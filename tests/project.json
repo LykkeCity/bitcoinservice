@@ -9,7 +9,7 @@
     "LkeServices": "1.0.0",
     "AzureRepositories": "1.0.0-*",
     "Core": "1.0.0-*",
-    "Microsoft.DotNet.InternalAbstractions": "1.0.1-beta-003206",
+    "Microsoft.DotNet.InternalAbstractions": "1.0.500-preview2-1-003177",
     "System.ComponentModel.TypeConverter": "4.1.0" 
   },
 

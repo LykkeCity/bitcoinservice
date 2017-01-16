@@ -48,8 +48,8 @@ namespace LkeServices.Signature
                                     return false;
                             }
                         }
+                        continue;
                     }
-                    continue;
                 }
 
                 var prevTransaction = await _bitcoinTransactionService.GetTransaction(input.PrevOut.Hash.ToString());
