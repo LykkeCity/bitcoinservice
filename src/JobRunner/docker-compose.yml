@@ -1,0 +1,7 @@
+version: '2'
+
+services:
+  apirunner:
+    image: bitcoinjob
+    environment:
+     - ConnectionStrings__Azure=UseDevelopmentStorage=true

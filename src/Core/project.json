@@ -1,0 +1,17 @@
+﻿{
+  "version": "1.0.0-*",
+
+  "dependencies": {
+    "Microsoft.NETCore.App": {
+      "version": "1.1.0",
+      "type": "platform"
+    },
+    "NBitcoin": "3.0.0.72",
+    "Newtonsoft.Json": "9.0.1",    
+    "QBitNinja.Client": "1.0.3.33"
+  },
+
+  "frameworks": {
+    "netcoreapp1.0": {}
+  }
+}

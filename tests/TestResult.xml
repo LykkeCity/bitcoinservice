@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<test-run id="0" testcasecount="1" result="Failed" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0" portable-engine-version="3.3.0.0" start-time="2016-12-19 12:33:48Z" end-time="2016-12-19 12:33:49Z" duration="0.347174">
+  <test-suite type="Assembly" id="1003" name="tests, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" fullname="tests, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" runstate="Runnable" testcasecount="1" result="Failed" site="Child" start-time="2016-12-19 12:33:48Z" end-time="2016-12-19 12:33:49Z" duration="0.153488" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+    <settings>
+      <setting name="WorkDirectory" value="E:\Projects\lykke\bitcoincore\tests" />
+    </settings>
+    <failure>
+      <message><![CDATA[One or more child tests had errors]]></message>
+    </failure>
+    <test-suite type="TestSuite" id="1005" name="Bitcoin" fullname="Bitcoin" runstate="Runnable" testcasecount="1" result="Failed" site="Child" start-time="2016-12-19 12:33:48Z" end-time="2016-12-19 12:33:49Z" duration="0.142053" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+      <failure>
+        <message><![CDATA[One or more child tests had errors]]></message>
+      </failure>
+      <test-suite type="TestSuite" id="1006" name="Tests" fullname="Bitcoin.Tests" runstate="Runnable" testcasecount="1" result="Failed" site="Child" start-time="2016-12-19 12:33:48Z" end-time="2016-12-19 12:33:49Z" duration="0.141755" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-suite type="TestFixture" id="1001" name="BitcoinTransactionTests" fullname="Bitcoin.Tests.BitcoinTransactionTests" classname="Bitcoin.Tests.BitcoinTransactionTests" runstate="Runnable" testcasecount="1" result="Failed" site="Child" start-time="2016-12-19 12:33:48Z" end-time="2016-12-19 12:33:49Z" duration="0.138339" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+          <failure>
+            <message><![CDATA[One or more child tests had errors]]></message>
+          </failure>
+          <test-case id="1002" name="TestColored" fullname="Bitcoin.Tests.BitcoinTransactionTests.TestSpendCommitment" methodname="TestSpendCommitment" classname="Bitcoin.Tests.BitcoinTransactionTests" runstate="Runnable" seed="101124507" result="Failed" label="Error" start-time="2016-12-19 12:33:48Z" end-time="2016-12-19 12:33:49Z" duration="0.085476" asserts="0">
+            <failure>
+              <message><![CDATA[System.ArgumentNullException : Value cannot be null.
+Parameter name: provider]]></message>
+              <stack-trace><![CDATA[   at Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetService[T](IServiceProvider provider)
+   at Bitcoin.Tests.BitcoinTransactionTests.<TestColored>d__0.MoveNext() in E:\Projects\lykke\bitcoincore\tests\BitcoinTransactionTests.cs:line 19
+--- End of stack trace from previous location where exception was thrown ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+   at NUnit.Framework.Internal.AsyncInvocationRegion.AsyncTaskInvocationRegion.WaitForPendingOperationsToComplete(Object invocationResult)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunAsyncTestMethod(TestExecutionContext context)]]></stack-trace>
+            </failure>
+          </test-case>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+    <test-suite type="SetUpFixture" id="1000" name="Tests" fullname="Tests.Config" classname="Tests.Config" runstate="Runnable" testcasecount="0" result="Passed" start-time="2016-12-19 12:33:49Z" end-time="2016-12-19 12:33:49Z" duration="0.000120" total="0" passed="0" failed="0" inconclusive="0" skipped="0" asserts="0" />
+  </test-suite>
+</test-run>

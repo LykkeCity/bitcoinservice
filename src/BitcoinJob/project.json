@@ -1,0 +1,26 @@
+﻿{
+  "version": "1.0.0",
+
+  "dependencies": {
+    "LkeServices": "1.0.0",
+    "Microsoft.Extensions.Configuration": "1.0.0",
+    "Microsoft.Extensions.Configuration.Binder": "1.0.0",
+    "Microsoft.Extensions.Configuration.EnvironmentVariables": "1.0.0",
+    "Microsoft.Extensions.Configuration.FileExtensions": "1.0.0",
+    "Microsoft.Extensions.Configuration.Json": "1.0.0",    
+    "AzureRepositories": "1.0.0-*",
+    "System.Reflection": "4.3.0"
+  },
+
+  "frameworks": {
+    "netcoreapp1.0": {
+      "dependencies": {
+        "Microsoft.NETCore.App": {
+          "type": "platform",
+          "version": "1.1.0"
+        }
+      },
+      "imports": "portable-net45"
+    }
+  }
+}
