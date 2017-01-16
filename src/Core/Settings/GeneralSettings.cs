@@ -14,7 +14,7 @@ namespace Core.Settings
 
         public string FeeAddress { get; set; }
         public FeeType21co FeeType { get; set; }
-        public decimal FeRateMultiplier { get; set; } = 1;
+        public decimal FeeRateMultiplier { get; set; } = 1;
 
         public string QBitNinjaBaseUrl { get; set; }
         public string SignatureProviderUrl { get; set; }

@@ -36,7 +36,7 @@ namespace LkeServices.Providers
             var feePerByte = await _repository.GetFeePerByte();
 
             // need fee per KB
-            return new FeeRate(new Money(feePerByte * 1000 * _baseSettings.FeRateMultiplier, MoneyUnit.Satoshi));
+            return new FeeRate(new Money(feePerByte * 1000 * _baseSettings.FeeRateMultiplier, MoneyUnit.Satoshi));
         }
 
         public async Task<Money> CalcFee(int size)
