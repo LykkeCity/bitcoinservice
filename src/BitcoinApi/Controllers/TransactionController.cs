@@ -213,12 +213,12 @@ namespace BitcoinApi.Controllers
 
         /// <summary>
         ///  Broadcast fully signed bitcoin transaction to network
-        /// </summary>            
+        /// </summary>
         [HttpPost("broadcast")]
+        [ProducesResponseType(typeof(ApiException), 400)]
         public async Task Broadcast([FromBody] BroadcastTransactionRequest model)
         {
             await Log("Broadcast", "Begin", model);
-
 
             var signRequest = await _transactionSignRequestRepository.GetSignRequest(model.TransactionId);
 
