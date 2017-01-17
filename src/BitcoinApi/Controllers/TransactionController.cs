@@ -13,6 +13,8 @@ using Core.Repositories.Assets;
 using LkeServices.Transactions;
 using NBitcoin;
 using System.Reflection;
+using Core.Helpers;
+using Core.Repositories.TransactionSign;
 
 namespace BitcoinApi.Controllers
 {
@@ -23,18 +25,21 @@ namespace BitcoinApi.Controllers
         private readonly IAssetRepository _assetRepository;
         private readonly ISignatureApiProvider _signatureApiProvider;
         private readonly ILog _log;
+        private readonly ITransactionSignRequestRepository _transactionSignRequestRepository;
         private readonly IBitcoinBroadcastService _broadcastService;
 
         public TransactionController(ILykkeTransactionBuilderService builder,
             IAssetRepository assetRepository,
             ISignatureApiProvider signatureApiProvider,
             ILog log,
+            ITransactionSignRequestRepository transactionSignRequestRepository,
             IBitcoinBroadcastService broadcastService)
         {
             _builder = builder;
             _assetRepository = assetRepository;
             _signatureApiProvider = signatureApiProvider;
             _log = log;
+            _transactionSignRequestRepository = transactionSignRequestRepository;
             _broadcastService = broadcastService;
         }
 
@@ -204,6 +209,36 @@ namespace BitcoinApi.Controllers
                 Transaction = createTransactionResponse.Transaction,
                 TransactionId = createTransactionResponse.TransactionId
             });
+        }
+
+        /// <summary>
+        ///  Broadcast fully signed bitcoin transaction to network
+        /// </summary>            
+        [HttpPost("broadcast")]
+        public async Task Broadcast([FromBody] BroadcastTransactionRequest model)
+        {
+            await Log("Broadcast", "Begin", model);
+
+
+            var signRequest = await _transactionSignRequestRepository.GetSignRequest(model.TransactionId);
+
+            if (!TransactionComparer.CompareTransactions(signRequest.InitialTransaction, model.Transaction))
+                throw new BackendException("Signed transaction is not equals to initial transaction", ErrorCode.BadTransaction);
+
+            var result = await _transactionSignRequestRepository.SetSignedTransaction(model.TransactionId, model.Transaction);
+            if (result.SignedTransaction1 != null && result.RequiredSignCount == 1 ||
+                result.SignedTransaction1 != null && result.SignedTransaction2 != null && result.RequiredSignCount == 2)
+            {
+                var tr = result.SignedTransaction1;
+                if (result.RequiredSignCount == 2)
+                    tr = OpenAssetsHelper.MergeTransactionsSignatures(result.SignedTransaction1, result.SignedTransaction2);
+
+                var fullSignedHex = await _signatureApiProvider.SignTransaction(tr);
+                var fullSigned = new Transaction(fullSignedHex);
+
+                await _broadcastService.BroadcastTransaction(model.TransactionId, fullSigned);
+            }
+            await Log("Broadcast", "End", model);
         }
 
         private async Task Log(string method, string status, object model, Guid? transactionId = null)
