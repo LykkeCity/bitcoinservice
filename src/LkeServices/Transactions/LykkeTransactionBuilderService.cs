@@ -157,6 +157,8 @@ namespace LkeServices.Transactions
 
                         var buildedTransaction = builder.BuildTransaction(true);
 
+                        await SaveSpentOutputs(buildedTransaction);
+
                         await SaveNewOutputs(transactionId, buildedTransaction, context);
 
                         return new CreateTransactionResponse(buildedTransaction.ToHex(), transactionId);

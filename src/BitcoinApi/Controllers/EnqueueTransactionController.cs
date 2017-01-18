@@ -40,7 +40,7 @@ namespace BitcoinApi.Controllers
         /// </summary>
         /// <returns>Internal transaction id</returns>
         [HttpPost("transfer")]
-        [ProducesResponseType(typeof(TransactionResponse), 200)]
+        [ProducesResponseType(typeof(TransactionIdResponse), 200)]
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<IActionResult> CreateCashout([FromBody]TransferRequest model)
         {
@@ -70,7 +70,7 @@ namespace BitcoinApi.Controllers
 
             await Log("Transfer", "End", model, transactionId);
 
-            return Ok(new TransactionResponse
+            return Ok(new TransactionIdResponse
             {
                 TransactionId = transactionId
             });
@@ -81,7 +81,7 @@ namespace BitcoinApi.Controllers
         /// </summary>
         /// <returns>Internal transaction id</returns>
         [HttpPost("transferall")]
-        [ProducesResponseType(typeof(TransactionResponse), 200)]
+        [ProducesResponseType(typeof(TransactionIdResponse), 200)]
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<IActionResult> CreateTransferAll([FromBody]TransferAllRequest model)
         {
@@ -104,7 +104,7 @@ namespace BitcoinApi.Controllers
 
 
             await Log("TransferAll", "End", model, transactionId);
-            return Ok(new TransactionResponse
+            return Ok(new TransactionIdResponse
             {
                 TransactionId = transactionId
             });
@@ -117,7 +117,7 @@ namespace BitcoinApi.Controllers
         /// </summary>
         /// <returns>Internal transaction id</returns>
         [HttpPost("swap")]
-        [ProducesResponseType(typeof(TransactionResponse), 200)]
+        [ProducesResponseType(typeof(TransactionIdResponse), 200)]
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<IActionResult> CreateSwap([FromBody]SwapRequest model)
         {
@@ -153,7 +153,7 @@ namespace BitcoinApi.Controllers
 
             await Log("Swap", "End", model, transactionId);
 
-            return Ok(new TransactionResponse
+            return Ok(new TransactionIdResponse
             {
                 TransactionId = transactionId
             });
@@ -164,7 +164,7 @@ namespace BitcoinApi.Controllers
         /// </summary>
         /// <returns>Internal transaction id</returns>
         [HttpPost("issue")]
-        [ProducesResponseType(typeof(TransactionResponse), 200)]
+        [ProducesResponseType(typeof(TransactionIdResponse), 200)]
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<IActionResult> Issue([FromBody] IssueRequest model)
         {
@@ -190,7 +190,7 @@ namespace BitcoinApi.Controllers
 
             await Log("Issue", "End", model, transactionId);
 
-            return Ok(new TransactionResponse
+            return Ok(new TransactionIdResponse
             {
                 TransactionId = transactionId
             });
@@ -201,7 +201,7 @@ namespace BitcoinApi.Controllers
         /// </summary>
         /// <returns>Internal transaction id</returns>
         [HttpPost("destroy")]
-        [ProducesResponseType(typeof(TransactionResponse), 200)]
+        [ProducesResponseType(typeof(TransactionIdResponse), 200)]
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<IActionResult> Destroy([FromBody] DestroyRequest model)
         {
@@ -226,7 +226,7 @@ namespace BitcoinApi.Controllers
 
             await Log("Destroy", "End", model, transactionId);
 
-            return Ok(new TransactionResponse
+            return Ok(new TransactionIdResponse
             {
                 TransactionId = transactionId
             });
