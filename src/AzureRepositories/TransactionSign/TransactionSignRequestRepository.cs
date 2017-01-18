@@ -42,15 +42,22 @@ namespace AzureRepositories.TransactionSign
         {
             _table = table;
         }
-        
+
         public async Task<ITransactionSignRequest> GetSignRequest(Guid transactionId)
         {
             return await _table.GetDataAsync(TransactionSignRequestEntity.GeneratePartition(), transactionId.ToString());
         }
 
+        public async Task<Guid> InsertTransactionId(Guid? transactionId)
+        {
+            var guid = transactionId ?? Guid.NewGuid();
+            await _table.InsertAsync(TransactionSignRequestEntity.Create(guid, null, 0));
+            return guid;
+        }
+
         public Task InsertSignRequest(Guid transactionId, string initialTr, int requiredSignCount)
         {
-            return _table.InsertAsync(TransactionSignRequestEntity.Create(transactionId, initialTr, requiredSignCount));
+            return _table.InsertOrReplaceAsync(TransactionSignRequestEntity.Create(transactionId, initialTr, requiredSignCount));
         }
 
         public async Task<ITransactionSignRequest> SetSignedTransaction(Guid transactionId, string signedTr)

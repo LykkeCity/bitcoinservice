@@ -17,7 +17,10 @@ namespace Core.Settings
         public decimal FeeRateMultiplier { get; set; } = 1;
 
         public string QBitNinjaBaseUrl { get; set; }
+
         public string SignatureProviderUrl { get; set; }
+        public string ClientSignatureProviderUrl { get; set; }
+
         public string LykkeJobsUrl { get; set; }
 
         public DbSettings Db { get; set; }
@@ -38,6 +41,10 @@ namespace Core.Settings
         public int GenerateAssetOutputsBatchSize { get; set; } = 100;
 
         public string[] IssuedAssets { get; set; } = new string[0];
+
+        public int MaxDequeueCount { get; set; } = 1000;
+
+        public int MaxQueueDelay { get; set; } = 5000;
     }
 
     public class DbSettings

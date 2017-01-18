@@ -16,6 +16,7 @@ namespace Core.QueueReader
 		Task<IQueueMessage> GetMessageAsync();
 		Task AddMessageAsync(string message);
 		Task FinishMessageAsync(IQueueMessage msg);
-		Task ReleaseMessageAsync(IQueueMessage msg);		
+		Task ReleaseMessageAsync(IQueueMessage msg);
+	    Task<int> Count();
 	}
 }

@@ -22,6 +22,8 @@ namespace Core.Repositories.TransactionSign
     {
         Task<ITransactionSignRequest> GetSignRequest(Guid transactionId);
 
+        Task<Guid> InsertTransactionId(Guid? transactionId);
+
         Task InsertSignRequest(Guid transactionId, string initialTr, int requiredSignCount);
 
         Task<ITransactionSignRequest> SetSignedTransaction(Guid transactionId, string signedTr);

@@ -79,5 +79,10 @@ namespace AzureRepositories.QueueReader
                 return _queue.ReleaseRawMessageAsync(internalMsg);
             return Task.CompletedTask;
         }
+
+        public async Task<int> Count()
+        {
+            return await _queue.Count() ?? 0;
+        }
     }
 }

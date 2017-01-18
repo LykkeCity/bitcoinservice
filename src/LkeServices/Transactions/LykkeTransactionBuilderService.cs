@@ -20,18 +20,20 @@ namespace LkeServices.Transactions
     public interface ILykkeTransactionBuilderService
     {
         Task<CreateTransactionResponse> GetTransferTransaction(BitcoinAddress source, BitcoinAddress destination,
-            decimal amount, IAsset assetId, Guid? transactionId);
+            decimal amount, IAsset assetId, Guid transactionId);
 
         Task<CreateTransactionResponse> GetSwapTransaction(BitcoinAddress address1, decimal amount1, IAsset asset1,
-            BitcoinAddress address2, decimal amount2, IAsset asset2, Guid? transactionId);
+            BitcoinAddress address2, decimal amount2, IAsset asset2, Guid transactionId);
 
-        Task<CreateTransactionResponse> GetIssueTransaction(BitcoinAddress bitcoinAddres, decimal amount, IAsset asset, Guid? transactionId);
+        Task<CreateTransactionResponse> GetIssueTransaction(BitcoinAddress bitcoinAddres, decimal amount, IAsset asset, Guid transactionId);
 
-        Task<CreateTransactionResponse> GetDestroyTransaction(BitcoinAddress bitcoinAddres, decimal modelAmount, IAsset asset, Guid? transactionId);
+        Task<CreateTransactionResponse> GetDestroyTransaction(BitcoinAddress bitcoinAddres, decimal modelAmount, IAsset asset, Guid transactionId);
 
-        Task<CreateTransactionResponse> GetTransferAllTransaction(BitcoinAddress from, BitcoinAddress to, Guid? transactionId);
+        Task<CreateTransactionResponse> GetTransferAllTransaction(BitcoinAddress from, BitcoinAddress to, Guid transactionId);
 
         Task SaveSpentOutputs(Transaction transaction);
+
+        Task<Guid> AddTransactionId(Guid? transactionId);
     }
 
     public class LykkeTransactionBuilderService : ILykkeTransactionBuilderService
@@ -70,12 +72,10 @@ namespace LkeServices.Transactions
         }
 
         public Task<CreateTransactionResponse> GetTransferTransaction(BitcoinAddress sourceAddress,
-            BitcoinAddress destAddress, decimal amount, IAsset asset, Guid? transactionId)
+            BitcoinAddress destAddress, decimal amount, IAsset asset, Guid transactionId)
         {
             return Retry.Try(async () =>
-            {
-                await CheckDuplicatedTransactionId(transactionId);
-
+            {         
                 var context = new TransactionBuildContext(_connectionParams.Network, _pregeneratedOutputsQueueFactory);
 
                 return await context.Build(async () =>
@@ -84,30 +84,26 @@ namespace LkeServices.Transactions
 
                     await TransferOneDirection(builder, context, sourceAddress, amount, asset, destAddress);
 
-                    await _transactionBuildHelper.AddFee(builder, context);
-
-                    var trId = transactionId ?? Guid.NewGuid();
+                    await _transactionBuildHelper.AddFee(builder, context);                    
 
                     var buildedTransaction = builder.BuildTransaction(true);
 
                     await SaveSpentOutputs(buildedTransaction);
 
-                    await _signRequestRepository.InsertSignRequest(trId, buildedTransaction.ToHex(), 1);
+                    await _signRequestRepository.InsertSignRequest(transactionId, buildedTransaction.ToHex(), 1);
 
-                    await SaveNewOutputs(trId, buildedTransaction, context);
+                    await SaveNewOutputs(transactionId, buildedTransaction, context);
 
-                    return new CreateTransactionResponse(buildedTransaction.ToHex(), trId);
+                    return new CreateTransactionResponse(buildedTransaction.ToHex(), transactionId);
                 });
             }, exception => (exception as BackendException)?.Code == ErrorCode.TransactionConcurrentInputsProblem, 3, _log);
         }
 
         public Task<CreateTransactionResponse> GetSwapTransaction(BitcoinAddress address1, decimal amount1,
-            IAsset asset1, BitcoinAddress address2, decimal amount2, IAsset asset2, Guid? transactionId)
+            IAsset asset1, BitcoinAddress address2, decimal amount2, IAsset asset2, Guid transactionId)
         {
             return Retry.Try(async () =>
-            {
-                await CheckDuplicatedTransactionId(transactionId);
-
+            {                
                 var context = new TransactionBuildContext(_connectionParams.Network, _pregeneratedOutputsQueueFactory);
 
                 return await context.Build(async () =>
@@ -116,29 +112,25 @@ namespace LkeServices.Transactions
                     await TransferOneDirection(builder, context, address1, amount1, asset1, address2);
                     await TransferOneDirection(builder, context, address2, amount2, asset2, address1);
 
-                    await _transactionBuildHelper.AddFee(builder, context);
-
-                    var trId = transactionId ?? Guid.NewGuid();
+                    await _transactionBuildHelper.AddFee(builder, context);                    
 
                     var buildedTransaction = builder.BuildTransaction(true);
 
                     await SaveSpentOutputs(buildedTransaction);
 
-                    await _signRequestRepository.InsertSignRequest(trId, buildedTransaction.ToHex(), 2);
+                    await _signRequestRepository.InsertSignRequest(transactionId, buildedTransaction.ToHex(), 2);
 
-                    await SaveNewOutputs(trId, buildedTransaction, context);
+                    await SaveNewOutputs(transactionId, buildedTransaction, context);
 
-                    return new CreateTransactionResponse(buildedTransaction.ToHex(), trId);
+                    return new CreateTransactionResponse(buildedTransaction.ToHex(), transactionId);
                 });
             }, exception => (exception as BackendException)?.Code == ErrorCode.TransactionConcurrentInputsProblem, 3, _log);
         }
 
-        public Task<CreateTransactionResponse> GetIssueTransaction(BitcoinAddress bitcoinAddres, decimal amount, IAsset asset, Guid? transactionId)
+        public Task<CreateTransactionResponse> GetIssueTransaction(BitcoinAddress bitcoinAddres, decimal amount, IAsset asset, Guid transactionId)
         {
             return Retry.Try(async () =>
-            {
-                await CheckDuplicatedTransactionId(transactionId);
-
+            {                
                 var context = new TransactionBuildContext(_connectionParams.Network, _pregeneratedOutputsQueueFactory);
 
                 return await context.Build(async () =>
@@ -161,15 +153,13 @@ namespace LkeServices.Transactions
                             .IssueAsset(bitcoinAddres, new AssetMoney(assetId, amount, asset.MultiplierPower));
                         context.IssueAsset(assetId);
 
-                        await _transactionBuildHelper.AddFee(builder, context);
-
-                        var trId = transactionId ?? Guid.NewGuid();
+                        await _transactionBuildHelper.AddFee(builder, context);                       
 
                         var buildedTransaction = builder.BuildTransaction(true);
 
-                        await SaveNewOutputs(trId, buildedTransaction, context);
+                        await SaveNewOutputs(transactionId, buildedTransaction, context);
 
-                        return new CreateTransactionResponse(buildedTransaction.ToHex(), trId);
+                        return new CreateTransactionResponse(buildedTransaction.ToHex(), transactionId);
                     }
                     catch (Exception)
                     {
@@ -180,12 +170,10 @@ namespace LkeServices.Transactions
             }, exception => (exception as BackendException)?.Code == ErrorCode.TransactionConcurrentInputsProblem, 3, _log);
         }
 
-        public Task<CreateTransactionResponse> GetDestroyTransaction(BitcoinAddress bitcoinAddres, decimal modelAmount, IAsset asset, Guid? transactionId)
+        public Task<CreateTransactionResponse> GetDestroyTransaction(BitcoinAddress bitcoinAddres, decimal modelAmount, IAsset asset, Guid transactionId)
         {
             return Retry.Try(async () =>
             {
-                await CheckDuplicatedTransactionId(transactionId);
-
                 var context = new TransactionBuildContext(_connectionParams.Network, _pregeneratedOutputsQueueFactory);
 
                 return await context.Build(async () =>
@@ -205,9 +193,7 @@ namespace LkeServices.Transactions
 
                     _transactionBuildHelper.SendAssetWithChange(builder, context, coins, changeAddress, assetMoney, bitcoinAddres);
 
-                    await _transactionBuildHelper.AddFee(builder, context);
-
-                    var trId = transactionId ?? Guid.NewGuid();
+                    await _transactionBuildHelper.AddFee(builder, context);                    
 
                     var tx = builder.BuildTransaction(true);
 
@@ -228,21 +214,19 @@ namespace LkeServices.Transactions
 
                     await SaveSpentOutputs(tx);
 
-                    await _signRequestRepository.InsertSignRequest(trId, tx.ToHex(), 1);
+                    await _signRequestRepository.InsertSignRequest(transactionId, tx.ToHex(), 1);
 
-                    await SaveNewOutputs(trId, tx, context);
+                    await SaveNewOutputs(transactionId, tx, context);
 
-                    return new CreateTransactionResponse(tx.ToHex(), trId);
+                    return new CreateTransactionResponse(tx.ToHex(), transactionId);
                 });
             }, exception => (exception as BackendException)?.Code == ErrorCode.TransactionConcurrentInputsProblem, 3, _log);
         }
 
-        public Task<CreateTransactionResponse> GetTransferAllTransaction(BitcoinAddress @from, BitcoinAddress to, Guid? transactionId)
+        public Task<CreateTransactionResponse> GetTransferAllTransaction(BitcoinAddress @from, BitcoinAddress to, Guid transactionId)
         {
             return Retry.Try(async () =>
-            {
-                await CheckDuplicatedTransactionId(transactionId);
-
+            {                
                 var context = new TransactionBuildContext(_connectionParams.Network, _pregeneratedOutputsQueueFactory);
 
                 return await context.Build(async () =>
@@ -264,19 +248,17 @@ namespace LkeServices.Transactions
 
                         _transactionBuildHelper.SendAssetWithChange(builder, context, assetGroup.ToList(), to, sum, from);
                     }
-                    await _transactionBuildHelper.AddFee(builder, context);
-
-                    var trId = transactionId ?? Guid.NewGuid();
+                    await _transactionBuildHelper.AddFee(builder, context);                    
 
                     var buildedTransaction = builder.BuildTransaction(true);
 
                     await SaveSpentOutputs(buildedTransaction);
 
-                    await _signRequestRepository.InsertSignRequest(trId, buildedTransaction.ToHex(), 1);
+                    await _signRequestRepository.InsertSignRequest(transactionId, buildedTransaction.ToHex(), 1);
 
-                    await SaveNewOutputs(trId, buildedTransaction, context);
+                    await SaveNewOutputs(transactionId, buildedTransaction, context);
 
-                    return new CreateTransactionResponse(buildedTransaction.ToHex(), trId);
+                    return new CreateTransactionResponse(buildedTransaction.ToHex(), transactionId);
                 });
             }, exception => (exception as BackendException)?.Code == ErrorCode.TransactionConcurrentInputsProblem, 3, _log);
         }
@@ -317,6 +299,12 @@ namespace LkeServices.Transactions
             {
                 await _broadcastedOutputRepository.DeleteOutput(outPoint.Hash.ToString(), (int)outPoint.N);
             }
+        }
+
+        public async Task<Guid> AddTransactionId(Guid? transactionId)
+        {
+            await CheckDuplicatedTransactionId(transactionId);
+            return await _signRequestRepository.InsertTransactionId(transactionId);
         }
 
         private async Task CheckDuplicatedTransactionId(Guid? transactionId)

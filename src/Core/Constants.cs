@@ -12,5 +12,8 @@ namespace Core
         public const string SignedTransactionsQueue = "signed-transactions";
         public const string EmailNotifierQueue = "emailsqueue";
         public const string SlackNotifierQueue = "slack-notifications";
+
+        public const string TransactionCommandQueue = "transaction-commands";
+        public const string BroadcastingQueue = "broadcasting-transactions";
     }
 }

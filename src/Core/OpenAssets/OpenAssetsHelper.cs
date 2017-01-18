@@ -8,7 +8,7 @@ using NBitcoin.OpenAsset;
 
 namespace Core.OpenAssets
 {
-    public class OpenAssetsHelper
+    public static class OpenAssetsHelper
     {
         public static BitcoinAddress GetBitcoinAddressFormBase58Date(string base58Data)
         {

@@ -13,11 +13,17 @@ using Common;
 
 namespace LkeServices.Providers
 {
+    public enum SignatureApiProviderType
+    {
+        Client, 
+        Exchange
+    }
+
     public class SignatureApiProvider : BaseApiProvider, ISignatureApiProvider
     {
 
-        public SignatureApiProvider(BaseSettings settings, ILog logger, IRestClient restClient)
-            : base(settings.SignatureProviderUrl, restClient, logger)
+        public SignatureApiProvider(string url, ILog logger, IRestClient restClient)
+            : base(url, restClient, logger)
         {
         }
 

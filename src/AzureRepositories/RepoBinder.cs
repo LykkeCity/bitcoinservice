@@ -8,6 +8,7 @@ using AzureRepositories.FeeRate;
 using AzureRepositories.Monitoring;
 using AzureRepositories.Offchain;
 using AzureRepositories.TransactionOutputs;
+using AzureRepositories.TransactionQueueHolder;
 using AzureRepositories.Transactions;
 using AzureRepositories.TransactionSign;
 using AzureRepositories.Walelts;
@@ -26,6 +27,7 @@ using Core.Repositories.Transactions;
 using Core.Repositories.TransactionSign;
 using Core.Repositories.Wallets;
 using Core.Settings;
+using Core.TransactionQueueWriter;
 
 namespace AzureRepositories
 {
@@ -74,8 +76,6 @@ namespace AzureRepositories
 
         private static void BindQueue(this ContainerBuilder ioc, BaseSettings settings)
         {
-            ioc.RegisterInstance(new SignedTransactionQueue(new AzureQueueExt(settings.Db.InQueueConnString, Constants.SignedTransactionsQueue)))
-                .As<ISignedTransactionQueue>();
 
             ioc.RegisterInstance<Func<string, IQueueExt>>(queueName =>
             {
@@ -90,6 +90,8 @@ namespace AzureRepositories
 
             });
             ioc.RegisterType<PregeneratedOutputsQueueFactory>().As<IPregeneratedOutputsQueueFactory>().SingleInstance();
+
+            ioc.RegisterType<TransactionQueueWriter>().As<ITransactionQueueWriter>().SingleInstance();
         }
     }
 }

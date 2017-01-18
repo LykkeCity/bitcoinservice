@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Common.Log;
+using Common.PasswordTools;
 using Core.QueueReader;
 using LkeServices.Triggers.Attributes;
 using LkeServices.Triggers.Delay;
@@ -32,6 +33,7 @@ namespace LkeServices.Triggers.Bindings
         private IQueueReader _poisonQueueReader;
         private Type _parameterType;
         private bool _hasSecondParameter;
+        private bool _useTriggeringContext;
 
 
         public QueueTriggerBinding(ILog log, IQueueReaderFactory queueReaderFactory)
@@ -58,11 +60,13 @@ namespace LkeServices.Triggers.Bindings
             var parameters = _method.GetParameters();
             if (parameters.Length > 2 && parameters.Length < 1)
                 throw new Exception($"Method {_method.Name} must have 1 or 2 parameters");
-            if (parameters.Length == 2 && parameters[1].ParameterType != typeof(DateTimeOffset))
-                throw new Exception($"Method {_method.Name} second parameter type is {parameters[1].ParameterType.Name}, but should by DateTimeOffset");
+            if (parameters.Length == 2 && parameters[1].ParameterType != typeof(DateTimeOffset) && parameters[1].ParameterType != typeof(QueueTriggeringContext))
+                throw new Exception($"Method {_method.Name} second parameter type is {parameters[1].ParameterType.Name}, but should by DateTimeOffset or QueueTriggeringContext");
 
-            _parameterType = _method.GetParameters()[0].ParameterType;
+            _parameterType = parameters[0].ParameterType;
             _hasSecondParameter = parameters.Length == 2;
+            if (_hasSecondParameter)
+                _useTriggeringContext = parameters[1].ParameterType == typeof(QueueTriggeringContext);
             _delayStrategy = new RandomizedExponentialStrategy(_minDelay,
                 metadata.MaxPollingIntervalMs > 0 ? TimeSpan.FromMilliseconds(metadata.MaxPollingIntervalMs) : _maxDelay);
         }
@@ -83,13 +87,15 @@ namespace LkeServices.Triggers.Bindings
                             if (message == null)
                                 break;
 
-                            var p = new List<object>() {message.Value(_parameterType)};
+                            var context = new QueueTriggeringContext(message.InsertionTime);
+
+                            var p = new List<object>() { message.Value(_parameterType) };
 
                             if (_hasSecondParameter)
-                                p.Add(message.InsertionTime);
+                                p.Add(_useTriggeringContext ? context : (object)message.InsertionTime);
 
                             await Invoke(_serviceProvider, _method, p.ToArray());
-                            await ProcessCompletedMessage(message);
+                            await ProcessCompletedMessage(message, context);
                             executionSucceeded = true;
                         } while (true);
                     }
@@ -109,9 +115,23 @@ namespace LkeServices.Triggers.Bindings
 
 
 
-        private Task ProcessCompletedMessage(IQueueMessage message)
+        private async Task ProcessCompletedMessage(IQueueMessage message, QueueTriggeringContext context)
         {
-            return _queueReader.FinishMessageAsync(message);
+            switch (context.MovingAction)
+            {
+                case QueueTriggeringContext.MessageMovingAction.Default:
+                    await _queueReader.FinishMessageAsync(message);
+                    break;
+                case QueueTriggeringContext.MessageMovingAction.MoveToEnd:
+                    await MoveToEnd(message, context.NewMessageVersion);
+                    break;
+                case QueueTriggeringContext.MessageMovingAction.MoveToPoison:
+                    await MoveToPoisonQueue(message);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+            await context.Delay(await _queueReader.Count());
         }
 
         private Task ProcessFailedMessage(IQueueMessage message)
@@ -129,6 +149,12 @@ namespace LkeServices.Triggers.Bindings
             {
                 return LogError("QueueTriggerBinding", "ProcessFailedMessage", ex);
             }
+        }
+
+        private async Task MoveToEnd(IQueueMessage message, string newMessageVersion)
+        {
+            await _queueReader.AddMessageAsync(newMessageVersion);
+            await _queueReader.FinishMessageAsync(message);
         }
 
         private async Task MoveToPoisonQueue(IQueueMessage message)
