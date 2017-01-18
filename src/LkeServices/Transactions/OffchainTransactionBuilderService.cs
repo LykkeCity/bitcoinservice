@@ -15,6 +15,7 @@ using Core.Providers;
 using Core.Repositories.Offchain;
 using Core.Repositories.TransactionOutputs;
 using Core.Repositories.Wallets;
+using LkeServices.Providers;
 using LkeServices.Signature;
 using PhoneNumbers;
 
@@ -56,7 +57,7 @@ namespace LkeServices.Transactions
             IBitcoinOutputsService bitcoinOutputsService,
             IOffchainChannelRepository offchainChannelRepository,
             ISignatureVerifier signatureVerifier,
-            ISignatureApiProvider signatureApiProvider,
+            Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
             ICommitmentRepository commitmentRepository,
             IPregeneratedOutputsQueueFactory pregeneratedOutputsQueueFactory,
             IBroadcastedOutputRepository broadcastedOutputRepository,
@@ -69,7 +70,7 @@ namespace LkeServices.Transactions
             _bitcoinOutputsService = bitcoinOutputsService;
             _offchainChannelRepository = offchainChannelRepository;
             _signatureVerifier = signatureVerifier;
-            _signatureApiProvider = signatureApiProvider;
+            _signatureApiProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
             _commitmentRepository = commitmentRepository;
             _pregeneratedOutputsQueueFactory = pregeneratedOutputsQueueFactory;
             _broadcastedOutputRepository = broadcastedOutputRepository;

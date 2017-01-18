@@ -9,6 +9,7 @@ using Core.Providers;
 using Core.QBitNinja;
 using Core.Repositories.Assets;
 using Core.ScriptTemplates;
+using LkeServices.Providers;
 using LkeServices.Transactions;
 using Microsoft.Extensions.DependencyInjection;
 using NBitcoin;
@@ -41,7 +42,7 @@ namespace Bitcoin.Tests
             var hex =
                 "01000000030fc8d9f48344cb9496af8b77c24b6d36bff11041d37b8ee0ac5c8c8aa63e0292020000004b00000047522102593e745d594696f503acab8d8a20fe6a9b97e9f63873e124ac79113dd20a03ae210379be0eea5380e3b03ae31efcfb19eba41fa6e6fdd0dc3329d4d658eca25168f452aeffffffff399b06f441db3581576da93139700d176bd726f54e05f51ace6dfedf68ada123040000004b000000475221025a4cd2d3e5e12142df245a8bc24fa9ac0a6cb412a205ca3d31b1fef891126cbf21020f0efab8a2845a8030b3a6eb535577fd38364f0897ca32ebd956223653cc6da252aeffffffff6735d37552e63c0d1386c3bd40d687546c917326502aafbb31f8018909e41a943300000000ffffffff0600000000000000000d6a0b4f41010004310538b006008c0a00000000000017a914745d46755d712e8ec662a30f70c4830261750932878c0a00000000000017a914da617d341e35dde727780f277129df8538be7f54878c0a00000000000017a914da617d341e35dde727780f277129df8538be7f54878c0a00000000000017a914745d46755d712e8ec662a30f70c483026175093287d0200000000000001976a9144104da83ef80ce0b2e5843230f489f1455e98ef688ac00000000";
             var tr = new Transaction(hex);
-            
+
             //var multisigScriptOps = PayToMultiSigTemplate.Instance.GenerateScriptPubKey
             //(2,
             //    new PubKey[]
@@ -67,12 +68,12 @@ namespace Bitcoin.Tests
 
             var bitcoinOutService = Config.Services.GetService<IBitcoinOutputsService>();
             var helper = Config.Services.GetService<ITransactionBuildHelper>();
-            var signProvider = Config.Services.GetService<ISignatureApiProvider>();
+            var signProvider = Config.Services.GetService<Func<SignatureApiProviderType, ISignatureApiProvider>>()(SignatureApiProviderType.Exchange);
             var bitcoinClient = Config.Services.GetService<IRpcBitcoinClient>();
             var outputs = await bitcoinOutService.GetUncoloredUnspentOutputs(address);
 
 
-            TransactionBuilder builder = new TransactionBuilder();            
+            TransactionBuilder builder = new TransactionBuilder();
 
             //helper.SendWithChange(builder, context, outputs.ToList(),
             //    CreateScript(pk.PubKey.ToHex(), pk2.PubKey.ToHex()).GetScriptAddress(Network.TestNet),
@@ -123,7 +124,7 @@ namespace Bitcoin.Tests
 
 
             //tr.Inputs[0].Sequence = new Sequence(144);
-           // tr.Version = 2;
+            // tr.Version = 2;
             var hash = Script.SignatureHash(redeem, tr, 0, SigHash.All);
 
             var signature = singlePk.PrivateKey.Sign(hash, SigHash.All).Signature.ToDER().Concat(new byte[] { 0x01 }).ToArray();
@@ -135,7 +136,7 @@ namespace Bitcoin.Tests
             {
                 IsMultisig = true,
                 RedeemScript = redeem.ToBytes(),
-                Pushes = new[] { new byte[0],  push1, push2 }
+                Pushes = new[] { new byte[0], push1, push2 }
             };
 
             tr.Inputs[0].ScriptSig = OffchainScriptCommitmentTemplate.GenerateScriptSig(scriptParams);

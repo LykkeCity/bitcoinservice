@@ -6,6 +6,7 @@ using Core.Bitcoin;
 using Core.Helpers;
 using Core.Providers;
 using Core.Repositories.Wallets;
+using LkeServices.Providers;
 
 namespace LkeServices.Multisig
 {
@@ -22,11 +23,11 @@ namespace LkeServices.Multisig
         private readonly RpcConnectionParams _connectionParams;
 
         public MultisigService(IWalletAddressRepository walletAddressRepository,
-            ISignatureApiProvider signatureApiProvider,
+            Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
             RpcConnectionParams connectionParams)
         {
             _walletAddressRepository = walletAddressRepository;
-            _signatureApiProvider = signatureApiProvider;
+            _signatureApiProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
             _connectionParams = connectionParams;
         }
         

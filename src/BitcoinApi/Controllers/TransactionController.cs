@@ -15,6 +15,8 @@ using NBitcoin;
 using System.Reflection;
 using Core.Helpers;
 using Core.Repositories.TransactionSign;
+using LkeServices.Providers;
+using TransactionResponse = BitcoinApi.Models.TransactionResponse;
 
 namespace BitcoinApi.Controllers
 {
@@ -30,14 +32,14 @@ namespace BitcoinApi.Controllers
 
         public TransactionController(ILykkeTransactionBuilderService builder,
             IAssetRepository assetRepository,
-            ISignatureApiProvider signatureApiProvider,
+            Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
             ILog log,
             ITransactionSignRequestRepository transactionSignRequestRepository,
             IBitcoinBroadcastService broadcastService)
         {
             _builder = builder;
             _assetRepository = assetRepository;
-            _signatureApiProvider = signatureApiProvider;
+            _signatureApiProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
             _log = log;
             _transactionSignRequestRepository = transactionSignRequestRepository;
             _broadcastService = broadcastService;
