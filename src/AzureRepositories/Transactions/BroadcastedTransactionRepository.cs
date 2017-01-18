@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using AzureStorage;
 using Core.Repositories.Transactions;
@@ -16,34 +17,45 @@ namespace AzureRepositories.Transactions
         }
 
         public string Hash => RowKey;
+        public Guid TransactionId { get; set; }
 
-        public static BroadcastedTransactionEntity Create(string hash)
+        public static BroadcastedTransactionEntity Create(string hash, Guid transactionId)
         {
             return new BroadcastedTransactionEntity
             {
                 PartitionKey = GeneratePartitionKey(),
-                RowKey = hash
+                RowKey = hash,
+                TransactionId = transactionId
             };
         }
     }
 
     public class BroadcastedTransactionRepository : IBroadcastedTransactionRepository
     {
-        private readonly INoSQLTableStorage<BroadcastedTransactionEntity> _storage;
+        private const string BlobContainer = "broadcasted-transactions";
 
-        public BroadcastedTransactionRepository(INoSQLTableStorage<BroadcastedTransactionEntity> storage)
+        private readonly INoSQLTableStorage<BroadcastedTransactionEntity> _storage;
+        private readonly IBlobStorage _blobStorage;
+
+        public BroadcastedTransactionRepository(INoSQLTableStorage<BroadcastedTransactionEntity> storage, IBlobStorage blobStorage)
         {
             _storage = storage;
+            _blobStorage = blobStorage;
         }
 
-        public async Task InsertTransaction(string hash)
+        public async Task InsertTransaction(string hash, Guid transactionId)
         {
-            await _storage.InsertAsync(BroadcastedTransactionEntity.Create(hash));
+            await _storage.InsertAsync(BroadcastedTransactionEntity.Create(hash, transactionId));
         }
 
         public async Task<IBroadcastedTransaction> GetTransaction(string hash)
         {
             return await _storage.GetDataAsync(BroadcastedTransactionEntity.GeneratePartitionKey(), hash);
+        }
+
+        public async Task SaveToBlob(Guid transactionId, string hex)
+        {
+            await _blobStorage.SaveBlobAsync(BlobContainer, transactionId + ".txt", Encoding.UTF8.GetBytes(hex));
         }
     }
 }

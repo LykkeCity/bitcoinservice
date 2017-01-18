@@ -8,9 +8,7 @@ namespace Core.Bitcoin
 {
     public interface IRpcBitcoinClient
     {
-        Task BroadcastTransaction(Transaction tr);
-
-        Task BroadcastTransaction(string tr);
+        Task BroadcastTransaction(Transaction tr, Guid transactionId);
 
         Task<string> GetTransactionHex(string trId);
     }

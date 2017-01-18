@@ -32,7 +32,7 @@ namespace LkeServices.Bitcoin
             if (_settings.UseLykkeApi)
                 await _apiProvider.SendPreBroadcastNotification(transactionId, hash);
 
-            await _rpcBitcoinClient.BroadcastTransaction(tx);
+            await _rpcBitcoinClient.BroadcastTransaction(tx, transactionId);
 
             await _broadcastedOutputRepository.SetTransactionHash(transactionId, hash);
 

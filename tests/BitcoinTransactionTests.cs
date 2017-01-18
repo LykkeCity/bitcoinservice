@@ -39,12 +39,9 @@ namespace Bitcoin.Tests
             var helper = Config.Services.GetService<ITransactionBuildHelper>();
 
             var hex =
-                "01000000022177aff6ea91735390f16d8e812e4016421b84685caeafd6d493c2e387b92826010000006a47304402207576124f5570e01482f10964dce977cc774e6779f82791b62fef1fa7a438c2ff022056734c906897ee3a523b19477db4aa7fa311c41db6ef4cb4437355c1747c4007012103e4407b9a8718b468aa59da0704ed9fd9e1f566e74f82d2c8f6a302127cda4fa3ffffffff9ef7933b504e50019e6f65088ae0dd402129ae11d126f715396fc9e0afc85307400000006a47304402202a3ed7b29a87f8286fb8df5b2bd0919e54b282270dc93f9c5eb1834de5b58a0f0220567c1f09563b1ba3c3c4ac014ab33355194b5f5b615ba135af35ed61b65b00b7012103e4407b9a8718b468aa59da0704ed9fd9e1f566e74f82d2c8f6a302127cda4fa3ffffffff040000000000000000106a0e4f41010002c096b102c0cc8d08008c0a00000000000017a9143a0737aa02c02ab43f2a502c850aff5f06712ea787aa0a0000000000001976a9146486f4670369e483b1cb982c216a9a0ba713237c88ac8ee40000000000001976a914ed75405f426601f5493117b5a22dc0082269e32288ac00000000";
+                "01000000030fc8d9f48344cb9496af8b77c24b6d36bff11041d37b8ee0ac5c8c8aa63e0292020000004b00000047522102593e745d594696f503acab8d8a20fe6a9b97e9f63873e124ac79113dd20a03ae210379be0eea5380e3b03ae31efcfb19eba41fa6e6fdd0dc3329d4d658eca25168f452aeffffffff399b06f441db3581576da93139700d176bd726f54e05f51ace6dfedf68ada123040000004b000000475221025a4cd2d3e5e12142df245a8bc24fa9ac0a6cb412a205ca3d31b1fef891126cbf21020f0efab8a2845a8030b3a6eb535577fd38364f0897ca32ebd956223653cc6da252aeffffffff6735d37552e63c0d1386c3bd40d687546c917326502aafbb31f8018909e41a943300000000ffffffff0600000000000000000d6a0b4f41010004310538b006008c0a00000000000017a914745d46755d712e8ec662a30f70c4830261750932878c0a00000000000017a914da617d341e35dde727780f277129df8538be7f54878c0a00000000000017a914da617d341e35dde727780f277129df8538be7f54878c0a00000000000017a914745d46755d712e8ec662a30f70c483026175093287d0200000000000001976a9144104da83ef80ce0b2e5843230f489f1455e98ef688ac00000000";
             var tr = new Transaction(hex);
             
-            await helper.AddFee(tr);
-            
-            await rpcClient.BroadcastTransaction(tr);
             //var multisigScriptOps = PayToMultiSigTemplate.Instance.GenerateScriptPubKey
             //(2,
             //    new PubKey[]
@@ -86,7 +83,7 @@ namespace Bitcoin.Tests
 
             var signed = await signProvider.SignTransaction(tr.ToHex());
 
-            await bitcoinClient.BroadcastTransaction(new Transaction(signed));
+            await bitcoinClient.BroadcastTransaction(new Transaction(signed), Guid.NewGuid());
         }
 
         [Test]
@@ -146,7 +143,7 @@ namespace Bitcoin.Tests
 
             ScriptError error;
             tr.Inputs.AsIndexedInputs().First().VerifyScript(scriptCoin.ScriptPubKey, out error);
-            await bitcoinClient.BroadcastTransaction(tr);
+            await bitcoinClient.BroadcastTransaction(tr, Guid.NewGuid());
 
             //CheckSequence(1, tr, 0);
             //CheckSig(signature.ToBytes(), pk.PubKey.ToBytes(), redeem, new TransactionChecker(tr, 0, scriptCoin.Amount), 0);

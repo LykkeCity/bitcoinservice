@@ -11,6 +11,7 @@ using AzureRepositories.TransactionOutputs;
 using AzureRepositories.Transactions;
 using AzureRepositories.TransactionSign;
 using AzureRepositories.Walelts;
+using AzureStorage.Blob;
 using AzureStorage.Queue;
 using AzureStorage.Tables;
 using Common.Log;
@@ -44,7 +45,9 @@ namespace AzureRepositories
             ioc.RegisterInstance(new SpentOutputRepository(new AzureTableStorage<OutputEntity>(settings.Db.DataConnString, "SpentOutputs", null)))
                 .As<ISpentOutputRepository>();
 
-            ioc.RegisterInstance(new BroadcastedTransactionRepository(new AzureTableStorage<BroadcastedTransactionEntity>(settings.Db.DataConnString, "BroadcastedTransactions", null)))
+            ioc.RegisterInstance(new BroadcastedTransactionRepository(
+                new AzureTableStorage<BroadcastedTransactionEntity>(settings.Db.DataConnString, "BroadcastedTransactions", null),
+                new AzureBlobStorage(settings.Db.DataConnString)))
                 .As<IBroadcastedTransactionRepository>();
 
             ioc.RegisterInstance(new AssetRepository(new AzureTableStorage<AssetEntity>(settings.Db.DictsConnString, "Dictionaries", null)))

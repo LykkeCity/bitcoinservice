@@ -22,16 +22,13 @@ namespace LkeServices.Bitcoin
             _client = new RPCClient(new NetworkCredential(connectionParams.UserName, connectionParams.Password), connectionParams.IpAddress, connectionParams.Network);
         }
 
-        public async Task BroadcastTransaction(Transaction tr)
+        public async Task BroadcastTransaction(Transaction tr, Guid transactionId)
         {
             await _client.SendRawTransactionAsync(tr);
 
-            await _broadcastedTransactionRepository.InsertTransaction(tr.GetHash().ToString());
-        }
+            await _broadcastedTransactionRepository.InsertTransaction(tr.GetHash().ToString(), transactionId);
 
-        public Task BroadcastTransaction(string tr)
-        {
-            return BroadcastTransaction(new Transaction(tr));
+            await _broadcastedTransactionRepository.SaveToBlob(transactionId, tr.ToHex());
         }
 
         public async Task<string> GetTransactionHex(string trId)

@@ -103,7 +103,7 @@ namespace BackgroundWorker.Functions
 
                 var signedTr = new Transaction(signedHex);
 
-                await _bitcoinClient.BroadcastTransaction(signedTr);
+                await _bitcoinClient.BroadcastTransaction(signedTr, Guid.NewGuid());
 
                 await queue.EnqueueOutputs(signedTr.Outputs.AsCoins().Where(o => o.TxOut.Value == feeAmount).ToArray());
 
@@ -143,7 +143,7 @@ namespace BackgroundWorker.Functions
                         var signedHex = await _signatureApiProvider.SignTransaction(builder.BuildTransaction(true).ToHex());
 
                         var signedTr = new Transaction(signedHex);
-                        await _bitcoinClient.BroadcastTransaction(signedTr);
+                        await _bitcoinClient.BroadcastTransaction(signedTr, Guid.NewGuid());
 
                         await queue.EnqueueOutputs(signedTr.Outputs.AsCoins()
                             .Where(o => o.ScriptPubKey.GetDestinationAddress(_connectionParams.Network).ToWif() == asset.AssetAddress &&
