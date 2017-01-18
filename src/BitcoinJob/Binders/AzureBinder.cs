@@ -7,9 +7,9 @@ using Autofac.Core;
 using Autofac.Features.ResolveAnything;
 using AzureRepositories;
 using AzureRepositories.Log;
+using AzureRepositories.Notifiers;
 using AzureRepositories.QueueReader;
 using AzureStorage.Tables;
-using BackgroundWorker.Notifiers;
 using Common;
 using Common.Cache;
 using Common.IocContainer;
@@ -50,9 +50,6 @@ namespace BackgroundWorker.Binders
             ioc.BindAzure(settings);
 
             ioc.RegisterInstance(new AzureQueueReaderFactory(settings.Db.InQueueConnString)).As<IQueueReaderFactory>();
-
-            ioc.RegisterType<EmailNotifier>().As<IEmailNotifier>();
-            ioc.RegisterType<SlackNotifier>().As<ISlackNotifier>();
 
             ioc.RegisterSource(new AnyConcreteTypeNotAlreadyRegisteredSource());
         }

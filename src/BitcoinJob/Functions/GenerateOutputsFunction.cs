@@ -2,14 +2,16 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using BackgroundWorker.Notifiers;
+using AzureRepositories.Notifiers;
 using Common.Log;
 using Core.Bitcoin;
 using Core.Exceptions;
+using Core.Notifiers;
 using Core.Providers;
 using Core.Repositories.Assets;
 using Core.Repositories.TransactionOutputs;
 using Core.Settings;
+using LkeServices.Providers;
 using LkeServices.Transactions;
 using LkeServices.Triggers.Attributes;
 using NBitcoin;
@@ -40,17 +42,15 @@ namespace BackgroundWorker.Functions
             IPregeneratedOutputsQueueFactory pregeneratedOutputsQueueFactory,
             IBitcoinOutputsService bitcoinOutputsService,
             IFeeProvider feeProvider,
-            ISignatureApiProvider signatureApiProvider,
             IRpcBitcoinClient bitcoinClient,
             IBroadcastedOutputRepository broadcastedOutputRepository,
             ILykkeTransactionBuilderService lykkeTransactionBuilderService,
-            BaseSettings baseSettings, RpcConnectionParams connectionParams, ILog logger, IEmailNotifier emailNotifier, ISlackNotifier slackNotifier)
+            BaseSettings baseSettings, RpcConnectionParams connectionParams, ILog logger, IEmailNotifier emailNotifier, ISlackNotifier slackNotifier, Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory)
         {
             _assetRepository = assetRepository;
             _pregeneratedOutputsQueueFactory = pregeneratedOutputsQueueFactory;
             _bitcoinOutputsService = bitcoinOutputsService;
             _feeProvider = feeProvider;
-            _signatureApiProvider = signatureApiProvider;
             _bitcoinClient = bitcoinClient;
             _broadcastedOutputRepository = broadcastedOutputRepository;
             _lykkeTransactionBuilderService = lykkeTransactionBuilderService;
@@ -59,6 +59,7 @@ namespace BackgroundWorker.Functions
             _logger = logger;
             _emailNotifier = emailNotifier;
             _slackNotifier = slackNotifier;
+            _signatureApiProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
         }
 
 

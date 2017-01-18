@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Common.Log;
 using Common.PasswordTools;
+using Core.Notifiers;
 using Core.QueueReader;
 using LkeServices.Triggers.Attributes;
 using LkeServices.Triggers.Delay;
@@ -23,6 +24,7 @@ namespace LkeServices.Triggers.Bindings
 
         private readonly ILog _log;
         private readonly IQueueReaderFactory _queueReaderFactory;
+        private readonly ISlackNotifier _slackNotifier;
 
 
         private IDelayStrategy _delayStrategy;
@@ -34,9 +36,10 @@ namespace LkeServices.Triggers.Bindings
         private Type _parameterType;
         private bool _hasSecondParameter;
         private bool _useTriggeringContext;
+        private bool _shouldNotify;
 
 
-        public QueueTriggerBinding(ILog log, IQueueReaderFactory queueReaderFactory)
+        public QueueTriggerBinding(ILog log, IQueueReaderFactory queueReaderFactory, ISlackNotifier slackNotifier)
         {
             if (queueReaderFactory == null)
                 throw new ArgumentNullException(nameof(queueReaderFactory));
@@ -44,7 +47,7 @@ namespace LkeServices.Triggers.Bindings
                 throw new ArgumentNullException(nameof(log));
             _log = log;
             _queueReaderFactory = queueReaderFactory;
-
+            _slackNotifier = slackNotifier;
         }
 
         public override void InitBinding(IServiceProvider serviceProvider, MethodInfo callbackMethod)
@@ -56,6 +59,7 @@ namespace LkeServices.Triggers.Bindings
 
             _queueName = metadata.Queue;
             _queueReader = _queueReaderFactory.Create(_queueName);
+            _shouldNotify = metadata.Notify;
 
             var parameters = _method.GetParameters();
             if (parameters.Length > 2 && parameters.Length < 1)
@@ -163,6 +167,9 @@ namespace LkeServices.Triggers.Bindings
                 _poisonQueueReader = _queueReaderFactory.Create(_queueName + PoisonSuffix);
             await _poisonQueueReader.AddMessageAsync(message.AsString);
             await _queueReader.FinishMessageAsync(message);
+            
+            if (_shouldNotify)
+                await _slackNotifier.WarningAsync($"Msg put to {_queueName + PoisonSuffix}, data: {message.AsString}");
         }
 
         private Task LogError(string component, string process, Exception ex)

@@ -2,15 +2,11 @@
 using System.Threading.Tasks;
 using AzureStorage.Queue;
 using Core;
+using Core.Notifiers;
 using Newtonsoft.Json;
 
-namespace BackgroundWorker.Notifiers
+namespace AzureRepositories.Notifiers
 {
-	public interface IEmailNotifier
-	{
-		Task WarningAsync(string title, string message);
-	}
-
 	public class EmailNotifier : IEmailNotifier
 	{
 		private readonly IQueueExt _queue;

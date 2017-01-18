@@ -9,11 +9,13 @@ namespace LkeServices.Triggers.Attributes
 	{
 		public string Queue { get; }
 	    public int MaxPollingIntervalMs { get; }
+	    public bool Notify { get; }
 
-	    public QueueTriggerAttribute(string queue, int maxPollingIntervalMs = -1)
+	    public QueueTriggerAttribute(string queue, int maxPollingIntervalMs = -1, bool notify = false)
 	    {
 	        Queue = queue;
 	        MaxPollingIntervalMs = maxPollingIntervalMs;
+	        Notify = notify;
 	    }
 	}
 }

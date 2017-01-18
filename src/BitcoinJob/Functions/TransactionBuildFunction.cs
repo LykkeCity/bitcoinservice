@@ -2,10 +2,12 @@
 using System.Threading.Tasks;
 using AzureStorage.Queue;
 using Common;
+using Common.Log;
 using Core;
 using Core.Exceptions;
 using Core.Providers;
 using Core.Repositories.Assets;
+using Core.Repositories.TransactionSign;
 using Core.Settings;
 using Core.TransactionQueueWriter;
 using Core.TransactionQueueWriter.Commands;
@@ -24,22 +26,26 @@ namespace BackgroundWorker.Functions
         private readonly BaseSettings _settings;
         private readonly ISignatureApiProvider _clientSignatureApi;
         private readonly ISignatureApiProvider _exchangeSignatureApi;
+        private readonly ILog _logger;
+        private readonly ITransactionSignRequestRepository _signRequestRepository;
 
         public TransactionBuildFunction(ILykkeTransactionBuilderService lykkeTransactionBuilderService,
             IAssetRepository assetRepository, Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
-            Func<string, IQueueExt> queueFactory, BaseSettings settings)
+            Func<string, IQueueExt> queueFactory, BaseSettings settings, ILog logger, ITransactionSignRequestRepository signRequestRepository)
         {
             _lykkeTransactionBuilderService = lykkeTransactionBuilderService;
             _assetRepository = assetRepository;
             _queueFactory = queueFactory;
             _settings = settings;
+            _logger = logger;
+            _signRequestRepository = signRequestRepository;
 
             _clientSignatureApi = signatureApiProviderFactory(SignatureApiProviderType.Client);
             _exchangeSignatureApi = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
         }
 
 
-        [QueueTrigger(Constants.TransactionCommandQueue, 100)]
+        [QueueTrigger(Constants.TransactionCommandQueue, 100, true)]
         public async Task ProcessMessage(TransactionQueueMessage message, QueueTriggeringContext context)
         {
             CreateTransactionResponse transactionResponse;
@@ -89,10 +95,12 @@ namespace BackgroundWorker.Functions
                         throw new ArgumentOutOfRangeException();
                 }
             }
-            catch (BackendException)
+            catch (BackendException e)
             {
+                await _logger.WriteWarningAsync("TransactionBuildFunction", "ProcessMessage", $"Id: [{message.TransactionId}], cmd: [{message.Command}]", e.Text);
+
                 if (message.DequeueCount >= _settings.MaxDequeueCount)
-                    context.MoveMessageToPoision();
+                    context.MoveMessageToPoison();
                 else
                 {
                     message.DequeueCount++;
@@ -101,8 +109,11 @@ namespace BackgroundWorker.Functions
                 }
                 return;
             }
+
             var signedByClientTr = await _clientSignatureApi.SignTransaction(transactionResponse.Transaction);
             var signedByExchangeTr = await _exchangeSignatureApi.SignTransaction(signedByClientTr);
+
+            await _signRequestRepository.InsertSignRequest(message.TransactionId, signedByExchangeTr, 0);
 
             await _queueFactory(Constants.BroadcastingQueue).PutRawMessageAsync(new BroadcastingTransaction
             {

@@ -6,6 +6,7 @@ using Autofac;
 using AzureRepositories.Assets;
 using AzureRepositories.FeeRate;
 using AzureRepositories.Monitoring;
+using AzureRepositories.Notifiers;
 using AzureRepositories.Offchain;
 using AzureRepositories.TransactionOutputs;
 using AzureRepositories.TransactionQueueHolder;
@@ -17,6 +18,7 @@ using AzureStorage.Queue;
 using AzureStorage.Tables;
 using Common.Log;
 using Core;
+using Core.Notifiers;
 using Core.Repositories;
 using Core.Repositories.Assets;
 using Core.Repositories.FeeRate;
@@ -37,6 +39,9 @@ namespace AzureRepositories
         {
             ioc.BindRepo(settings);
             ioc.BindQueue(settings);
+            
+            ioc.RegisterType<EmailNotifier>().As<IEmailNotifier>();
+            ioc.RegisterType<SlackNotifier>().As<ISlackNotifier>();
         }
 
         private static void BindRepo(this ContainerBuilder ioc, BaseSettings settings)

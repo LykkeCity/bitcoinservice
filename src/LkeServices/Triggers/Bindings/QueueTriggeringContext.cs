@@ -23,7 +23,7 @@ namespace LkeServices.Triggers.Bindings
             MovingAction = MessageMovingAction.MoveToEnd;
         }
 
-        public void MoveMessageToPoision()
+        public void MoveMessageToPoison()
         {
             MovingAction = MessageMovingAction.MoveToPoison;
         }
@@ -32,7 +32,6 @@ namespace LkeServices.Triggers.Bindings
         {
             DelayStrategy = new QueueLengthBasedDelayStrategy(maxDelayMs, reduceDelayPerItemMs);
         }
-
 
         internal string NewMessageVersion { get; set; }
 

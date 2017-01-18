@@ -8,6 +8,7 @@ namespace Core.Exceptions
         public string Text { get; private set; }
 
         public BackendException(string text, ErrorCode code)
+            : base(text)
         {
             Code = code;
             Text = text;

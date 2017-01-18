@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Common;
+using Common.Log;
 using Core;
 using Core.Bitcoin;
 using Core.Settings;
@@ -14,24 +15,27 @@ namespace BackgroundWorker.Functions
     {
         private readonly IBitcoinBroadcastService _broadcastService;
         private readonly BaseSettings _settings;
+        private readonly ILog _logger;
 
-        public BroadcastingTransactionFunction(IBitcoinBroadcastService broadcastService, BaseSettings settings)
+        public BroadcastingTransactionFunction(IBitcoinBroadcastService broadcastService, BaseSettings settings, ILog logger)
         {
             _broadcastService = broadcastService;
             _settings = settings;
+            _logger = logger;
         }
 
-        [QueueTrigger(Constants.BroadcastingQueue, 100)]
+        [QueueTrigger(Constants.BroadcastingQueue, 100, true)]
         public async Task BroadcastTransaction(BroadcastingTransaction transaction, QueueTriggeringContext context)
         {
             try
             {
                 await _broadcastService.BroadcastTransaction(transaction.TransactionId, new Transaction(transaction.TransactionHex));
             }
-            catch (RPCException)
+            catch (RPCException e)
             {
+                await _logger.WriteErrorAsync("BroadcastingTransactionFunction", "BroadcastTransaction", $"Id: [{transaction.TransactionId}]", e);
                 if (transaction.DequeueCount >= _settings.MaxDequeueCount)
-                    context.MoveMessageToPoision();
+                    context.MoveMessageToPoison();
                 else
                 {
                     transaction.DequeueCount++;

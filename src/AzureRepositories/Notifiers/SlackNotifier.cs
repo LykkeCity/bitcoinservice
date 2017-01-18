@@ -2,15 +2,11 @@
 using System.Threading.Tasks;
 using AzureStorage.Queue;
 using Core;
+using Core.Notifiers;
 using Newtonsoft.Json;
 
-namespace BackgroundWorker.Notifiers
+namespace AzureRepositories.Notifiers
 {
-	public interface ISlackNotifier
-	{
-	    Task WarningAsync(string message);
-	}
-
 	public class SlackNotifier : ISlackNotifier
     {
 		private readonly IQueueExt _queue;
