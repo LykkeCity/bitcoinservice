@@ -44,6 +44,8 @@ namespace BackgroundWorker.Functions
                 if (e.RPCCodeMessage != transaction.LastError)
                     await _logger.WriteWarningAsync("BroadcastingTransactionFunction", "BroadcastTransaction", $"Id: [{transaction.TransactionId}]", $"Message: {e.RPCCodeMessage} Code:{e.RPCCode}");
 
+                transaction.LastError = e.RPCCodeMessage;
+
                 if (transaction.DequeueCount >= _settings.MaxDequeueCount)
                 {
                     context.MoveMessageToPoison();
