@@ -40,7 +40,11 @@ namespace BackgroundWorker.Binders
 
         private void InitContainer(ContainerBuilder ioc, BaseSettings settings, ILog log)
         {
+#if DEBUG
             log.WriteInfoAsync("BackgroundWorker", "App start", null, $"BaseSettings : {settings.ToJson()}").Wait();
+#else
+            log.WriteInfoAsync("BackgroundWorker", "App start", null, $"BaseSettings : private").Wait();
+#endif
 
             ioc.RegisterInstance(log);
             ioc.RegisterInstance(settings);
