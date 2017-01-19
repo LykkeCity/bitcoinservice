@@ -1,9 +1,12 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
+using AzureStorage.Queue;
 using Common;
 using Common.Log;
 using Core;
 using Core.Bitcoin;
 using Core.Settings;
+using Core.TransactionMonitoring;
 using LkeServices.Triggers.Attributes;
 using LkeServices.Triggers.Bindings;
 using NBitcoin;
@@ -14,12 +17,16 @@ namespace BackgroundWorker.Functions
     public class BroadcastingTransactionFunction
     {
         private readonly IBitcoinBroadcastService _broadcastService;
+        private readonly IFailedTransactionRepository _failedTransactionRepository;
         private readonly BaseSettings _settings;
         private readonly ILog _logger;
 
-        public BroadcastingTransactionFunction(IBitcoinBroadcastService broadcastService, BaseSettings settings, ILog logger)
+        public BroadcastingTransactionFunction(IBitcoinBroadcastService broadcastService, 
+            IFailedTransactionRepository failedTransactionRepository,
+            BaseSettings settings, ILog logger)
         {
             _broadcastService = broadcastService;
+            _failedTransactionRepository = failedTransactionRepository;
             _settings = settings;
             _logger = logger;
         }
@@ -29,13 +36,19 @@ namespace BackgroundWorker.Functions
         {
             try
             {
-                await _broadcastService.BroadcastTransaction(transaction.TransactionId, new Transaction(transaction.TransactionHex));
+                var tr = new Transaction(transaction.TransactionHex);
+                await _broadcastService.BroadcastTransaction(transaction.TransactionId, tr);
             }
             catch (RPCException e)
             {
-                await _logger.WriteErrorAsync("BroadcastingTransactionFunction", "BroadcastTransaction", $"Id: [{transaction.TransactionId}]", e);
+                if (e.RPCCodeMessage != transaction.LastError)
+                    await _logger.WriteWarningAsync("BroadcastingTransactionFunction", "BroadcastTransaction", $"Id: [{transaction.TransactionId}]", $"Message: {e.RPCCodeMessage} Code:{e.RPCCode}");
+
                 if (transaction.DequeueCount >= _settings.MaxDequeueCount)
+                {
                     context.MoveMessageToPoison();
+                    await _failedTransactionRepository.AddFailedTransaction(transaction.TransactionId, null);
+                }
                 else
                 {
                     transaction.DequeueCount++;

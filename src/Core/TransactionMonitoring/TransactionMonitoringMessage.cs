@@ -3,16 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace BackgroundWorker
+namespace Core.TransactionMonitoring
 {
-    public class BroadcastingTransaction
+    public class TransactionMonitoringMessage
     {
-        public string TransactionHex { get; set; }
-
         public Guid TransactionId { get; set; }
 
-        public int DequeueCount { get; set; }
+        public string TransactionHash { get; set; }
 
+        public DateTime PutDateTime { get; set; }
         public string LastError { get; set; }
     }
 }

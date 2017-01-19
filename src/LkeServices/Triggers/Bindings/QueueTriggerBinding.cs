@@ -130,7 +130,7 @@ namespace LkeServices.Triggers.Bindings
                     await MoveToEnd(message, context.NewMessageVersion);
                     break;
                 case QueueTriggeringContext.MessageMovingAction.MoveToPoison:
-                    await MoveToPoisonQueue(message);
+                    await MoveToPoisonQueue(message, context.NewMessageVersion);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -143,7 +143,7 @@ namespace LkeServices.Triggers.Bindings
             try
             {
                 if (message.DequeueCount >= MaxDequeueCount)
-                    return MoveToPoisonQueue(message);
+                    return MoveToPoisonQueue(message, null);
                 else
                 {
                     return _queueReader.ReleaseMessageAsync(message);
@@ -157,19 +157,21 @@ namespace LkeServices.Triggers.Bindings
 
         private async Task MoveToEnd(IQueueMessage message, string newMessageVersion)
         {
+            newMessageVersion = newMessageVersion ?? message.AsString;
             await _queueReader.AddMessageAsync(newMessageVersion);
             await _queueReader.FinishMessageAsync(message);
         }
 
-        private async Task MoveToPoisonQueue(IQueueMessage message)
+        private async Task MoveToPoisonQueue(IQueueMessage message, string newMessageVersion)
         {
+            newMessageVersion = newMessageVersion ?? message.AsString;
             if (_poisonQueueReader == null)
                 _poisonQueueReader = _queueReaderFactory.Create(_queueName + PoisonSuffix);
-            await _poisonQueueReader.AddMessageAsync(message.AsString);
+            await _poisonQueueReader.AddMessageAsync(newMessageVersion);
             await _queueReader.FinishMessageAsync(message);
-            
+
             if (_shouldNotify)
-                await _slackNotifier.WarningAsync($"Msg put to {_queueName + PoisonSuffix}, data: {message.AsString}");
+                await _slackNotifier.WarningAsync($"Msg put to {_queueName + PoisonSuffix}, data: {newMessageVersion}");
         }
 
         private Task LogError(string component, string process, Exception ex)

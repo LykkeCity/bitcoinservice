@@ -8,6 +8,7 @@ using AzureRepositories.FeeRate;
 using AzureRepositories.Monitoring;
 using AzureRepositories.Notifiers;
 using AzureRepositories.Offchain;
+using AzureRepositories.TransactionMonitoring;
 using AzureRepositories.TransactionOutputs;
 using AzureRepositories.TransactionQueueHolder;
 using AzureRepositories.Transactions;
@@ -29,6 +30,7 @@ using Core.Repositories.Transactions;
 using Core.Repositories.TransactionSign;
 using Core.Repositories.Wallets;
 using Core.Settings;
+using Core.TransactionMonitoring;
 using Core.TransactionQueueWriter;
 
 namespace AzureRepositories
@@ -77,6 +79,9 @@ namespace AzureRepositories
 
             ioc.RegisterInstance(new MonitoringRepository(new AzureTableStorage<MonitoringEntity>(settings.Db.SharedConnString, "Monitoring", null)))
                 .As<IMonitoringRepository>();
+
+            ioc.RegisterInstance(new FailedTransactionRepository(new AzureTableStorage<FailedTransactionEntity>(settings.Db.ClientPersonalInfoConnString, "FailedTransactions", null)))
+                .As<IFailedTransactionRepository>();
         }
 
         private static void BindQueue(this ContainerBuilder ioc, BaseSettings settings)
@@ -97,6 +102,7 @@ namespace AzureRepositories
             ioc.RegisterType<PregeneratedOutputsQueueFactory>().As<IPregeneratedOutputsQueueFactory>().SingleInstance();
 
             ioc.RegisterType<TransactionQueueWriter>().As<ITransactionQueueWriter>().SingleInstance();
+            ioc.RegisterType<TransactionMonitoringWriter>().As<ITransactionMonitoringWriter>().SingleInstance();
         }
     }
 }

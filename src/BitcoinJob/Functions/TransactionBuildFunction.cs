@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using AzureRepositories.TransactionMonitoring;
 using AzureStorage.Queue;
 using Common;
 using Common.Log;
@@ -9,6 +10,7 @@ using Core.Providers;
 using Core.Repositories.Assets;
 using Core.Repositories.TransactionSign;
 using Core.Settings;
+using Core.TransactionMonitoring;
 using Core.TransactionQueueWriter;
 using Core.TransactionQueueWriter.Commands;
 using LkeServices.Providers;
@@ -22,6 +24,7 @@ namespace BackgroundWorker.Functions
     {
         private readonly ILykkeTransactionBuilderService _lykkeTransactionBuilderService;
         private readonly IAssetRepository _assetRepository;
+        private readonly IFailedTransactionRepository _failedTransactionRepository;
         private readonly Func<string, IQueueExt> _queueFactory;
         private readonly BaseSettings _settings;
         private readonly ISignatureApiProvider _clientSignatureApi;
@@ -31,10 +34,12 @@ namespace BackgroundWorker.Functions
 
         public TransactionBuildFunction(ILykkeTransactionBuilderService lykkeTransactionBuilderService,
             IAssetRepository assetRepository, Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
+            IFailedTransactionRepository failedTransactionRepository,
             Func<string, IQueueExt> queueFactory, BaseSettings settings, ILog logger, ITransactionSignRequestRepository signRequestRepository)
         {
             _lykkeTransactionBuilderService = lykkeTransactionBuilderService;
             _assetRepository = assetRepository;
+            _failedTransactionRepository = failedTransactionRepository;
             _queueFactory = queueFactory;
             _settings = settings;
             _logger = logger;
@@ -97,10 +102,15 @@ namespace BackgroundWorker.Functions
             }
             catch (BackendException e)
             {
-                await _logger.WriteWarningAsync("TransactionBuildFunction", "ProcessMessage", $"Id: [{message.TransactionId}], cmd: [{message.Command}]", e.Text);
+                if (e.Text != message.LastError)
+                    await _logger.WriteWarningAsync("TransactionBuildFunction", "ProcessMessage", $"Id: [{message.TransactionId}], cmd: [{message.Command}]", e.Text);
 
+                message.LastError = e.Text;
                 if (message.DequeueCount >= _settings.MaxDequeueCount)
-                    context.MoveMessageToPoison();
+                {
+                    context.MoveMessageToPoison(message.ToJson());
+                    await _failedTransactionRepository.AddFailedTransaction(message.TransactionId, null);
+                }
                 else
                 {
                     message.DequeueCount++;

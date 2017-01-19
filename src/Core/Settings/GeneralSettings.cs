@@ -45,6 +45,8 @@ namespace Core.Settings
         public int MaxDequeueCount { get; set; } = 1000;
 
         public int MaxQueueDelay { get; set; } = 5000;
+
+        public int BroadcastMonitoringPeriodSeconds { get; set; } = 3600 * 2;
     }
 
     public class DbSettings
@@ -54,5 +56,6 @@ namespace Core.Settings
         public string DataConnString { get; set; }
         public string DictsConnString { get; set; }
         public string SharedConnString { get; set; }
+        public string ClientPersonalInfoConnString { get; set; }
     }
 }

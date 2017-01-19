@@ -11,5 +11,7 @@ namespace Core.TransactionQueueWriter
         public string Command { get; set; }        
 
         public int DequeueCount { get; set; }
+        
+        public string LastError { get; set; }
     }
 }

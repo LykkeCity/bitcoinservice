@@ -17,14 +17,15 @@ namespace LkeServices.Triggers.Bindings
 
         public DateTimeOffset Time { get; set; }
 
-        public void MoveMessageToEnd(string newMessageVersion)
+        public void MoveMessageToEnd(string newMessageVersion = null)
         {
             NewMessageVersion = newMessageVersion;
             MovingAction = MessageMovingAction.MoveToEnd;
         }
 
-        public void MoveMessageToPoison()
+        public void MoveMessageToPoison(string newMessageVersion = null)
         {
+            NewMessageVersion = newMessageVersion;
             MovingAction = MessageMovingAction.MoveToPoison;
         }
 
@@ -35,7 +36,7 @@ namespace LkeServices.Triggers.Bindings
 
         internal string NewMessageVersion { get; set; }
 
-        internal MessageMovingAction MovingAction { get; set; }              
+        internal MessageMovingAction MovingAction { get; set; }
 
         internal Task Delay(int queueLength)
         {
