@@ -49,7 +49,7 @@ namespace BackgroundWorker.Binders
             ioc.BindCommonServices();
             ioc.BindAzure(settings);
 
-            ioc.RegisterInstance(new AzureQueueReaderFactory(settings.Db.InQueueConnString)).As<IQueueReaderFactory>();
+            ioc.RegisterInstance(new AzureQueueReaderFactory(settings.Db.DataConnString)).As<IQueueReaderFactory>();
 
             ioc.RegisterSource(new AnyConcreteTypeNotAlreadyRegisteredSource());
         }

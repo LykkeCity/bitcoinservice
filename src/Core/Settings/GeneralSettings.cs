@@ -52,7 +52,6 @@ namespace Core.Settings
     public class DbSettings
     {
         public string LogsConnString { get; set; }
-        public string InQueueConnString { get; set; }
         public string DataConnString { get; set; }
         public string DictsConnString { get; set; }
         public string SharedConnString { get; set; }
