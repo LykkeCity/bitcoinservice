@@ -35,5 +35,10 @@ namespace LkeServices.Bitcoin
         {
             return (await _client.GetRawTransactionAsync(uint256.Parse(trId))).ToHex();
         }
+
+        public Task<int> GetBlockCount()
+        {
+            return _client.GetBlockCountAsync();
+        }
     }
 }

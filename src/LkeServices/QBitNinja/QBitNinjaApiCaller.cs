@@ -23,8 +23,6 @@ namespace LkeServices.QBitNinja
             _connectionParams = connectionParams;
         }
 
-
-
         public async Task<BalanceModel> GetAddressBalance(string walletAddress, bool colored = true, bool unspentonly = true)
         {
             var client = _clientFactory();

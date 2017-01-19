@@ -11,5 +11,7 @@ namespace Core.Bitcoin
         Task BroadcastTransaction(Transaction tr, Guid transactionId);
 
         Task<string> GetTransactionHex(string trId);
+
+        Task<int> GetBlockCount();
     }
 }
