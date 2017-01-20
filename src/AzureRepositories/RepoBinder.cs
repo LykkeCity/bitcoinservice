@@ -85,7 +85,7 @@ namespace AzureRepositories
             ioc.RegisterInstance(new FailedTransactionRepository(new AzureTableStorage<FailedTransactionEntity>(settings.Db.ClientPersonalInfoConnString, "FailedTransactions", null)))
                 .As<IFailedTransactionRepository>();
 
-            ioc.RegisterInstance(new ApiRequestBlobRepository(new AzureBlobStorage(settings.Db.DataConnString)))
+            ioc.RegisterInstance(new ApiRequestBlobRepository(new AzureBlobStorage(settings.Db.LogsConnString)))
                 .As<IApiRequestBlobRepository>();
         }
 

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Common.Log;
 using Core.Repositories.Assets;
 using Core.Repositories.TransactionOutputs;
+using Core.Settings;
 using LkeServices.Triggers.Attributes;
 
 namespace BackgroundWorker.Functions
@@ -14,13 +15,15 @@ namespace BackgroundWorker.Functions
         private readonly IPregeneratedOutputsQueueFactory _queueFactory;
         private readonly ILog _logger;
         private readonly IAssetRepository _assetRepository;
+        private readonly BaseSettings _baseSettings;
 
         public PregeneratedOutputsRenewFunction(IPregeneratedOutputsQueueFactory queueFactory, ILog logger,
-            IAssetRepository assetRepository)
+            IAssetRepository assetRepository, BaseSettings baseSettings)
         {
             _queueFactory = queueFactory;
             _logger = logger;
             _assetRepository = assetRepository;
+            _baseSettings = baseSettings;
         }
 
         [TimerTrigger("24:00:00")]
@@ -59,6 +62,8 @@ namespace BackgroundWorker.Functions
             {
                 try
                 {
+                    if (!_baseSettings.IssuedAssets.Contains(asset.Id))
+                        continue;
                     var queue = _queueFactory.Create(asset.BlockChainAssetId);
                     var count = await queue.Count();
                     for (int i = 0; i < count; i++)

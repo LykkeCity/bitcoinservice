@@ -2,7 +2,7 @@
   "profiles": {
     "EnqueueFees": {
       "commandName": "Project",
-      "commandLineArgs": "-type=asset -asset=all"
+      "commandLineArgs": "-type=fee"
     }
   }
 }
