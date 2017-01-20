@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
@@ -13,7 +14,7 @@ using Common.IocContainer;
 using Core.Settings;
 using LkeServices.Triggers;
 using Microsoft.Extensions.Configuration;
-
+using System.Runtime.Loader;
 namespace BackgroundWorker
 {
     public class AppHost
@@ -47,7 +48,18 @@ namespace BackgroundWorker
 
             triggerHost.ProvideAssembly(GetType().GetTypeInfo().Assembly);
 
+            var end = new ManualResetEvent(false);
+
+            AssemblyLoadContext.Default.Unloading += ctx =>
+            {
+                Console.WriteLine("SIGTERM recieved");
+                triggerHost.Cancel();
+
+                end.WaitOne();
+            };
+
             triggerHost.StartAndBlock();
+            end.Set();
         }
     }
 }

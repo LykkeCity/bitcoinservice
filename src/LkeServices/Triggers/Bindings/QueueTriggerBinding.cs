@@ -101,7 +101,7 @@ namespace LkeServices.Triggers.Bindings
                             await Invoke(_serviceProvider, _method, p.ToArray());
                             await ProcessCompletedMessage(message, context);
                             executionSucceeded = true;
-                        } while (true);
+                        } while (!cancellationToken.IsCancellationRequested);
                     }
                     catch (Exception ex)
                     {

@@ -77,8 +77,8 @@ namespace AzureRepositories.TransactionOutputs
         {
             var enumerable = outputs.ToArray();
 
-            var dbOutputs = await _storage.GetDataAsync(OutputEntity.GeneratePartitionKey(), enumerable.Select(x => OutputEntity.GenerateRowKey(x.TransactionHash, x.N)));
-
+            var dbOutputs = await _storage.GetDataAsync(OutputEntity.GeneratePartitionKey(), enumerable.Select(x => OutputEntity.GenerateRowKey(x.TransactionHash, x.N)), 50);
+            
             var setOfSpentRowKeys = new HashSet<string>(dbOutputs.Select(x => x.RowKey));
 
             return enumerable.Where(x => !setOfSpentRowKeys.Contains(OutputEntity.GenerateRowKey(x.TransactionHash, x.N)));

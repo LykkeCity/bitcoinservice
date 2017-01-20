@@ -35,7 +35,7 @@ namespace ApiRunner
 
             var host = builder.Build();
 
-            host.Run();
+            host.Run();            
         }
 
         static void Exit()
