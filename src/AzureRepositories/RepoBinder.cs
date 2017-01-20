@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Autofac;
+using AzureRepositories.ApiRequests;
 using AzureRepositories.Assets;
 using AzureRepositories.FeeRate;
 using AzureRepositories.Monitoring;
@@ -21,6 +22,7 @@ using Common.Log;
 using Core;
 using Core.Notifiers;
 using Core.Repositories;
+using Core.Repositories.ApiRequests;
 using Core.Repositories.Assets;
 using Core.Repositories.FeeRate;
 using Core.Repositories.Monitoring;
@@ -41,7 +43,7 @@ namespace AzureRepositories
         {
             ioc.BindRepo(settings);
             ioc.BindQueue(settings);
-            
+
             ioc.RegisterType<EmailNotifier>().As<IEmailNotifier>();
             ioc.RegisterType<SlackNotifier>().As<ISlackNotifier>();
         }
@@ -82,6 +84,9 @@ namespace AzureRepositories
 
             ioc.RegisterInstance(new FailedTransactionRepository(new AzureTableStorage<FailedTransactionEntity>(settings.Db.ClientPersonalInfoConnString, "FailedTransactions", null)))
                 .As<IFailedTransactionRepository>();
+
+            ioc.RegisterInstance(new ApiRequestBlobRepository(new AzureBlobStorage(settings.Db.DataConnString)))
+                .As<IApiRequestBlobRepository>();
         }
 
         private static void BindQueue(this ContainerBuilder ioc, BaseSettings settings)

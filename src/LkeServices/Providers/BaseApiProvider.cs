@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Common.Log;
 using RestSharp;
 using Common;
+using Core.Repositories.ApiRequests;
 using Core.Settings;
 
 namespace LkeServices.Providers
@@ -17,25 +18,34 @@ namespace LkeServices.Providers
         private int _requestId;
 
         private readonly IRestClient _restClient;
+        private readonly IApiRequestBlobRepository _apiRequestRepository;
         protected readonly ILog Logger;
 
-        public BaseApiProvider(string url, IRestClient restClient, ILog logger)
+        public BaseApiProvider(string url, IRestClient restClient, ILog logger, IApiRequestBlobRepository apiRequestRepository)
         {
             _restClient = restClient;
             Logger = logger;
+            _apiRequestRepository = apiRequestRepository;
             _restClient.BaseUrl = new Uri(url);
         }
 
 
         public async Task<T> DoRequest<T>(RestRequest request) where T : new()
         {
+            var requestGuid = Guid.NewGuid();
+
             var reqId = Interlocked.Increment(ref _requestId);
 
+            var requestLog = $"Request reqId={reqId}, Method: {request.Method} {request.Resource}, Guid: {requestGuid}";
+
             var info = new StringBuilder();
-            info.Append($"Invoke request reqId={reqId}, Method: {request.Method} {request.Resource}, Params: {Environment.NewLine}");
+            info.AppendLine(requestLog);
             foreach (var parameter in request.Parameters)
                 info.Append(parameter.Name + "=" + parameter.Value + Environment.NewLine);
-            await Logger.WriteInfoAsync("ApiCaller", "DoRequest", "", info.ToString());
+
+            await _apiRequestRepository.LogToBlob(requestGuid, "request", info.ToString());
+
+            await Logger.WriteInfoAsync("ApiCaller", "DoRequest", "", requestLog);
 
             var t = new TaskCompletionSource<IRestResponse>();
             _restClient.ExecuteAsync(request, resp => { t.SetResult(resp); });
@@ -44,11 +54,15 @@ namespace LkeServices.Providers
             if (response.ResponseStatus == ResponseStatus.Completed && response.StatusCode == HttpStatusCode.OK)
             {
                 var content = response.Content;
-                await Logger.WriteInfoAsync("ApiCaller", "DoRequest", "", $"Response reqId={reqId}: {content} ");
-                return string.IsNullOrWhiteSpace(response.Content) ? default(T) : response.Content.DeserializeJson<T>();
+
+                await Logger.WriteInfoAsync("ApiCaller", "DoRequest", "", $"Response reqId={reqId}, guid: {requestGuid}");
+
+                await _apiRequestRepository.LogToBlob(requestGuid, "response", content);
+
+                return string.IsNullOrWhiteSpace(content) ? default(T) : content.DeserializeJson<T>();
             }
             var exception = response.ErrorException ?? new Exception(response.Content);
-            await Logger.WriteErrorAsync("ApiCaller", "DoRequest", $"reqId={reqId}", exception);
+            await Logger.WriteErrorAsync("ApiCaller", "DoRequest", $"reqId={reqId}, guid: {requestGuid}", exception);
             throw exception;
         }
     }

@@ -10,20 +10,21 @@ using Core.Providers;
 using Core.Settings;
 using RestSharp;
 using Common;
+using Core.Repositories.ApiRequests;
 
 namespace LkeServices.Providers
 {
     public enum SignatureApiProviderType
     {
-        Client, 
+        Client,
         Exchange
     }
 
     public class SignatureApiProvider : BaseApiProvider, ISignatureApiProvider
     {
 
-        public SignatureApiProvider(string url, ILog logger, IRestClient restClient)
-            : base(url, restClient, logger)
+        public SignatureApiProvider(string url, ILog logger, IRestClient restClient, IApiRequestBlobRepository apiBlob)
+            : base(url, restClient, logger, apiBlob)
         {
         }
 

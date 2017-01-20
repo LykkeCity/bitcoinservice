@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Common.Log;
 using Core.Providers;
+using Core.Repositories.ApiRequests;
 using Core.Settings;
 using RestSharp;
 
@@ -9,8 +10,8 @@ namespace LkeServices.Providers
 {
     public class LykkeApiProvider : BaseApiProvider, ILykkeApiProvider
     {
-        public LykkeApiProvider(BaseSettings settings, IRestClient restClient, ILog logger)
-            : base(settings.LykkeJobsUrl, restClient, logger)
+        public LykkeApiProvider(BaseSettings settings, IRestClient restClient, ILog logger, IApiRequestBlobRepository apiBlob)
+            : base(settings.LykkeJobsUrl, restClient, logger, apiBlob)
         {
         }
 
