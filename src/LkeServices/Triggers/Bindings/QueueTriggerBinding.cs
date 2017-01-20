@@ -107,7 +107,7 @@ namespace LkeServices.Triggers.Bindings
                     {
                         await LogError("QueueTriggerBinding", "RunAsync", ex);
                         await ProcessFailedMessage(message);
-                        executionSucceeded = false;
+                        executionSucceeded = false;                        
                     }
                     finally
                     {
