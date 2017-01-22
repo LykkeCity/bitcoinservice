@@ -80,16 +80,25 @@ namespace LkeServices.Transactions
 
         public void SendWithChange(TransactionBuilder builder, TransactionBuildContext context, List<ICoin> coins, IDestination destination, Money amount, IDestination changeDestination)
         {
-            var orderedCounts = coins.OrderBy(o => o.Amount).ToList();
+            Action throwError = () =>
+            {
+                throw new BackendException($"The sum of total applicable outputs is less than the required: {amount.Satoshi} satoshis.", ErrorCode.NotEnoughBitcoinAvailable);
+            };
+
+            var selectedCoins = OpenAssetsHelper.CoinSelect(coins, amount);
+            if (selectedCoins == null)
+                throwError();
+
+            var orderedCounts = selectedCoins.OrderBy(o => o.Amount).ToList();
             var sendAmount = Money.Zero;
-            int cnt = 0;
+            var cnt = 0;
             while (sendAmount < amount && cnt < orderedCounts.Count)
             {
                 sendAmount += orderedCounts[cnt].TxOut.Value;
                 cnt++;
             }
             if (sendAmount < amount)
-                throw new BackendException($"The sum of total applicable outputs is less than the required: {amount.Satoshi} satoshis.", ErrorCode.NotEnoughBitcoinAvailable);
+                throwError();
 
             context.AddCoins(orderedCounts.Take(cnt));
             builder.AddCoins(orderedCounts.Take(cnt));
@@ -102,16 +111,26 @@ namespace LkeServices.Transactions
         public void SendAssetWithChange(TransactionBuilder builder, TransactionBuildContext context, List<ColoredCoin> coins, IDestination destination, AssetMoney amount,
             IDestination changeDestination)
         {
-            var orderedCounts = coins.OrderBy(o => o.Amount).ToList();
+            Action throwError = () =>
+            {
+                throw new BackendException($"The sum of total applicable outputs is less than the required: {amount.Quantity} {amount.Id}.", ErrorCode.NotEnoughAssetAvailable);
+            };
+
+            var selectedCoins = OpenAssetsHelper.CoinSelect(coins, amount);
+            if (selectedCoins == null)
+                throwError();
+
+            var orderedCounts = selectedCoins.Cast<ColoredCoin>().OrderBy(o => o.Amount).ToList();
             var sendAmount = new AssetMoney(amount.Id);
-            int cnt = 0;
+            var cnt = 0;
             while (sendAmount < amount && cnt < orderedCounts.Count)
             {
                 sendAmount += orderedCounts[cnt].Amount;
                 cnt++;
             }
+
             if (sendAmount < amount)
-                throw new BackendException($"The sum of total applicable outputs is less than the required: {amount.Quantity} {amount.Id}.", ErrorCode.NotEnoughAssetAvailable);
+                throwError();
 
             builder.AddCoins(orderedCounts.Take(cnt));
             context.AddCoins(orderedCounts.Take(cnt));

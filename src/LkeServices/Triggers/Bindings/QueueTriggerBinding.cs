@@ -171,7 +171,7 @@ namespace LkeServices.Triggers.Bindings
             await _queueReader.FinishMessageAsync(message);
 
             if (_shouldNotify)
-                await _slackNotifier.WarningAsync($"Msg put to {_queueName + PoisonSuffix}, data: {newMessageVersion}");
+                await _slackNotifier.ErrorAsync($"Msg put to {_queueName + PoisonSuffix}, data: {newMessageVersion}");
         }
 
         private Task LogError(string component, string process, Exception ex)

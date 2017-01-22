@@ -12,7 +12,9 @@ namespace AzureRepositories.TransactionMonitoring
     {
         public string TransactionHash { get; set; }
 
-        public Guid TransactionId => Guid.Parse(RowKey);
+        public string TransactionId { get; set; }
+
+        public DateTime DateTime { get; set; }
 
         public static FailedTransactionEntity Create(Guid transactionId, string transactionHash)
         {
@@ -20,7 +22,9 @@ namespace AzureRepositories.TransactionMonitoring
             {
                 PartitionKey = "FailedTransaction",
                 RowKey = transactionId.ToString(),
-                TransactionHash = transactionHash
+                TransactionId = transactionId.ToString(),
+                TransactionHash = transactionHash,
+                DateTime = DateTime.UtcNow
             };
         }
     }

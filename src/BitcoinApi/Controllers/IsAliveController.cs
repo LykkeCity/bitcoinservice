@@ -29,10 +29,6 @@ namespace BitcoinApi.Controllers
         [HttpGet]
         public async Task<IsAliveResponse> Get()
         {
-            await _rpcClient.GetBlockCount();
-
-            await _qbitninja().GetBlock(new QBitNinja.Client.Models.BlockFeature(1));
-
             await GetSignatureAlive(_settings.ClientSignatureProviderUrl);
 
             await GetSignatureAlive(_settings.SignatureProviderUrl);
@@ -44,6 +40,17 @@ namespace BitcoinApi.Controllers
             };
         }
 
+        [HttpGet("rpc")]
+        public async Task RpcAlive()
+        {
+            await _rpcClient.GetBlockCount();
+        }
+
+        [HttpGet("ninja")]
+        public async Task NinjaAlive()
+        {
+            await _qbitninja().GetBlock(new QBitNinja.Client.Models.BlockFeature(1));
+        }
 
         private async Task GetSignatureAlive(string baseUrl)
         {

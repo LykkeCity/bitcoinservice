@@ -54,7 +54,7 @@ namespace BackgroundWorker.Functions
             if (DateTime.UtcNow - message.PutDateTime > TimeSpan.FromSeconds(_settings.BroadcastMonitoringPeriodSeconds))
             {
                 context.MoveMessageToPoison(message.ToJson());
-                await _slackNotifier.WarningAsync($"Transaction with hash {message.TransactionHash} has no confirmations");
+                await _slackNotifier.ErrorAsync($"Transaction with hash {message.TransactionHash} has no confirmations");
                 await _failedTransactionRepository.AddFailedTransaction(message.TransactionId, message.TransactionHash);
             }
             else

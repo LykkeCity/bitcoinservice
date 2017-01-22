@@ -27,5 +27,17 @@ namespace AzureRepositories.Notifiers
             
 			await _queue.PutRawMessageAsync(JsonConvert.SerializeObject(obj));
 		}
-	}
+
+        public async Task ErrorAsync(string message)
+        {
+            var obj = new
+            {
+                Type = "Errors",
+                Sender = "bitcoin service",
+                Message = message
+            };
+
+            await _queue.PutRawMessageAsync(JsonConvert.SerializeObject(obj));
+        }
+    }
 }

@@ -242,7 +242,7 @@ namespace BitcoinApi.Controllers
             if (transactionId.HasValue)
                 builder.Append($"Transaction: [{transactionId}]");
 
-            await _log.WriteInfoAsync("TransactionController", method, status, builder.ToString());
+            await _log.WriteInfoAsync("EnqueueTransactionController", method, status, builder.ToString());
         }
 
     }

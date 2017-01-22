@@ -7,8 +7,11 @@ namespace Core.TransactionMonitoring
 {
     public interface IFailedTransaction
     {
+        string TransactionId { get; }
         string TransactionHash { get; }
+        DateTime DateTime { get; }
     }
+
     public interface IFailedTransactionRepository
     {
         Task AddFailedTransaction(Guid transactionId, string transactionHash);
