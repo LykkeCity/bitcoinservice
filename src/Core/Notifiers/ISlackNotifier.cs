@@ -9,5 +9,6 @@ namespace Core.Notifiers
     {
         Task WarningAsync(string message);
         Task ErrorAsync(string message);
+        Task FinanceWarningAsync(string message);
     }
 }

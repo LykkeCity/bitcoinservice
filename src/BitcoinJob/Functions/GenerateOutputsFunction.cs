@@ -187,7 +187,7 @@ namespace BackgroundWorker.Functions
 
                     if (!_balanceWarningSended)
                     {
-                        await _slackNotifier.ErrorAsync(message);
+                        await _slackNotifier.FinanceWarningAsync(message);
                         await _emailNotifier.WarningAsync("Bitcoin job", message);
                     }
 
