@@ -131,11 +131,10 @@ namespace Core.OpenAssets
 
         public static IEnumerable<ICoin> CoinSelect(IEnumerable<ICoin> coins, IMoney target)
         {
-            var rand = new Random((int) DateTime.Now.Ticks);
+            var rand = new Random((int)DateTime.Now.Ticks);
             var zero = target.Sub(target);
             var targetCoin = coins.FirstOrDefault(c => c.Amount.CompareTo(target) == 0);
-
-            //If any of your UTXO² matches the Target¹ it will be used.
+            
             if (targetCoin != null)
                 return new[] { targetCoin };
 
@@ -153,47 +152,42 @@ namespace Core.OpenAssets
                 {
                     total = total.Add(coin.Amount);
                     result.Add(coin);
-                    //If the "sum of all your UTXO smaller than the Target" happens to match the Target, they will be used. (This is the case if you sweep a complete wallet.)
-                    if (total.CompareTo(target) == 0)
-                        return result;
-
                 }
                 else
                 {
                     if (total.CompareTo(target) == -1 && coin.Amount.CompareTo(target) == 1)
                     {
-                        //If the "sum of all your UTXO smaller than the Target" doesn't surpass the target, the smallest UTXO greater than your Target will be used.
                         return new[] { coin };
                     }
                     else
                     {
-                        //Else Bitcoin Core does 1000 rounds of randomly combining unspent transaction outputs until their sum is greater than or equal to the Target. If it happens to find an exact match, it stops early and uses that.
-                        //Otherwise it finally settles for the minimum of
-                        //the smallest UTXO greater than the Target
-                        //the smallest combination of UTXO it discovered in Step 4.
                         var allCoins = orderedCoins.ToArray();
-                        IMoney minTotal = null;
                         for (int _ = 0; _ < 1000; _++)
                         {
                             var selection = new List<ICoin>();
                             Utils.Shuffle(allCoins, rand);
-                            total = zero;
+                            var currentTotal = zero;
                             for (int i = 0; i < allCoins.Length; i++)
                             {
                                 selection.Add(allCoins[i]);
-                                total = total.Add(allCoins[i].Amount);
-                                if (total.CompareTo(target) == 0)
-                                    return selection;
-                                if (total.CompareTo(target) == 1)
+                                currentTotal = currentTotal.Add(allCoins[i].Amount);
+
+                                // if new count already greater than previous
+                                if (selection.Count > result.Count)
                                     break;
-                            }
-                            if (total.CompareTo(target) == -1)
-                            {
-                                return null;
-                            }
-                            if (minTotal == null || total.CompareTo(minTotal) == -1)
-                            {
-                                minTotal = total;
+
+                                if (currentTotal.CompareTo(target) >= 0)
+                                {
+                                    // if new count less than previous then use it
+                                    // if new count equals to previous but sum of used inputs is less, then use it
+                                    if (selection.Count < result.Count || selection.Count == result.Count && currentTotal.CompareTo(total) == -1)
+                                    {
+                                        result = selection;
+                                        total = currentTotal;
+                                    }
+
+                                    break;
+                                }
                             }
                         }
                     }
