@@ -22,7 +22,7 @@ namespace BackgroundWorker.Functions
     {
         private readonly Money _dustSize = new Money(2730);
 
-        private static DateTime _lastWarningSentTime;
+        private static DateTime _lastWarningSentTime = DateTime.MinValue;
 
         private readonly IAssetRepository _assetRepository;
         private readonly IPregeneratedOutputsQueueFactory _pregeneratedOutputsQueueFactory;
@@ -60,7 +60,6 @@ namespace BackgroundWorker.Functions
             _emailNotifier = emailNotifier;
             _slackNotifier = slackNotifier;
             _signatureApiProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
-            _lastWarningSentTime = DateTime.MinValue;
         }
 
 
