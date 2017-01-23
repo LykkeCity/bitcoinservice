@@ -181,17 +181,16 @@ namespace BackgroundWorker.Functions
 
                 if (balance < new Money(_baseSettings.MinHotWalletBalance, MoneyUnit.BTC))
                 {
-                    string message =
-                        $"Hot wallet {_baseSettings.HotWalletForPregeneratedOutputs} balance is less than {_baseSettings.MinHotWalletBalance} BTC !";
-                    await _logger.WriteWarningAsync("GenerateOutputsFunction", "InternalBalanceCheck", "", message);
-
                     if ((DateTime.UtcNow - _lastWarningSentTime).TotalHours > 1)
                     {
+                        string message = $"Hot wallet {_baseSettings.HotWalletForPregeneratedOutputs} balance is less than {_baseSettings.MinHotWalletBalance} BTC !";
+                        await _logger.WriteWarningAsync("GenerateOutputsFunction", "InternalBalanceCheck", "", message);
+
                         await _slackNotifier.FinanceWarningAsync(message);
                         await _emailNotifier.WarningAsync("Bitcoin job", message);
-                    }
 
-                    _lastWarningSentTime = DateTime.UtcNow;
+                        _lastWarningSentTime = DateTime.UtcNow;
+                    }
                 }
             }
             catch (Exception e)
