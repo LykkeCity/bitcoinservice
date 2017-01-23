@@ -7,6 +7,7 @@ using Core;
 using Core.Bitcoin;
 using Core.Settings;
 using Core.TransactionMonitoring;
+using LkeServices.Transactions;
 using LkeServices.Triggers.Attributes;
 using LkeServices.Triggers.Bindings;
 using NBitcoin;
@@ -17,16 +18,16 @@ namespace BackgroundWorker.Functions
     public class BroadcastingTransactionFunction
     {
         private readonly IBitcoinBroadcastService _broadcastService;
-        private readonly IFailedTransactionRepository _failedTransactionRepository;
+        private readonly IFailedTransactionsManager _failedTransactionManager;
         private readonly BaseSettings _settings;
         private readonly ILog _logger;
 
-        public BroadcastingTransactionFunction(IBitcoinBroadcastService broadcastService, 
-            IFailedTransactionRepository failedTransactionRepository,
+        public BroadcastingTransactionFunction(IBitcoinBroadcastService broadcastService,
+            IFailedTransactionsManager failedTransactionManager,
             BaseSettings settings, ILog logger)
         {
             _broadcastService = broadcastService;
-            _failedTransactionRepository = failedTransactionRepository;
+            _failedTransactionManager = failedTransactionManager;
             _settings = settings;
             _logger = logger;
         }
@@ -49,7 +50,7 @@ namespace BackgroundWorker.Functions
                 if (transaction.DequeueCount >= _settings.MaxDequeueCount)
                 {
                     context.MoveMessageToPoison();
-                    await _failedTransactionRepository.AddFailedTransaction(transaction.TransactionId, null);
+                    await _failedTransactionManager.InsertFailedTransaction(transaction.TransactionId, null);
                 }
                 else
                 {

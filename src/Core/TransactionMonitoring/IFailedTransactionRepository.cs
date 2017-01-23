@@ -15,5 +15,6 @@ namespace Core.TransactionMonitoring
     public interface IFailedTransactionRepository
     {
         Task AddFailedTransaction(Guid transactionId, string transactionHash);
+        Task<IEnumerable<IFailedTransaction>> GetAllAsync();
     }
 }

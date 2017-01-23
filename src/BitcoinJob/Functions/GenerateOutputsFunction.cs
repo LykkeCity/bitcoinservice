@@ -22,7 +22,7 @@ namespace BackgroundWorker.Functions
     {
         private readonly Money _dustSize = new Money(2730);
 
-        private bool _balanceWarningSended;
+        private static DateTime _lastWarningSentTime;
 
         private readonly IAssetRepository _assetRepository;
         private readonly IPregeneratedOutputsQueueFactory _pregeneratedOutputsQueueFactory;
@@ -60,6 +60,7 @@ namespace BackgroundWorker.Functions
             _emailNotifier = emailNotifier;
             _slackNotifier = slackNotifier;
             _signatureApiProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
+            _lastWarningSentTime = DateTime.MinValue;
         }
 
 
@@ -182,21 +183,16 @@ namespace BackgroundWorker.Functions
                 if (balance < new Money(_baseSettings.MinHotWalletBalance, MoneyUnit.BTC))
                 {
                     string message =
-                        $"Hot wallet {_baseSettings.HotWalletForPregeneratedOutputs} balance is less that {_baseSettings.MinHotWalletBalance} BTC !";
+                        $"Hot wallet {_baseSettings.HotWalletForPregeneratedOutputs} balance is less than {_baseSettings.MinHotWalletBalance} BTC !";
                     await _logger.WriteWarningAsync("GenerateOutputsFunction", "InternalBalanceCheck", "", message);
 
-                    if (!_balanceWarningSended)
+                    if ((DateTime.UtcNow - _lastWarningSentTime).TotalHours > 1)
                     {
                         await _slackNotifier.FinanceWarningAsync(message);
                         await _emailNotifier.WarningAsync("Bitcoin job", message);
                     }
 
-                    _balanceWarningSended = true;
-                }
-                else
-                {
-                    // reset if balance become higher
-                    _balanceWarningSended = false;
+                    _lastWarningSentTime = DateTime.Now;
                 }
             }
             catch (Exception e)

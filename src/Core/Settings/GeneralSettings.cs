@@ -56,5 +56,6 @@ namespace Core.Settings
         public string DictsConnString { get; set; }
         public string SharedConnString { get; set; }
         public string ClientPersonalInfoConnString { get; set; }
+        public string BackofficeConnString { get; set; }
     }
 }

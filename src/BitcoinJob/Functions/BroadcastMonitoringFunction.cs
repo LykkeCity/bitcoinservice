@@ -10,6 +10,7 @@ using Core.Notifiers;
 using Core.QBitNinja;
 using Core.Settings;
 using Core.TransactionMonitoring;
+using LkeServices.Transactions;
 using LkeServices.Triggers.Attributes;
 using LkeServices.Triggers.Bindings;
 using QBitNinja.Client.Models;
@@ -21,17 +22,17 @@ namespace BackgroundWorker.Functions
         private readonly IQBitNinjaApiCaller _qBitNinjaApiCaller;
         private readonly ILog _logger;
         private readonly ISlackNotifier _slackNotifier;
-        private readonly IFailedTransactionRepository _failedTransactionRepository;
+        private readonly IFailedTransactionsManager _failedTransactionManager;
         private readonly BaseSettings _settings;
 
         public BroadcastMonitoringFunction(IQBitNinjaApiCaller qBitNinjaApiCaller, ILog logger,
-            ISlackNotifier slackNotifier, IFailedTransactionRepository failedTransactionRepository,
+            ISlackNotifier slackNotifier, IFailedTransactionsManager failedTransactionManager,
             BaseSettings settings)
         {
             _qBitNinjaApiCaller = qBitNinjaApiCaller;
             _logger = logger;
             _slackNotifier = slackNotifier;
-            _failedTransactionRepository = failedTransactionRepository;
+            _failedTransactionManager = failedTransactionManager;
             _settings = settings;
         }
 
@@ -55,7 +56,7 @@ namespace BackgroundWorker.Functions
             {
                 context.MoveMessageToPoison(message.ToJson());
                 await _slackNotifier.ErrorAsync($"Transaction with hash {message.TransactionHash} has no confirmations");
-                await _failedTransactionRepository.AddFailedTransaction(message.TransactionId, message.TransactionHash);
+                await _failedTransactionManager.InsertFailedTransaction(message.TransactionId, message.TransactionHash);
             }
             else
             {

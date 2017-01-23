@@ -85,6 +85,9 @@ namespace AzureRepositories
             ioc.RegisterInstance(new FailedTransactionRepository(new AzureTableStorage<FailedTransactionEntity>(settings.Db.ClientPersonalInfoConnString, "FailedTransactions", null)))
                 .As<IFailedTransactionRepository>();
 
+            ioc.RegisterInstance(new MenuBadgesRepository(new AzureTableStorage<MenuBadgeEntity>(settings.Db.BackofficeConnString, "MenuBadges", null)))
+                .As<IMenuBadgesRepository>();
+
             ioc.RegisterInstance(new ApiRequestBlobRepository(new AzureBlobStorage(settings.Db.LogsConnString)))
                 .As<IApiRequestBlobRepository>();
         }

@@ -24,7 +24,7 @@ namespace BackgroundWorker.Functions
     {
         private readonly ILykkeTransactionBuilderService _lykkeTransactionBuilderService;
         private readonly IAssetRepository _assetRepository;
-        private readonly IFailedTransactionRepository _failedTransactionRepository;
+        private readonly IFailedTransactionsManager _failedTransactionManager;
         private readonly Func<string, IQueueExt> _queueFactory;
         private readonly BaseSettings _settings;
         private readonly ISignatureApiProvider _clientSignatureApi;
@@ -34,12 +34,12 @@ namespace BackgroundWorker.Functions
 
         public TransactionBuildFunction(ILykkeTransactionBuilderService lykkeTransactionBuilderService,
             IAssetRepository assetRepository, Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
-            IFailedTransactionRepository failedTransactionRepository,
+            IFailedTransactionsManager failedTransactionManager,
             Func<string, IQueueExt> queueFactory, BaseSettings settings, ILog logger, ITransactionSignRequestRepository signRequestRepository)
         {
             _lykkeTransactionBuilderService = lykkeTransactionBuilderService;
             _assetRepository = assetRepository;
-            _failedTransactionRepository = failedTransactionRepository;
+            _failedTransactionManager = failedTransactionManager;
             _queueFactory = queueFactory;
             _settings = settings;
             _logger = logger;
@@ -109,7 +109,7 @@ namespace BackgroundWorker.Functions
                 if (message.DequeueCount >= _settings.MaxDequeueCount)
                 {
                     context.MoveMessageToPoison(message.ToJson());
-                    await _failedTransactionRepository.AddFailedTransaction(message.TransactionId, null);
+                    await _failedTransactionManager.InsertFailedTransaction(message.TransactionId, null);
                 }
                 else
                 {

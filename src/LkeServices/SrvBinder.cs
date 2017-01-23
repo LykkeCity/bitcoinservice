@@ -43,7 +43,7 @@ namespace LkeServices
             ioc.RegisterType<BitcoinOutputsService>().As<IBitcoinOutputsService>();
             ioc.RegisterType<FeeProvider>().As<IFeeProvider>();
             ioc.Register(x => new RestClient()).As<IRestClient>();
-            
+
             ioc.RegisterType<LykkeApiProvider>().As<ILykkeApiProvider>().SingleInstance();
             ioc.RegisterType<FeeRateApiProvider>().As<IFeeRateApiProvider>().SingleInstance();
 
@@ -55,6 +55,7 @@ namespace LkeServices
             ioc.RegisterType<OffchainTransactionBuilderService>().As<IOffchainTransactionBuilderService>();
             ioc.RegisterType<SignatureVerifier>().As<ISignatureVerifier>();
             ioc.RegisterType<BitcoinBroadcastService>().As<IBitcoinBroadcastService>();
+            ioc.RegisterType<FailedTransactionsManager>().As<IFailedTransactionsManager>();
 
             ioc.Register<Func<SignatureApiProviderType, ISignatureApiProvider>>(x =>
             {
