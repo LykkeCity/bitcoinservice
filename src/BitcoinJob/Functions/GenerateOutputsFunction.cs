@@ -179,7 +179,7 @@ namespace BackgroundWorker.Functions
                 var coins = await _bitcoinOutputsService.GetUncoloredUnspentOutputs(_baseSettings.HotWalletForPregeneratedOutputs);
                 var balance = coins.OfType<Coin>().Sum(x => x.Amount);
 
-                if (balance < _baseSettings.MinHotWalletBalance)
+                if (balance < new Money(_baseSettings.MinHotWalletBalance, MoneyUnit.BTC))
                 {
                     string message =
                         $"Hot wallet {_baseSettings.HotWalletForPregeneratedOutputs} balance is less that {_baseSettings.MinHotWalletBalance} BTC !";
