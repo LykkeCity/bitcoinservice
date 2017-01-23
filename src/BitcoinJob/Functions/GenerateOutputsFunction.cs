@@ -192,7 +192,7 @@ namespace BackgroundWorker.Functions
                         await _emailNotifier.WarningAsync("Bitcoin job", message);
                     }
 
-                    _lastWarningSentTime = DateTime.Now;
+                    _lastWarningSentTime = DateTime.UtcNow;
                 }
             }
             catch (Exception e)
