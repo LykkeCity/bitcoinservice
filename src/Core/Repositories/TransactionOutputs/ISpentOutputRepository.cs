@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using NBitcoin;
 
@@ -13,7 +14,7 @@ namespace Core.Repositories.TransactionOutputs
 
     public interface ISpentOutputRepository
     {
-        Task InsertSpentOutputs(IEnumerable<IOutput> outputs);
+        Task InsertSpentOutputs(Guid transactionId, IEnumerable<IOutput> outputs);
 
         Task<IEnumerable<IOutput>> GetUnspentOutputs(IEnumerable<IOutput> outputs);
     }

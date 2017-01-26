@@ -13,9 +13,9 @@ namespace LkeServices.Triggers.Attributes
 			TimeSpan value;
 			if (!TimeSpan.TryParse(period, out value))
 				throw new ArgumentException("Can't parse to timespan. Expected format is HH:mm:ss", nameof(period));
-			Period = value;
+			Period = value;		    
 		}
 
-		public TimeSpan Period { get; }
+		public TimeSpan Period { get; }        
 	}
 }

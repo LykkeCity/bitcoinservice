@@ -5,8 +5,8 @@
     "Core": "1.0.0",
     "Lykke.Common": "1.1.1",
     "Microsoft.Extensions.DependencyModel": "1.1.0",
-    "Microsoft.Extensions.PlatformAbstractions": "1.0.0",
-    "RestSharp.NetCore": "105.2.3"
+    "Microsoft.Extensions.PlatformAbstractions": "1.0.0",    
+    "RestEase": "1.3.1"
   },
 
   "frameworks": {

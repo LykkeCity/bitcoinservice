@@ -43,7 +43,7 @@ namespace BitcoinApi.Binders
             ioc.RegisterInstance(new RpcConnectionParams(settings));
 
             ioc.BindCommonServices();
-            ioc.BindAzure(settings);
+            ioc.BindAzure(settings, log);
             
             ioc.RegisterSource(new AnyConcreteTypeNotAlreadyRegisteredSource());
         }        

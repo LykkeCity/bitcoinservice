@@ -51,7 +51,7 @@ namespace BackgroundWorker.Binders
             ioc.RegisterInstance(new RpcConnectionParams(settings));
 
             ioc.BindCommonServices();
-            ioc.BindAzure(settings);
+            ioc.BindAzure(settings, log);
 
             ioc.RegisterInstance(new AzureQueueReaderFactory(settings.Db.DataConnString)).As<IQueueReaderFactory>();
 

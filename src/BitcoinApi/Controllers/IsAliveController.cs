@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Core.Bitcoin;
+using Core.Providers;
 using Core.Settings;
+using LkeServices.Providers;
 using Microsoft.AspNetCore.Mvc;
 using QBitNinja.Client;
-using RestSharp;
 
 namespace BitcoinApi.Controllers
 {
@@ -15,28 +16,25 @@ namespace BitcoinApi.Controllers
     {
         private readonly IRpcBitcoinClient _rpcClient;
         private readonly Func<QBitNinjaClient> _qbitninja;
-        private readonly IRestClient _client;
+        private readonly Func<SignatureApiProviderType, ISignatureApi> _signatureApiFactory;
         private readonly BaseSettings _settings;
 
-        public IsAliveController(IRpcBitcoinClient rpcClient, Func<QBitNinjaClient> qbitninja, IRestClient client, BaseSettings settings)
+        public IsAliveController(IRpcBitcoinClient rpcClient, Func<QBitNinjaClient> qbitninja, Func<SignatureApiProviderType, ISignatureApi> signatureApiFactory, BaseSettings settings)
         {
             _rpcClient = rpcClient;
             _qbitninja = qbitninja;
-            _client = client;
+            _signatureApiFactory = signatureApiFactory;
             _settings = settings;
         }
 
         [HttpGet]
         public async Task<IsAliveResponse> Get()
         {
-            await GetSignatureAlive(_settings.ClientSignatureProviderUrl);
-
-            await GetSignatureAlive(_settings.SignatureProviderUrl);
-
+            await _signatureApiFactory(SignatureApiProviderType.Client).IsAlive();
+            await _signatureApiFactory(SignatureApiProviderType.Exchange).IsAlive();
             return new IsAliveResponse
             {
-                Version =
-                    Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion
+                Version = Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion
             };
         }
 
@@ -50,17 +48,6 @@ namespace BitcoinApi.Controllers
         public async Task NinjaAlive()
         {
             await _qbitninja().GetBlock(new QBitNinja.Client.Models.BlockFeature(1));
-        }
-
-        private async Task GetSignatureAlive(string baseUrl)
-        {
-            _client.BaseUrl = new Uri(baseUrl);
-            var request = new RestRequest("/api/IsAlive");
-            var t = new TaskCompletionSource<IRestResponse>();
-            _client.ExecuteAsync(request, resp => { t.SetResult(resp); });
-            var response = await t.Task;
-            if (response.StatusCode != System.Net.HttpStatusCode.OK)
-                throw new Exception($"Signature: {baseUrl} is down");
         }
 
         public class IsAliveResponse

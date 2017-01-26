@@ -5,6 +5,7 @@ using Common;
 using Common.Log;
 using Core;
 using Core.Bitcoin;
+using Core.Repositories.Transactions;
 using Core.Settings;
 using Core.TransactionMonitoring;
 using LkeServices.Transactions;
@@ -19,15 +20,18 @@ namespace BackgroundWorker.Functions
     {
         private readonly IBitcoinBroadcastService _broadcastService;
         private readonly IFailedTransactionsManager _failedTransactionManager;
+        private readonly ITransactionBlobStorage _transactionBlobStorage;
         private readonly BaseSettings _settings;
         private readonly ILog _logger;
 
         public BroadcastingTransactionFunction(IBitcoinBroadcastService broadcastService,
             IFailedTransactionsManager failedTransactionManager,
+            ITransactionBlobStorage transactionBlobStorage,
             BaseSettings settings, ILog logger)
         {
             _broadcastService = broadcastService;
             _failedTransactionManager = failedTransactionManager;
+            _transactionBlobStorage = transactionBlobStorage;
             _settings = settings;
             _logger = logger;
         }
@@ -37,7 +41,8 @@ namespace BackgroundWorker.Functions
         {
             try
             {
-                var tr = new Transaction(transaction.TransactionHex);
+                var transactionHex = await _transactionBlobStorage.GetTransaction(transaction.TransactionId, TransactionBlobType.Signed);
+                var tr = new Transaction(transactionHex);
                 await _broadcastService.BroadcastTransaction(transaction.TransactionId, tr);
             }
             catch (RPCException e)

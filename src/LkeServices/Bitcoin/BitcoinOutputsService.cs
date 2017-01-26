@@ -19,7 +19,7 @@ namespace LkeServices.Bitcoin
     {
         private readonly IQBitNinjaApiCaller _qBitNinjaApiCaller;
         private readonly IBroadcastedOutputRepository _broadcastedOutputRepository;
-        private readonly ISpentOutputRepository _spentOutputRepository;        
+        private readonly ISpentOutputRepository _spentOutputRepository;
         private readonly IWalletAddressRepository _walletAddressRepository;
         private readonly RpcConnectionParams _connectionParams;
 
@@ -29,7 +29,7 @@ namespace LkeServices.Bitcoin
         {
             _qBitNinjaApiCaller = qBitNinjaApiCaller;
             _broadcastedOutputRepository = broadcastedOutputRepository;
-            _spentOutputRepository = spentOutputRepository;            
+            _spentOutputRepository = spentOutputRepository;
             _walletAddressRepository = walletAddressRepository;
             _connectionParams = connectionParams;
         }

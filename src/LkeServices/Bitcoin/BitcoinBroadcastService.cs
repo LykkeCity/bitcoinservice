@@ -35,14 +35,14 @@ namespace LkeServices.Bitcoin
             var hash = tx.GetHash().ToString();
 
             if (_settings.UseLykkeApi)
-                await _apiProvider.SendPreBroadcastNotification(transactionId, hash);
+                await _apiProvider.SendPreBroadcastNotification(new LykkeTransactionNotification(transactionId, hash));
 
             await _rpcBitcoinClient.BroadcastTransaction(tx, transactionId);
 
             await _broadcastedOutputRepository.SetTransactionHash(transactionId, hash);
 
             if (_settings.UseLykkeApi)
-                await _apiProvider.SendPostBroadcastNotification(transactionId, hash);
+                await _apiProvider.SendPostBroadcastNotification(new LykkeTransactionNotification(transactionId, hash));
 
             await _monitoringWriter.AddToMonitoring(transactionId, tx.GetHash().ToString());
         }

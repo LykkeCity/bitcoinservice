@@ -210,7 +210,7 @@ namespace LkeServices.Transactions
 
             await _broadcastService.BroadcastTransaction(channel.TransactionId, channelTr);
 
-            await _lykkeTransactionBuilderService.SaveSpentOutputs(channelTr);
+            await _lykkeTransactionBuilderService.SaveSpentOutputs(channel.TransactionId, channelTr);
 
             return signedByHubCommitment;
         }
