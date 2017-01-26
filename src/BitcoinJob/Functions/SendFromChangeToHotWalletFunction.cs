@@ -16,7 +16,6 @@ namespace BackgroundWorker.Functions
     public class SendFromChangeToHotWalletFunction
     {
         private const int SizeOfInputInBytes = 150;
-        private const int InputsCount = 200;
 
         private readonly IBitcoinOutputsService _bitcoinOutputsService;
         private readonly IFeeProvider _feeProvider;
@@ -53,9 +52,9 @@ namespace BackgroundWorker.Functions
 
             Utils.Shuffle(coins, new Random());
 
-            while (coins.Count > InputsCount)
+            while (coins.Count > _baseSettings.NumberOfChangeInputsForTransaction)
             {
-                var part = coins.Take(InputsCount).ToList();
+                var part = coins.Take(_baseSettings.NumberOfChangeInputsForTransaction).ToList();
                 var balance = part.Sum(o => o.Amount);
 
                 var builder = new TransactionBuilder();
@@ -79,7 +78,7 @@ namespace BackgroundWorker.Functions
                 await _bitcoinBroadcastService.BroadcastTransaction(transactionId, signedTr);
                 await _lykkeTransactionBuilderService.SaveSpentOutputs(transactionId, signedTr);
 
-                coins = coins.Skip(InputsCount).ToList();
+                coins = coins.Skip(_baseSettings.NumberOfChangeInputsForTransaction).ToList();
             }
         }
     }
