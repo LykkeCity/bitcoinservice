@@ -63,9 +63,9 @@ namespace BackgroundWorker.Functions
         }
 
 
-        [TimerTrigger("00:01:00")]
+        [TimerTrigger("00:30:00")]
         public async Task GenerateOutputs()
-        {
+        {            
             await InternalBalanceCheck();
             await GenerateFeeOutputs();
             await GenerateAssetOutputs();
@@ -73,6 +73,7 @@ namespace BackgroundWorker.Functions
 
         private async Task GenerateFeeOutputs()
         {
+            await _logger.WriteInfoAsync("GenerateOutputsFunction", "GenerateFeeOutputs", null, "Start process");
             var queue = _pregeneratedOutputsQueueFactory.CreateFeeQueue();
 
             var uncoloredOutputs = await _bitcoinOutputsService.GetUncoloredUnspentOutputs(_baseSettings.HotWalletForPregeneratedOutputs);
@@ -103,16 +104,20 @@ namespace BackgroundWorker.Functions
 
                 var signedTr = new Transaction(signedHex);
 
-                await _bitcoinClient.BroadcastTransaction(signedTr, Guid.NewGuid());
+                var transactionId = Guid.NewGuid();
+
+                await _bitcoinClient.BroadcastTransaction(signedTr, transactionId);
 
                 await queue.EnqueueOutputs(signedTr.Outputs.AsCoins().Where(o => o.TxOut.Value == feeAmount).ToArray());
 
-                await FinishOutputs(signedTr, hotWallet);
+                await FinishOutputs(transactionId, signedTr, hotWallet);
             }
+            await _logger.WriteInfoAsync("GenerateOutputsFunction", "GenerateFeeOutputs", null, "End process");
         }
 
         private async Task GenerateAssetOutputs()
         {
+            await _logger.WriteInfoAsync("GenerateOutputsFunction", "GenerateAssetOutputs", null, "Start process");
             var hotWallet = new BitcoinPubKeyAddress(_baseSettings.HotWalletForPregeneratedOutputs, _connectionParams.Network);
             var assets = (await _assetRepository.GetBitcoinAssets()).Where(o => !string.IsNullOrEmpty(o.AssetAddress) &&
                                                                                 !o.IsDisabled &&
@@ -143,13 +148,14 @@ namespace BackgroundWorker.Functions
                         var signedHex = await _signatureApiProvider.SignTransaction(builder.BuildTransaction(true).ToHex());
 
                         var signedTr = new Transaction(signedHex);
-                        await _bitcoinClient.BroadcastTransaction(signedTr, Guid.NewGuid());
+                        var transactionId = Guid.NewGuid();
+                        await _bitcoinClient.BroadcastTransaction(signedTr, transactionId);
 
                         await queue.EnqueueOutputs(signedTr.Outputs.AsCoins()
                             .Where(o => o.ScriptPubKey.GetDestinationAddress(_connectionParams.Network).ToWif() == asset.AssetAddress &&
                                         o.TxOut.Value == _dustSize).ToArray());
 
-                        await FinishOutputs(signedTr, hotWallet);
+                        await FinishOutputs(transactionId, signedTr, hotWallet);
                     }
                 }
                 catch (Exception e)
@@ -157,23 +163,24 @@ namespace BackgroundWorker.Functions
                     await _logger.WriteErrorAsync("GenerateOutputsFunction", "GenerateAssetOutputs", $"Asset {asset.Id}", e);
                 }
             }
+            await _logger.WriteInfoAsync("GenerateOutputsFunction", "GenerateAssetOutputs", null, "End process");
         }
 
 
-        private async Task FinishOutputs(Transaction tr, BitcoinPubKeyAddress hotWallet)
+        private async Task FinishOutputs(Guid transactionId, Transaction tr, BitcoinPubKeyAddress hotWallet)
         {
-            var transactionId = Guid.NewGuid();
 
             await _broadcastedOutputRepository.InsertOutputs(tr.Outputs.AsCoins()
                 .Where(o => o.ScriptPubKey.GetDestinationAddress(_connectionParams.Network).ToWif() == hotWallet.ToWif())
                 .Select(o => new BroadcastedOutput(o, transactionId, _connectionParams.Network)));
             await _broadcastedOutputRepository.SetTransactionHash(transactionId, tr.GetHash().ToString());
 
-            await _lykkeTransactionBuilderService.SaveSpentOutputs(tr);
+            await _lykkeTransactionBuilderService.SaveSpentOutputs(transactionId, tr);
         }
 
         private async Task InternalBalanceCheck()
         {
+            await _logger.WriteInfoAsync("GenerateOutputsFunction", "InternalBalanceCheck", null, "Start process");
             try
             {
                 var coins = await _bitcoinOutputsService.GetUncoloredUnspentOutputs(_baseSettings.HotWalletForPregeneratedOutputs);
@@ -183,7 +190,7 @@ namespace BackgroundWorker.Functions
                 {
                     if ((DateTime.UtcNow - _lastWarningSentTime).TotalHours > 1)
                     {
-                        string message = $"Hot wallet {_baseSettings.HotWalletForPregeneratedOutputs} balance is less than {_baseSettings.MinHotWalletBalance} BTC !";
+                        string message = $"Fees hot wallet {_baseSettings.HotWalletForPregeneratedOutputs} balance is less than {_baseSettings.MinHotWalletBalance} BTC !";
                         await _logger.WriteWarningAsync("GenerateOutputsFunction", "InternalBalanceCheck", "", message);
 
                         await _slackNotifier.FinanceWarningAsync(message);
@@ -197,6 +204,7 @@ namespace BackgroundWorker.Functions
             {
                 await _logger.WriteErrorAsync("GenerateOutputsFunction", "InternalBalanceCheck", "", e);
             }
+            await _logger.WriteInfoAsync("GenerateOutputsFunction", "InternalBalanceCheck", null, "End process");
         }
     }
 }

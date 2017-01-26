@@ -9,6 +9,7 @@ using Core.OpenAssets;
 using Core.Providers;
 using Core.Repositories.Assets;
 using Core.Repositories.TransactionOutputs;
+using Core.Repositories.Transactions;
 using Core.Repositories.TransactionSign;
 using Core.Settings;
 using LkeServices.Helpers;
@@ -31,7 +32,7 @@ namespace LkeServices.Transactions
 
         Task<CreateTransactionResponse> GetTransferAllTransaction(BitcoinAddress from, BitcoinAddress to, Guid transactionId);
 
-        Task SaveSpentOutputs(Transaction transaction);
+        Task SaveSpentOutputs(Guid transactionId, Transaction transaction);
 
         Task<Guid> AddTransactionId(Guid? transactionId);
     }
@@ -43,7 +44,7 @@ namespace LkeServices.Transactions
         private readonly ITransactionSignRequestRepository _signRequestRepository;
         private readonly IBroadcastedOutputRepository _broadcastedOutputRepository;
         private readonly ISpentOutputRepository _spentOutputRepository;
-        private readonly IPregeneratedOutputsQueueFactory _pregeneratedOutputsQueueFactory;
+        private readonly IPregeneratedOutputsQueueFactory _pregeneratedOutputsQueueFactory;        
         private readonly ILog _log;
 
         private readonly RpcConnectionParams _connectionParams;
@@ -55,7 +56,7 @@ namespace LkeServices.Transactions
             ITransactionSignRequestRepository signRequestRepository,
             IBroadcastedOutputRepository broadcastedOutputRepository,
             ISpentOutputRepository spentOutputRepository,
-            IPregeneratedOutputsQueueFactory pregeneratedOutputsQueueFactory,
+            IPregeneratedOutputsQueueFactory pregeneratedOutputsQueueFactory,            
             ILog log,
             RpcConnectionParams connectionParams, BaseSettings baseSettings)
         {
@@ -75,7 +76,7 @@ namespace LkeServices.Transactions
             BitcoinAddress destAddress, decimal amount, IAsset asset, Guid transactionId)
         {
             return Retry.Try(async () =>
-            {         
+            {
                 var context = new TransactionBuildContext(_connectionParams.Network, _pregeneratedOutputsQueueFactory);
 
                 return await context.Build(async () =>
@@ -84,14 +85,14 @@ namespace LkeServices.Transactions
 
                     await TransferOneDirection(builder, context, sourceAddress, amount, asset, destAddress);
 
-                    await _transactionBuildHelper.AddFee(builder, context);                    
+                    await _transactionBuildHelper.AddFee(builder, context);
 
                     var buildedTransaction = builder.BuildTransaction(true);
 
-                    await SaveSpentOutputs(buildedTransaction);
+                    await SaveSpentOutputs(transactionId, buildedTransaction);
 
-                    await _signRequestRepository.InsertSignRequest(transactionId, buildedTransaction.ToHex(), 1);
-
+                    await _signRequestRepository.InsertTransactionId(transactionId);
+                    
                     await SaveNewOutputs(transactionId, buildedTransaction, context);
 
                     return new CreateTransactionResponse(buildedTransaction.ToHex(), transactionId);
@@ -103,7 +104,7 @@ namespace LkeServices.Transactions
             IAsset asset1, BitcoinAddress address2, decimal amount2, IAsset asset2, Guid transactionId)
         {
             return Retry.Try(async () =>
-            {                
+            {
                 var context = new TransactionBuildContext(_connectionParams.Network, _pregeneratedOutputsQueueFactory);
 
                 return await context.Build(async () =>
@@ -112,13 +113,13 @@ namespace LkeServices.Transactions
                     await TransferOneDirection(builder, context, address1, amount1, asset1, address2);
                     await TransferOneDirection(builder, context, address2, amount2, asset2, address1);
 
-                    await _transactionBuildHelper.AddFee(builder, context);                    
+                    await _transactionBuildHelper.AddFee(builder, context);
 
                     var buildedTransaction = builder.BuildTransaction(true);
 
-                    await SaveSpentOutputs(buildedTransaction);
+                    await SaveSpentOutputs(transactionId, buildedTransaction);
 
-                    await _signRequestRepository.InsertSignRequest(transactionId, buildedTransaction.ToHex(), 2);
+                    await _signRequestRepository.InsertTransactionId(transactionId);
 
                     await SaveNewOutputs(transactionId, buildedTransaction, context);
 
@@ -130,7 +131,7 @@ namespace LkeServices.Transactions
         public Task<CreateTransactionResponse> GetIssueTransaction(BitcoinAddress bitcoinAddres, decimal amount, IAsset asset, Guid transactionId)
         {
             return Retry.Try(async () =>
-            {                
+            {
                 var context = new TransactionBuildContext(_connectionParams.Network, _pregeneratedOutputsQueueFactory);
 
                 return await context.Build(async () =>
@@ -153,11 +154,11 @@ namespace LkeServices.Transactions
                             .IssueAsset(bitcoinAddres, new AssetMoney(assetId, amount, asset.MultiplierPower));
                         context.IssueAsset(assetId);
 
-                        await _transactionBuildHelper.AddFee(builder, context);                       
+                        await _transactionBuildHelper.AddFee(builder, context);
 
                         var buildedTransaction = builder.BuildTransaction(true);
 
-                        await SaveSpentOutputs(buildedTransaction);
+                        await SaveSpentOutputs(transactionId, buildedTransaction);
 
                         await SaveNewOutputs(transactionId, buildedTransaction, context);
 
@@ -195,7 +196,7 @@ namespace LkeServices.Transactions
 
                     _transactionBuildHelper.SendAssetWithChange(builder, context, coins, changeAddress, assetMoney, bitcoinAddres);
 
-                    await _transactionBuildHelper.AddFee(builder, context);                    
+                    await _transactionBuildHelper.AddFee(builder, context);
 
                     var tx = builder.BuildTransaction(true);
 
@@ -214,9 +215,9 @@ namespace LkeServices.Transactions
 
                     tx.Outputs[markerPosition].ScriptPubKey = colorMarker.GetScript();
 
-                    await SaveSpentOutputs(tx);
+                    await SaveSpentOutputs(transactionId, tx);
 
-                    await _signRequestRepository.InsertSignRequest(transactionId, tx.ToHex(), 1);
+                    await _signRequestRepository.InsertTransactionId(transactionId);
 
                     await SaveNewOutputs(transactionId, tx, context);
 
@@ -228,7 +229,7 @@ namespace LkeServices.Transactions
         public Task<CreateTransactionResponse> GetTransferAllTransaction(BitcoinAddress @from, BitcoinAddress to, Guid transactionId)
         {
             return Retry.Try(async () =>
-            {                
+            {
                 var context = new TransactionBuildContext(_connectionParams.Network, _pregeneratedOutputsQueueFactory);
 
                 return await context.Build(async () =>
@@ -250,13 +251,13 @@ namespace LkeServices.Transactions
 
                         _transactionBuildHelper.SendAssetWithChange(builder, context, assetGroup.ToList(), to, sum, from);
                     }
-                    await _transactionBuildHelper.AddFee(builder, context);                    
+                    await _transactionBuildHelper.AddFee(builder, context);
 
                     var buildedTransaction = builder.BuildTransaction(true);
 
-                    await SaveSpentOutputs(buildedTransaction);
+                    await SaveSpentOutputs(transactionId, buildedTransaction);
 
-                    await _signRequestRepository.InsertSignRequest(transactionId, buildedTransaction.ToHex(), 1);
+                    await _signRequestRepository.InsertTransactionId(transactionId);
 
                     await SaveNewOutputs(transactionId, buildedTransaction, context);
 
@@ -294,9 +295,9 @@ namespace LkeServices.Transactions
                     coloredOutputs.Select(o => new BroadcastedOutput(o, transactionId, _connectionParams.Network)).ToList());
         }
 
-        public async Task SaveSpentOutputs(Transaction transaction)
+        public async Task SaveSpentOutputs(Guid transactionId, Transaction transaction)
         {
-            await _spentOutputRepository.InsertSpentOutputs(transaction.Inputs.Select(o => new Output(o.PrevOut)));
+            await _spentOutputRepository.InsertSpentOutputs(transactionId, transaction.Inputs.Select(o => new Output(o.PrevOut)));
             foreach (var outPoint in transaction.Inputs.Select(o => o.PrevOut))
             {
                 await _broadcastedOutputRepository.DeleteOutput(outPoint.Hash.ToString(), (int)outPoint.N);

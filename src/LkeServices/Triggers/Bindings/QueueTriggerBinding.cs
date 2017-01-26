@@ -79,40 +79,47 @@ namespace LkeServices.Triggers.Bindings
         {
             return Task.Run(async () =>
             {
-                while (!cancellationToken.IsCancellationRequested)
+                try
                 {
-                    IQueueMessage message = null;
-                    bool executionSucceeded = false;
-                    try
+                    while (!cancellationToken.IsCancellationRequested)
                     {
-                        do
+                        IQueueMessage message = null;
+                        bool executionSucceeded = false;
+                        try
                         {
-                            message = await _queueReader.GetMessageAsync();
-                            if (message == null)
-                                break;
+                            do
+                            {
+                                message = await _queueReader.GetMessageAsync();
+                                if (message == null)
+                                    break;
 
-                            var context = new QueueTriggeringContext(message.InsertionTime);
+                                var context = new QueueTriggeringContext(message.InsertionTime);
 
-                            var p = new List<object>() { message.Value(_parameterType) };
+                                var p = new List<object>() { message.Value(_parameterType) };
 
-                            if (_hasSecondParameter)
-                                p.Add(_useTriggeringContext ? context : (object)message.InsertionTime);
+                                if (_hasSecondParameter)
+                                    p.Add(_useTriggeringContext ? context : (object)message.InsertionTime);
 
-                            await Invoke(_serviceProvider, _method, p.ToArray());
-                            await ProcessCompletedMessage(message, context);
-                            executionSucceeded = true;
-                        } while (!cancellationToken.IsCancellationRequested);
+                                await Invoke(_serviceProvider, _method, p.ToArray());
+                                await ProcessCompletedMessage(message, context);
+                                executionSucceeded = true;
+                            } while (!cancellationToken.IsCancellationRequested);
+                        }
+                        catch (Exception ex)
+                        {
+                            await LogError("QueueTriggerBinding", "RunAsync", ex);
+                            await ProcessFailedMessage(message);
+                            executionSucceeded = false;
+                        }
+                        finally
+                        {
+                            await Task.Delay(_delayStrategy.GetNextDelay(executionSucceeded), cancellationToken);
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        await LogError("QueueTriggerBinding", "RunAsync", ex);
-                        await ProcessFailedMessage(message);
-                        executionSucceeded = false;                        
-                    }
-                    finally
-                    {
-                        await Task.Delay(_delayStrategy.GetNextDelay(executionSucceeded), cancellationToken);
-                    }
+                }
+                finally
+                {
+                    await _log.WriteInfoAsync("QueueTriggerBinding", "RunAsync", _queueName, "Process ended");
                 }
             }, cancellationToken);
         }
@@ -178,7 +185,7 @@ namespace LkeServices.Triggers.Bindings
         {
             try
             {
-                return _log.WriteErrorAsync(component, process, null, ex);
+                return _log.WriteErrorAsync(component, process, _queueName, ex);
             }
             catch (Exception logEx)
             {

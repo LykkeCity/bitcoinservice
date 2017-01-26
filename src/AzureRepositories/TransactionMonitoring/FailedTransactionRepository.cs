@@ -41,7 +41,7 @@ namespace AzureRepositories.TransactionMonitoring
 
         public Task AddFailedTransaction(Guid transactionId, string transactionHash)
         {
-            return _table.InsertAsync(FailedTransactionEntity.Create(transactionId, transactionHash));
+            return _table.InsertOrReplaceAsync(FailedTransactionEntity.Create(transactionId, transactionHash));
         }
 
         public async Task<IEnumerable<IFailedTransaction>> GetAllAsync()

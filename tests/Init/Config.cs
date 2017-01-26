@@ -53,7 +53,7 @@ namespace Bitcoin.Tests
             builder.RegisterInstance(settings);
             builder.RegisterInstance(log).As<ILog>();
             builder.RegisterInstance(new RpcConnectionParams(settings));
-            builder.BindAzure(settings);
+            builder.BindAzure(settings, log);
             builder.BindCommonServices();
 
             Services = new AutofacServiceProvider(builder.Build());

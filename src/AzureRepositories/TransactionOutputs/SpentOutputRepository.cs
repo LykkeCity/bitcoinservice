@@ -25,14 +25,17 @@ namespace AzureRepositories.TransactionOutputs
         public string TransactionHash { get; set; }
         public int N { get; set; }
 
-        public static OutputEntity Create(IOutput output)
+        public Guid TransactionId { get; set; }
+
+        public static OutputEntity Create(Guid transactionId, IOutput output)
         {
             return new OutputEntity
             {
                 PartitionKey = GeneratePartitionKey(),
                 RowKey = GenerateRowKey(output.TransactionHash, output.N),
                 TransactionHash = output.TransactionHash,
-                N = output.N
+                N = output.N,
+                TransactionId = transactionId
             };
         }
     }
@@ -48,7 +51,7 @@ namespace AzureRepositories.TransactionOutputs
             _storage = storage;
         }
 
-        public Task InsertSpentOutputs(IEnumerable<IOutput> outputs)
+        public async Task InsertSpentOutputs(Guid transactionId, IEnumerable<IOutput> outputs)
         {
             Action<StorageException> throwIfBackend = (exception) =>
             {
@@ -58,7 +61,14 @@ namespace AzureRepositories.TransactionOutputs
 
             try
             {
-                return _storage.InsertAsync(outputs.Select(OutputEntity.Create));
+                var forInsert = outputs.Select(o => OutputEntity.Create(transactionId, o)).ToList();
+
+                while (forInsert.Count > 0)
+                {
+                    var part = forInsert.Take(100);
+                    forInsert = forInsert.Skip(100).ToList();
+                    await _storage.InsertAsync(part);
+                }
             }
             catch (AggregateException e)
             {
