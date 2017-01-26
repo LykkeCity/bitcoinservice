@@ -47,10 +47,12 @@ namespace Core.Settings
         public int MaxQueueDelay { get; set; } = 5000;
 
         public int BroadcastMonitoringPeriodSeconds { get; set; } = 3600 * 2;
-        
+
         public decimal SpendChangeFeeRateMultiplier { get; set; } = 0.2M;
 
         public int NumberOfChangeInputsForTransaction { get; set; } = 200;
+
+        public int FeeReservePeriodSeconds { get; set; } = 5 * 60;
     }
 
     public class DbSettings

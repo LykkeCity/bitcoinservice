@@ -88,10 +88,21 @@ namespace AzureRepositories.TransactionOutputs
             var enumerable = outputs.ToArray();
 
             var dbOutputs = await _storage.GetDataAsync(OutputEntity.GeneratePartitionKey(), enumerable.Select(x => OutputEntity.GenerateRowKey(x.TransactionHash, x.N)), 50);
-            
+
             var setOfSpentRowKeys = new HashSet<string>(dbOutputs.Select(x => x.RowKey));
 
             return enumerable.Where(x => !setOfSpentRowKeys.Contains(OutputEntity.GenerateRowKey(x.TransactionHash, x.N)));
+        }
+
+        public async Task RemoveSpentOutputs(IEnumerable<IOutput> outputs)
+        {
+            var outputEntities = outputs.Select(x => OutputEntity.Create(Guid.NewGuid(), x)).ToList();
+            while (outputEntities.Any())
+            {
+                await _storage.DeleteAsync(outputEntities.Take(50));
+
+                outputEntities = outputEntities.Skip(50).ToList();
+            }
         }
     }
 }

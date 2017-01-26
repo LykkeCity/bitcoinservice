@@ -24,7 +24,7 @@ namespace Core.OpenAssets
 
         public List<ICoin> Coins { get; set; } = new List<ICoin>();
 
-        private List<ICoin> _feeCoins = new List<ICoin>();
+        public List<ICoin> FeeCoins { get; set; } = new List<ICoin>();
 
         public AssetId IssuedAssetId { get; private set; }
 
@@ -37,7 +37,7 @@ namespace Core.OpenAssets
         {
             Coins.AddRange(coins);
             if (feeCoin)
-                _feeCoins.AddRange(coins);
+                FeeCoins.AddRange(coins);
         }
 
         public void IssueAsset(AssetId asset)
@@ -77,10 +77,10 @@ namespace Core.OpenAssets
             }
             catch (Exception)
             {
-                if (_feeCoins.Count > 0)
+                if (FeeCoins.Count > 0)
                 {
                     var queue = _pregeneratedOutputsQueueFactory.CreateFeeQueue();
-                    await queue.EnqueueOutputs(_feeCoins.OfType<Coin>().ToArray());
+                    await queue.EnqueueOutputs(FeeCoins.OfType<Coin>().ToArray());
                 }
                 throw;
             }
