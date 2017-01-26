@@ -55,7 +55,17 @@ namespace AzureRepositories.Transactions
 
         public async Task SaveToBlob(Guid transactionId, string hex)
         {
-            await _blobStorage.SaveBlobAsync(BlobContainer, transactionId + ".txt", Encoding.UTF8.GetBytes(hex));
+            await _blobStorage.SaveBlobAsync(BlobContainer, GetBlobKey(transactionId), Encoding.UTF8.GetBytes(hex));
+        }
+
+        public Task<bool> IsBroadcasted(Guid transactionId)
+        {
+            return _blobStorage.HasBlobAsync(BlobContainer, GetBlobKey(transactionId));
+        }
+        
+        private string GetBlobKey(Guid transactionId)
+        {
+            return transactionId + ".txt";
         }
     }
 }

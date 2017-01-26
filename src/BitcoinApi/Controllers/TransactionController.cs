@@ -77,7 +77,7 @@ namespace BitcoinApi.Controllers
 
             var transactionId = await _builder.AddTransactionId(model.TransactionId);
 
-            var createTransactionResponse = await _builder.GetTransferTransaction(sourceAddress, destAddress, model.Amount, asset, transactionId);
+            var createTransactionResponse = await _builder.GetTransferTransaction(sourceAddress, destAddress, model.Amount, asset, transactionId, true);
 
             await _transactionBlobStorage.AddOrReplaceTransaction(transactionId, TransactionBlobType.Initial, createTransactionResponse.Transaction);
 
@@ -105,6 +105,9 @@ namespace BitcoinApi.Controllers
 
             if (signRequest == null)
                 throw new BackendException("Transaction is not found", ErrorCode.BadTransaction);
+
+            if(signRequest.Invalidated == true)
+                throw new BackendException("Transaction was invalidated", ErrorCode.BadTransaction);
 
             var initialTransaction = await _transactionBlobStorage.GetTransaction(model.TransactionId, TransactionBlobType.Initial);
 

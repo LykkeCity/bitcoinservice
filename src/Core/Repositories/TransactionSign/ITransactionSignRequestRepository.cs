@@ -7,13 +7,16 @@ namespace Core.Repositories.TransactionSign
 {
     public interface ITransactionSignRequest
     {
-        Guid TransactionId { get;}         
+        Guid TransactionId { get; }
+        bool? Invalidated { get; }
     }
 
     public interface ITransactionSignRequestRepository
     {
         Task<ITransactionSignRequest> GetSignRequest(Guid transactionId);
 
-        Task<Guid> InsertTransactionId(Guid? transactionId);        
+        Task<Guid> InsertTransactionId(Guid? transactionId);
+
+        Task InvalidateTransactionId(Guid transactionId);
     }
 }

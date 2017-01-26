@@ -18,5 +18,7 @@ namespace Core.Repositories.Transactions
         Task<IBroadcastedTransaction> GetTransaction(string hash);
 
         Task SaveToBlob(Guid transactionId, string hex);
+
+        Task<bool> IsBroadcasted(Guid transactionId);
     }
 }

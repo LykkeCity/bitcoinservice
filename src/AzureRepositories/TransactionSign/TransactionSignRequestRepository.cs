@@ -10,7 +10,8 @@ namespace AzureRepositories.TransactionSign
 {
     public class TransactionSignRequestEntity : TableEntity, ITransactionSignRequest
     {
-        public Guid TransactionId => Guid.Parse(RowKey);        
+        public Guid TransactionId => Guid.Parse(RowKey);
+        public bool? Invalidated { get; set; }
 
 
         public static TransactionSignRequestEntity Create(Guid transactionId)
@@ -49,5 +50,14 @@ namespace AzureRepositories.TransactionSign
             return guid;
         }
 
+        public async Task InvalidateTransactionId(Guid transactionId)
+        {
+            await _table.ReplaceAsync(TransactionSignRequestEntity.GeneratePartition(), transactionId.ToString(),
+                entity =>
+                {
+                    entity.Invalidated = true;
+                    return entity;
+                });
+        }
     }
 }

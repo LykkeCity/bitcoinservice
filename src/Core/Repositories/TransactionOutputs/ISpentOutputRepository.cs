@@ -17,5 +17,7 @@ namespace Core.Repositories.TransactionOutputs
         Task InsertSpentOutputs(Guid transactionId, IEnumerable<IOutput> outputs);
 
         Task<IEnumerable<IOutput>> GetUnspentOutputs(IEnumerable<IOutput> outputs);
+
+        Task RemoveSpentOutputs(IEnumerable<IOutput> outputs);
     }
 }

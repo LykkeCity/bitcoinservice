@@ -2,17 +2,16 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Core.Bitcoin;
 
 namespace Core.TransactionMonitoring
 {
-    public class TransactionMonitoringMessage
+    public class FeeReserveMonitoringMessage
     {
         public Guid TransactionId { get; set; }
 
-        public string TransactionHash { get; set; }
+        public List<SerializableCoin> FeeCoins { get; set; }
 
         public DateTime PutDateTime { get; set; }
-
-        public string LastError { get; set; }
     }
 }

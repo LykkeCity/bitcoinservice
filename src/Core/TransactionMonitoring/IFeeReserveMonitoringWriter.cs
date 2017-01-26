@@ -2,11 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using NBitcoin;
 
 namespace Core.TransactionMonitoring
 {
-    public interface ITransactionMonitoringWriter
+    public interface IFeeReserveMonitoringWriter
     {
-        Task AddToMonitoring(Guid transactionId, string transactionHash);
+        Task AddTransactionFeeReserve(Guid transactionId, List<ICoin> feeCoins);
     }
 }

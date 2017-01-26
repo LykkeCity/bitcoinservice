@@ -12,6 +12,7 @@ using Core.Repositories.TransactionOutputs;
 using Core.Repositories.Transactions;
 using Core.Repositories.TransactionSign;
 using Core.Settings;
+using Core.TransactionMonitoring;
 using LkeServices.Helpers;
 using NBitcoin;
 using NBitcoin.OpenAsset;
@@ -20,8 +21,7 @@ namespace LkeServices.Transactions
 {
     public interface ILykkeTransactionBuilderService
     {
-        Task<CreateTransactionResponse> GetTransferTransaction(BitcoinAddress source, BitcoinAddress destination,
-            decimal amount, IAsset assetId, Guid transactionId);
+        Task<CreateTransactionResponse> GetTransferTransaction(BitcoinAddress source, BitcoinAddress destination, decimal amount, IAsset assetId, Guid transactionId, bool shouldReserveFee = false);
 
         Task<CreateTransactionResponse> GetSwapTransaction(BitcoinAddress address1, decimal amount1, IAsset asset1,
             BitcoinAddress address2, decimal amount2, IAsset asset2, Guid transactionId);
@@ -46,6 +46,7 @@ namespace LkeServices.Transactions
         private readonly ISpentOutputRepository _spentOutputRepository;
         private readonly IPregeneratedOutputsQueueFactory _pregeneratedOutputsQueueFactory;        
         private readonly ILog _log;
+        private readonly IFeeReserveMonitoringWriter _feeReserveMonitoringWriter;
 
         private readonly RpcConnectionParams _connectionParams;
         private readonly BaseSettings _baseSettings;
@@ -58,6 +59,7 @@ namespace LkeServices.Transactions
             ISpentOutputRepository spentOutputRepository,
             IPregeneratedOutputsQueueFactory pregeneratedOutputsQueueFactory,            
             ILog log,
+            IFeeReserveMonitoringWriter feeReserveMonitoringWriter,
             RpcConnectionParams connectionParams, BaseSettings baseSettings)
         {
             _transactionBuildHelper = transactionBuildHelper;
@@ -67,13 +69,14 @@ namespace LkeServices.Transactions
             _spentOutputRepository = spentOutputRepository;
             _pregeneratedOutputsQueueFactory = pregeneratedOutputsQueueFactory;
             _log = log;
+            _feeReserveMonitoringWriter = feeReserveMonitoringWriter;
 
             _connectionParams = connectionParams;
             _baseSettings = baseSettings;
         }
 
         public Task<CreateTransactionResponse> GetTransferTransaction(BitcoinAddress sourceAddress,
-            BitcoinAddress destAddress, decimal amount, IAsset asset, Guid transactionId)
+            BitcoinAddress destAddress, decimal amount, IAsset asset, Guid transactionId, bool shouldReserveFee = false)
         {
             return Retry.Try(async () =>
             {
@@ -94,6 +97,9 @@ namespace LkeServices.Transactions
                     await _signRequestRepository.InsertTransactionId(transactionId);
                     
                     await SaveNewOutputs(transactionId, buildedTransaction, context);
+
+                    if (shouldReserveFee)
+                        await _feeReserveMonitoringWriter.AddTransactionFeeReserve(transactionId, context.FeeCoins);
 
                     return new CreateTransactionResponse(buildedTransaction.ToHex(), transactionId);
                 });
