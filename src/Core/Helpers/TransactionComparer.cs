@@ -15,6 +15,8 @@ namespace Core.Helpers
 
             if (tr1.Inputs.Count != tr2.Inputs.Count)
                 return false;
+            if (tr1.Outputs.Count != tr2.Outputs.Count)
+                return false;
             if (tr1.Version != tr2.Version)
                 return false;
             for (var i = 0; i < tr1.Inputs.Count; i++)

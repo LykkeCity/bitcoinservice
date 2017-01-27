@@ -20,19 +20,19 @@ namespace BitcoinApi.Controllers
     public class EnqueueTransactionController : Controller
     {
         private readonly ILykkeTransactionBuilderService _builder;
-        private readonly IAssetRepository _assetRepository;        
+        private readonly IAssetRepository _assetRepository;
         private readonly ILog _log;
-        private readonly ITransactionQueueWriter _transactionQueueWriter;        
+        private readonly ITransactionQueueWriter _transactionQueueWriter;
 
         public EnqueueTransactionController(ILykkeTransactionBuilderService builder,
-            IAssetRepository assetRepository,            
-            ILog log,            
+            IAssetRepository assetRepository,
+            ILog log,
             ITransactionQueueWriter transactionQueueWriter)
         {
             _builder = builder;
-            _assetRepository = assetRepository;            
+            _assetRepository = assetRepository;
             _log = log;
-            _transactionQueueWriter = transactionQueueWriter;            
+            _transactionQueueWriter = transactionQueueWriter;
         }
 
         /// <summary>
@@ -45,6 +45,9 @@ namespace BitcoinApi.Controllers
         public async Task<IActionResult> CreateCashout([FromBody]TransferRequest model)
         {
             await Log("Transfer", "Begin", model);
+
+            if (model.Amount <= 0)
+                throw new BackendException("Amount can't be less or equal to zero", ErrorCode.BadInputParameter);
 
             var sourceAddress = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(model.SourceAddress);
             if (sourceAddress == null)
@@ -123,6 +126,10 @@ namespace BitcoinApi.Controllers
         {
             await Log("Swap", "Begin", model);
 
+            if (model.Amount1 <= 0 || model.Amount2 <= 0)
+                throw new BackendException("Amount can't be less or equal to zero", ErrorCode.BadInputParameter);
+
+
             var bitcoinAddres1 = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(model.MultisigCustomer1);
             if (bitcoinAddres1 == null)
                 throw new BackendException("Invalid MultisigCustomer1 provided", ErrorCode.InvalidAddress);
@@ -170,6 +177,9 @@ namespace BitcoinApi.Controllers
         {
             await Log("Issue", "Begin", model);
 
+            if (model.Amount <= 0)
+                throw new BackendException("Amount can't be less or equal to zero", ErrorCode.BadInputParameter);
+
             var bitcoinAddres = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(model.Address);
             if (bitcoinAddres == null)
                 throw new BackendException("Invalid Address provided", ErrorCode.InvalidAddress);
@@ -206,6 +216,9 @@ namespace BitcoinApi.Controllers
         public async Task<IActionResult> Destroy([FromBody] DestroyRequest model)
         {
             await Log("Destroy", "Begin", model);
+
+            if (model.Amount <= 0)
+                throw new BackendException("Amount can't be less or equal to zero", ErrorCode.BadInputParameter);
 
             var bitcoinAddres = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(model.Address);
             if (bitcoinAddres == null)

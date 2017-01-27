@@ -76,10 +76,15 @@ namespace LkeServices.Transactions
                 totalFeeSent = newEstimate;
 
             } while (totalFeeSent + dustAmount > sentAmount);
+
+            builder.Send(BitcoinAddress.Create(_baseSettings.ChangeAddress, _connectionParams.Network), sentAmount - dustAmount - totalFeeSent);
         }
 
         public void SendWithChange(TransactionBuilder builder, TransactionBuildContext context, List<ICoin> coins, IDestination destination, Money amount, IDestination changeDestination)
         {
+            if (amount.Satoshi <= 0)
+                throw new BackendException("Amount can't be less or equal to zero", ErrorCode.BadInputParameter);
+
             Action throwError = () =>
             {
                 throw new BackendException($"The sum of total applicable outputs is less than the required: {amount.Satoshi} satoshis.", ErrorCode.NotEnoughBitcoinAvailable);
@@ -111,6 +116,9 @@ namespace LkeServices.Transactions
         public void SendAssetWithChange(TransactionBuilder builder, TransactionBuildContext context, List<ColoredCoin> coins, IDestination destination, AssetMoney amount,
             IDestination changeDestination)
         {
+            if (amount.Quantity <= 0)
+                throw new BackendException("Amount can't be less or equal to zero", ErrorCode.BadInputParameter);
+
             Action throwError = () =>
             {
                 throw new BackendException($"The sum of total applicable outputs is less than the required: {amount.Quantity} {amount.Id}.", ErrorCode.NotEnoughAssetAvailable);
