@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Common;
+using Common.Log;
 using Core;
 using Core.Repositories.TransactionOutputs;
 using Core.Repositories.Transactions;
@@ -22,8 +24,9 @@ namespace BackgroundWorker.Functions
         private readonly IPregeneratedOutputsQueueFactory _pregeneratedOutputsQueueFactory;
         private readonly ITransactionBlobStorage _transactionBlobStorage;
         private readonly ISpentOutputRepository _spentOutputRepository;
+        private readonly ILog _logger;
 
-        public FeeReserveMonitoringFunction(BaseSettings settings, IBroadcastedTransactionRepository broadcastedTransactionRepository, ITransactionSignRequestRepository transactionSignRequestRepository, IPregeneratedOutputsQueueFactory pregeneratedOutputsQueueFactory, ITransactionBlobStorage transactionBlobStorage, ISpentOutputRepository spentOutputRepository)
+        public FeeReserveMonitoringFunction(BaseSettings settings, IBroadcastedTransactionRepository broadcastedTransactionRepository, ITransactionSignRequestRepository transactionSignRequestRepository, IPregeneratedOutputsQueueFactory pregeneratedOutputsQueueFactory, ITransactionBlobStorage transactionBlobStorage, ISpentOutputRepository spentOutputRepository, ILog logger)
         {
             _settings = settings;
             _broadcastedTransactionRepository = broadcastedTransactionRepository;
@@ -31,6 +34,7 @@ namespace BackgroundWorker.Functions
             _pregeneratedOutputsQueueFactory = pregeneratedOutputsQueueFactory;
             _transactionBlobStorage = transactionBlobStorage;
             _spentOutputRepository = spentOutputRepository;
+            _logger = logger;
         }
 
         [QueueTrigger(Constants.FeeReserveMonitoringQueue)]
@@ -41,6 +45,8 @@ namespace BackgroundWorker.Functions
 
             if (DateTime.UtcNow - message.PutDateTime > TimeSpan.FromSeconds(_settings.FeeReservePeriodSeconds))
             {
+                await _logger.WriteInfoAsync("FeeReserveMonitoringFunction", "Monitor", message.ToJson(), "Free reserved fee");
+
                 await _transactionSignRequestRepository.InvalidateTransactionId(message.TransactionId);
 
                 await Task.Delay(3000);

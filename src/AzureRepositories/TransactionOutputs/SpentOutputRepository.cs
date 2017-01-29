@@ -97,12 +97,8 @@ namespace AzureRepositories.TransactionOutputs
         public async Task RemoveSpentOutputs(IEnumerable<IOutput> outputs)
         {
             var outputEntities = outputs.Select(x => OutputEntity.Create(Guid.NewGuid(), x)).ToList();
-            while (outputEntities.Any())
-            {
-                await _storage.DeleteAsync(outputEntities.Take(50));
-
-                outputEntities = outputEntities.Skip(50).ToList();
-            }
+            foreach (var item in outputEntities)
+                await _storage.DeleteAsync(item.PartitionKey, item.RowKey);
         }
     }
 }
