@@ -38,6 +38,9 @@ namespace Core.Exceptions
         BadTransaction,
         BadFullSignTransaction,
         CommitmentNotFound,
-        DuplicateTransactionId
+        DuplicateTransactionId,
+        AnotherChannelSetupExists,
+        BadChannelAmount,
+        ChannelNotFinalized
     }
 }

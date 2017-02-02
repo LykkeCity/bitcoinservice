@@ -5,14 +5,14 @@ using System.Threading.Tasks;
 
 namespace BitcoinApi.Models.Offchain
 {
-    public class CreateHubCommitmentModel
+    public class TransferModel
     {
         public string ClientPubKey { get; set; }
 
         public decimal Amount { get; set; }
 
         public string Asset { get; set; }
-
-        public string SignedByClientChannel { get; set; }
+        
+        public string ClientPrevPrivateKey { get; set; }
     }
 }
