@@ -8,6 +8,7 @@ using Core.Bitcoin;
 using Core.Repositories.Transactions;
 using Core.Settings;
 using Core.TransactionMonitoring;
+using Core.TransactionQueueWriter;
 using LkeServices.Transactions;
 using LkeServices.Triggers.Attributes;
 using LkeServices.Triggers.Bindings;

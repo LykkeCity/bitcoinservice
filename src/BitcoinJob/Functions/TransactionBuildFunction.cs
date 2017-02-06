@@ -104,6 +104,9 @@ namespace BackgroundWorker.Functions
             }
             catch (BackendException e)
             {
+                if (e.Code == ErrorCode.NoCoinsFound)
+                    return;
+
                 if (e.Text != message.LastError)
                     await _logger.WriteWarningAsync("TransactionBuildFunction", "ProcessMessage", $"Id: [{message.TransactionId}], cmd: [{message.Command}]", e.Text);
 

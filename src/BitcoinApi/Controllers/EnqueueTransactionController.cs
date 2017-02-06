@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using BitcoinApi.Filters;
 using BitcoinApi.Models;
+using BitcoinApi.Services;
 using Common;
 using Common.Log;
 using Core.Exceptions;
@@ -23,16 +24,18 @@ namespace BitcoinApi.Controllers
         private readonly IAssetRepository _assetRepository;
         private readonly ILog _log;
         private readonly ITransactionQueueWriter _transactionQueueWriter;
+        private readonly IRetryFailedTransactionService _retryFailedService;
 
         public EnqueueTransactionController(ILykkeTransactionBuilderService builder,
             IAssetRepository assetRepository,
             ILog log,
-            ITransactionQueueWriter transactionQueueWriter)
+            ITransactionQueueWriter transactionQueueWriter, IRetryFailedTransactionService retryFailedService)
         {
             _builder = builder;
             _assetRepository = assetRepository;
             _log = log;
             _transactionQueueWriter = transactionQueueWriter;
+            _retryFailedService = retryFailedService;
         }
 
         /// <summary>
@@ -243,6 +246,20 @@ namespace BitcoinApi.Controllers
             {
                 TransactionId = transactionId
             });
+        }
+
+        [HttpPost("retry")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(typeof(ApiException), 400)]
+        public async Task<IActionResult> Retry([FromBody] RetryFailedRequest model)
+        {
+            await Log("Retry", "Begin", model);
+
+            await _retryFailedService.RetryTransaction(model.TransactionId);
+
+            await Log("Retry", "End", model);
+
+            return Ok();
         }
 
         private async Task Log(string method, string status, object model, Guid? transactionId = null)

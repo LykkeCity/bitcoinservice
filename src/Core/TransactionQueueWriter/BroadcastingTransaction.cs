@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace BackgroundWorker
+namespace Core.TransactionQueueWriter
 {
     public class BroadcastingTransaction
     {        
