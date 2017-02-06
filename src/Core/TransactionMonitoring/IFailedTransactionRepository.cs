@@ -10,11 +10,12 @@ namespace Core.TransactionMonitoring
         string TransactionId { get; }
         string TransactionHash { get; }
         DateTime DateTime { get; }
+        string Error { get; }
     }
 
     public interface IFailedTransactionRepository
     {
-        Task AddFailedTransaction(Guid transactionId, string transactionHash);
+        Task AddFailedTransaction(Guid transactionId, string transactionHash, string error);
         Task<IEnumerable<IFailedTransaction>> GetAllAsync();
     }
 }

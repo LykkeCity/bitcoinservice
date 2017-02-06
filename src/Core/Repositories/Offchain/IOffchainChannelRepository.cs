@@ -22,14 +22,21 @@ namespace Core.Repositories.Offchain
         decimal HubAmount { get; }
 
         string FullySignedChannel { get; }
+
+        bool IsBroadcasted { get; }
     }
 
 
     public interface IOffchainChannelRepository
     {
-        Task<IOffchainChannel> CreateChannel(Guid transactionId, string multisig, string asset, string initialTr);
+        Task<IOffchainChannel> CreateChannel(string multisig, string asset, string initialTr, decimal clientAmount, decimal hubAmount);
 
-        Task<IOffchainChannel> GetChannel(string multisig, string assetName);
-        Task SetFullSignedTransactionAndAmount(string multisig, string assetName, string fullSignedTr, decimal hubAmount, decimal clientAmount);
+        Task<IOffchainChannel> GetChannel(string multisig, string asset);
+
+        Task<IOffchainChannel> SetFullSignedTransaction(string multisig, string asset, string fullSignedTr);
+
+        Task UpdateAmounts(string multisig, string asset, decimal clientAmount, decimal hubAmount);
+
+        Task SetChannelBroadcasted(string multisig, string asset);
     }
 }

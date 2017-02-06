@@ -8,6 +8,7 @@ using Core.Bitcoin;
 using Core.Repositories.Transactions;
 using Core.Settings;
 using Core.TransactionMonitoring;
+using Core.TransactionQueueWriter;
 using LkeServices.Transactions;
 using LkeServices.Triggers.Attributes;
 using LkeServices.Triggers.Bindings;
@@ -55,7 +56,7 @@ namespace BackgroundWorker.Functions
                 if (transaction.DequeueCount >= _settings.MaxDequeueCount)
                 {
                     context.MoveMessageToPoison();
-                    await _failedTransactionManager.InsertFailedTransaction(transaction.TransactionId, null);
+                    await _failedTransactionManager.InsertFailedTransaction(transaction.TransactionId, null, transaction.LastError);
                 }
                 else
                 {

@@ -4,13 +4,14 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using AzureStorage;
+using AzureStorage.Tables;
 using Core.Repositories.Offchain;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 
 namespace AzureRepositories.Offchain
 {
-    public class OffchainChannelEntity : TableEntity, IOffchainChannel
+    public class OffchainChannelEntity : BaseEntity, IOffchainChannel
     {
         public Guid TransactionId { get; set; }
         public string Multisig { get; set; }
@@ -23,45 +24,60 @@ namespace AzureRepositories.Offchain
 
         public string FullySignedChannel { get; set; }
 
+        public bool IsBroadcasted { get; set; }
 
-        public static string GeneratePartitionKey(string asset)
+        public class CurrentChannel
         {
-            return asset;
+            public static string GeneratePartitionKey(string asset)
+            {
+                return asset;
+            }
+
+            public static string GenerateRowKey(string multisig)
+            {
+                return multisig;
+            }
+
+            public static OffchainChannelEntity Create(string multisig, string asset,
+                string initialTr, decimal clientAmount, decimal hubAmount)
+            {
+                return new OffchainChannelEntity
+                {
+                    PartitionKey = GeneratePartitionKey(asset),
+                    RowKey = GenerateRowKey(multisig),
+                    TransactionId = Guid.NewGuid(),
+                    Asset = asset,
+                    Multisig = multisig,
+                    InitialTransaction = initialTr,
+                    HubAmount = hubAmount,
+                    ClientAmount = clientAmount,
+                    FullySignedChannel = null
+                };
+            }
         }
 
-        public static string GenerateRowKey(string multisig)
+        public class Archived
         {
-            return multisig;
-        }
+            public static string GeneratePartitionKey(string asset, string multisig)
+            {
+                return asset + "_" + multisig;
+            }
 
-        public static OffchainChannelEntity Create(Guid transactionId, string multisig, string asset, string initialTr)
-        {
-            return new OffchainChannelEntity
-            {                
-                PartitionKey = GeneratePartitionKey(asset),
-                RowKey = GenerateRowKey(multisig),
-                TransactionId = transactionId,
-                Asset = asset,
-                Multisig = multisig,
-                InitialTransaction = initialTr
-            };
-        }
-        public override void ReadEntity(IDictionary<string, EntityProperty> properties, OperationContext operationContext)
-        {
-            base.ReadEntity(properties, operationContext);
-
-            foreach (var p in GetType().GetProperties().Where(x => x.PropertyType == typeof(decimal) && properties.ContainsKey(x.Name)))
-                p.SetValue(this, Convert.ToDecimal(properties[p.Name].StringValue));
-        }
-
-        public override IDictionary<string, EntityProperty> WriteEntity(OperationContext operationContext)
-        {
-            var properties = base.WriteEntity(operationContext);
-
-            foreach (var p in GetType().GetProperties().Where(x => x.PropertyType == typeof(decimal)))
-                properties.Add(p.Name, new EntityProperty(p.GetValue(this).ToString()));
-
-            return properties;
+            public static OffchainChannelEntity Create(IOffchainChannel channel)
+            {
+                return new OffchainChannelEntity
+                {
+                    PartitionKey = GeneratePartitionKey(channel.Asset, channel.Multisig),
+                    RowKey = Guid.NewGuid().ToString(),
+                    TransactionId = channel.TransactionId,
+                    Asset = channel.Asset,
+                    Multisig = channel.Multisig,
+                    InitialTransaction = channel.InitialTransaction,
+                    HubAmount = channel.HubAmount,
+                    ClientAmount = channel.ClientAmount,
+                    FullySignedChannel = channel.FullySignedChannel
+                };
+            }
         }
     }
 
@@ -75,30 +91,57 @@ namespace AzureRepositories.Offchain
             _table = table;
         }
 
-        public async Task<IOffchainChannel> CreateChannel(Guid transactionId, string multisig, string asset, string initialTr)
+        public async Task<IOffchainChannel> CreateChannel(string multisig, string asset, string initialTr, decimal clientAmount, decimal hubAmount)
         {
-            var entity = OffchainChannelEntity.Create(transactionId, multisig, asset, initialTr);
-            await _table.InsertOrReplaceAsync(entity);
-            return entity;
+            var current = await GetChannel(multisig, asset);
+
+            if (current != null)
+            {
+                var archived = OffchainChannelEntity.Archived.Create(current);
+                await _table.InsertAsync(archived);
+            }
+
+            var newChannel = OffchainChannelEntity.CurrentChannel.Create(multisig, asset, initialTr, clientAmount, hubAmount);
+            await _table.InsertOrReplaceAsync(newChannel);
+
+            return newChannel;
         }
 
-        public async Task<IOffchainChannel> GetChannel(string multisig, string assetName)
+        public async Task<IOffchainChannel> GetChannel(string multisig, string asset)
         {
-            return await _table.GetDataAsync(OffchainChannelEntity.GeneratePartitionKey(assetName),
-                OffchainChannelEntity.GenerateRowKey(multisig));
+            return await _table.GetDataAsync(OffchainChannelEntity.CurrentChannel.GeneratePartitionKey(asset),
+                OffchainChannelEntity.CurrentChannel.GenerateRowKey(multisig));
         }
 
-        public async Task SetFullSignedTransactionAndAmount(string multisig, string assetName, string fullSignedTr, decimal hubAmount,
-            decimal clientAmount)
+        public async Task<IOffchainChannel> SetFullSignedTransaction(string multisig, string asset, string fullSignedTr)
         {
-            await _table.ReplaceAsync(OffchainChannelEntity.GeneratePartitionKey(assetName),
-               OffchainChannelEntity.GenerateRowKey(multisig), entity =>
+            return await _table.ReplaceAsync(OffchainChannelEntity.CurrentChannel.GeneratePartitionKey(asset),
+               OffchainChannelEntity.CurrentChannel.GenerateRowKey(multisig), entity =>
                 {
                     entity.FullySignedChannel = fullSignedTr;
-                    entity.HubAmount = hubAmount;
-                    entity.ClientAmount = clientAmount;
                     return entity;
                 });
+        }
+
+        public async Task UpdateAmounts(string multisig, string asset, decimal clientAmount, decimal hubAmount)
+        {
+            await _table.ReplaceAsync(OffchainChannelEntity.CurrentChannel.GeneratePartitionKey(asset),
+              OffchainChannelEntity.CurrentChannel.GenerateRowKey(multisig), entity =>
+                {
+                    entity.ClientAmount = clientAmount;
+                    entity.HubAmount = hubAmount;
+                    return entity;
+                });
+        }
+
+        public Task SetChannelBroadcasted(string multisig, string asset)
+        {
+            return _table.ReplaceAsync(OffchainChannelEntity.CurrentChannel.GeneratePartitionKey(asset),
+             OffchainChannelEntity.CurrentChannel.GenerateRowKey(multisig), entity =>
+                {
+                    entity.IsBroadcasted = true;
+                 return entity;
+             });
         }
     }
 }

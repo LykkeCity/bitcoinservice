@@ -34,10 +34,13 @@ namespace Core.Exceptions
         PregeneratedPoolIsEmpty,
         TransactionConcurrentInputsProblem,
         AddressHasUncompletedSignRequest,
-        ChannelNotFound,
+        ShouldOpenNewChannel,
         BadTransaction,
         BadFullSignTransaction,
         CommitmentNotFound,
-        DuplicateTransactionId
+        DuplicateTransactionId,
+        AnotherChannelSetupExists,
+        BadChannelAmount,
+        ChannelNotFinalized
     }
 }

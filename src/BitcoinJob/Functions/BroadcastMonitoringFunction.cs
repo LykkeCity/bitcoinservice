@@ -56,7 +56,7 @@ namespace BackgroundWorker.Functions
             {
                 context.MoveMessageToPoison(message.ToJson());
                 await _slackNotifier.ErrorAsync($"Transaction with hash {message.TransactionHash} has no confirmations");
-                await _failedTransactionManager.InsertFailedTransaction(message.TransactionId, message.TransactionHash);
+                await _failedTransactionManager.InsertFailedTransaction(message.TransactionId, message.TransactionHash, message.LastError);
             }
             else
             {

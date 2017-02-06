@@ -57,13 +57,11 @@ namespace BackgroundWorker.Functions
         {
             var assets = (await _assetRepository.GetBitcoinAssets()).Where(o => !string.IsNullOrEmpty(o.AssetAddress) &&
                                                                                 !o.IsDisabled &&
-                                                                                string.IsNullOrWhiteSpace(o.PartnerId)).ToList();
+                                                                                o.IssueAllowed).ToList();
             foreach (var asset in assets)
             {
                 try
                 {
-                    if (!_baseSettings.IssuedAssets.Contains(asset.Id))
-                        continue;
                     var queue = _queueFactory.Create(asset.BlockChainAssetId);
                     var count = await queue.Count();
                     for (int i = 0; i < count; i++)

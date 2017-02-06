@@ -9,7 +9,7 @@ namespace LkeServices.Transactions
 {
     public interface IFailedTransactionsManager
     {
-        Task InsertFailedTransaction(Guid transactionId, string hash);
+        Task InsertFailedTransaction(Guid transactionId, string hash, string error);
     }
 
     public class FailedTransactionsManager : IFailedTransactionsManager
@@ -24,9 +24,9 @@ namespace LkeServices.Transactions
             _menuBadgesRepository = menuBadgesRepository;
         }
 
-        public async Task InsertFailedTransaction(Guid transactionId, string hash)
+        public async Task InsertFailedTransaction(Guid transactionId, string hash, string error)
         {
-            await _failedTransactionRepository.AddFailedTransaction(transactionId, hash);
+            await _failedTransactionRepository.AddFailedTransaction(transactionId, hash, error);
             await UpdateBadges();
         }
 

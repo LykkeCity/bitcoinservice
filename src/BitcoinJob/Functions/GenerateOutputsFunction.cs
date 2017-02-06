@@ -121,13 +121,11 @@ namespace BackgroundWorker.Functions
             var hotWallet = new BitcoinPubKeyAddress(_baseSettings.HotWalletForPregeneratedOutputs, _connectionParams.Network);
             var assets = (await _assetRepository.GetBitcoinAssets()).Where(o => !string.IsNullOrEmpty(o.AssetAddress) &&
                                                                                 !o.IsDisabled &&
-                                                                                string.IsNullOrWhiteSpace(o.PartnerId)).ToList();
+                                                                                o.IssueAllowed).ToList();
             foreach (var asset in assets)
             {
                 try
                 {
-                    if (!_baseSettings.IssuedAssets.Contains(asset.Id))
-                        continue;
                     if (asset.DefinitionUrl == null)
                     {
                         await _logger.WriteWarningAsync("GenerateOutputsFunction", "GenerateAssetOutputs", $"Asset: {asset.Id} has no DefinitionUrl", "");

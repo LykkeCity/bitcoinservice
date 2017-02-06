@@ -10,13 +10,14 @@ namespace Core.Repositories.Assets
         string AssetAddress { get; }
         int MultiplierPower { get; }
         string DefinitionUrl { get; }
-        bool IsDisabled { get; set; }
-        string PartnerId { get; set; }
+        bool IsDisabled { get; }
+        string PartnerId { get; }
+        bool IssueAllowed { get; }
     }
 
     public interface IAssetRepository
     {
         Task<IAsset> GetAssetById(string id);
-        Task<IEnumerable<IAsset>>  GetBitcoinAssets();
+        Task<IEnumerable<IAsset>> GetBitcoinAssets();
     }
 }
