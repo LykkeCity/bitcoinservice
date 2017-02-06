@@ -114,7 +114,7 @@ namespace BackgroundWorker.Functions
                 if (message.DequeueCount >= _settings.MaxDequeueCount)
                 {
                     context.MoveMessageToPoison(message.ToJson());
-                    await _failedTransactionManager.InsertFailedTransaction(message.TransactionId, null);
+                    await _failedTransactionManager.InsertFailedTransaction(message.TransactionId, null, message.LastError);
                 }
                 else
                 {
@@ -132,7 +132,7 @@ namespace BackgroundWorker.Functions
 
             await _queueFactory(Constants.BroadcastingQueue).PutRawMessageAsync(new BroadcastingTransaction
             {
-                TransactionId = message.TransactionId            
+                TransactionId = message.TransactionId
             }.ToJson());
         }
     }

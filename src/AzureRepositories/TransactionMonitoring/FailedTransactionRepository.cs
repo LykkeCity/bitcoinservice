@@ -16,7 +16,9 @@ namespace AzureRepositories.TransactionMonitoring
 
         public DateTime DateTime { get; set; }
 
-        public static FailedTransactionEntity Create(Guid transactionId, string transactionHash)
+        public string Error { get; set; }
+
+        public static FailedTransactionEntity Create(Guid transactionId, string transactionHash, string error)
         {
             return new FailedTransactionEntity
             {
@@ -24,7 +26,8 @@ namespace AzureRepositories.TransactionMonitoring
                 RowKey = transactionId.ToString(),
                 TransactionId = transactionId.ToString(),
                 TransactionHash = transactionHash,
-                DateTime = DateTime.UtcNow
+                DateTime = DateTime.UtcNow,
+                Error = error
             };
         }
     }
@@ -39,9 +42,9 @@ namespace AzureRepositories.TransactionMonitoring
             _table = table;
         }
 
-        public Task AddFailedTransaction(Guid transactionId, string transactionHash)
+        public Task AddFailedTransaction(Guid transactionId, string transactionHash, string error)
         {
-            return _table.InsertOrReplaceAsync(FailedTransactionEntity.Create(transactionId, transactionHash));
+            return _table.InsertOrReplaceAsync(FailedTransactionEntity.Create(transactionId, transactionHash, error));
         }
 
         public async Task<IEnumerable<IFailedTransaction>> GetAllAsync()

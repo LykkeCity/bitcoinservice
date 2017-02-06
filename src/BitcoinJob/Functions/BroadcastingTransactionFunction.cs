@@ -56,7 +56,7 @@ namespace BackgroundWorker.Functions
                 if (transaction.DequeueCount >= _settings.MaxDequeueCount)
                 {
                     context.MoveMessageToPoison();
-                    await _failedTransactionManager.InsertFailedTransaction(transaction.TransactionId, null);
+                    await _failedTransactionManager.InsertFailedTransaction(transaction.TransactionId, null, transaction.LastError);
                 }
                 else
                 {
