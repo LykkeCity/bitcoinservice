@@ -16,6 +16,7 @@ namespace BackgroundWorker.Functions
     public class SendFromChangeToHotWalletFunction
     {
         private const int SizeOfInputInBytes = 150;
+        private const int ConfirmationsCount = 1;
 
         private readonly IBitcoinOutputsService _bitcoinOutputsService;
         private readonly IFeeProvider _feeProvider;
@@ -47,7 +48,7 @@ namespace BackgroundWorker.Functions
         {
             var feePerByte = (await _feeProvider.GetFeeRate()).FeePerK.Satoshi * _baseSettings.SpendChangeFeeRateMultiplier / 1000;
 
-            var coins = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(_baseSettings.ChangeAddress)).OfType<Coin>()
+            var coins = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(_baseSettings.ChangeAddress, ConfirmationsCount)).OfType<Coin>()
                 .Where(o => o.Amount.Satoshi > feePerByte * SizeOfInputInBytes).ToList();
 
             Utils.Shuffle(coins, new Random());

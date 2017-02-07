@@ -93,26 +93,26 @@ namespace LkeServices.Transactions
 
             var channel = await _offchainChannelRepository.GetChannel(address.MultisigAddress, asset.Id);
             if (channel == null)
-                throw new BackendException("Channel is not found", ErrorCode.ChannelNotFound);
+                throw new BackendException("Channel is not found", ErrorCode.ShouldOpenNewChannel);
 
             if (!channel.IsBroadcasted)
                 throw new BackendException("Channel is not finalized", ErrorCode.ChannelNotFinalized);
 
             if (amount < 0 && channel.ClientAmount < Math.Abs(amount))
-                throw new BackendException("Client amount in channel is low than required", ErrorCode.BadChannelAmount);
+                throw new BackendException("Client amount in channel is low than required", ErrorCode.ShouldOpenNewChannel);
 
             if (amount > 0 && channel.HubAmount < amount)
-                throw new BackendException("Hub amount in channel is low than required", ErrorCode.BadChannelAmount);
+                throw new BackendException("Hub amount in channel is low than required", ErrorCode.ShouldOpenNewChannel);
 
             if (string.IsNullOrWhiteSpace(clientPrevPrivateKey))
-                throw new BackendException("Private key for previous commitment is required", ErrorCode.BadInputParameter);
+                throw new BackendException("Private key for previous commitment is required", ErrorCode.ShouldOpenNewChannel);
 
             var prevCommitment = await _commitmentRepository.GetLastCommitment(address.MultisigAddress, asset.Id, CommitmentType.Client);
 
             var secret = new BitcoinSecret(clientPrevPrivateKey);
 
             if (prevCommitment.RevokePubKey != secret.PubKey.ToHex())
-                throw new BackendException("Client private key for previous commitment is invalid", ErrorCode.BadInputParameter);
+                throw new BackendException("Client private key for previous commitment is invalid", ErrorCode.ShouldOpenNewChannel);
 
             await _signatureApiProvider.AddKey(clientPrevPrivateKey);
 
@@ -204,7 +204,7 @@ namespace LkeServices.Transactions
 
             var channel = await _offchainChannelRepository.GetChannel(address.MultisigAddress, asset.Id);
             if (channel == null)
-                throw new BackendException("Channel is not found", ErrorCode.ChannelNotFound);
+                throw new BackendException("Channel is not found", ErrorCode.ShouldOpenNewChannel);
 
             if (amount < 0 && channel.ClientAmount < Math.Abs(amount))
                 throw new BackendException("Client amount in channel is low than required", ErrorCode.BadChannelAmount);
@@ -247,7 +247,7 @@ namespace LkeServices.Transactions
 
             var channel = await _offchainChannelRepository.GetChannel(address.MultisigAddress, asset.Id);
             if (channel == null)
-                throw new BackendException("Channel is not found", ErrorCode.ChannelNotFound);
+                throw new BackendException("Channel is not found", ErrorCode.ShouldOpenNewChannel);
 
             var hubCommitment = await _commitmentRepository.GetLastCommitment(address.MultisigAddress, asset.Id, CommitmentType.Hub);
             if (hubCommitment == null)

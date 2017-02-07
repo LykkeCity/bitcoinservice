@@ -22,6 +22,7 @@ namespace AzureRepositories.Assets
         public string DefinitionUrl { get; set; }
         public bool IsDisabled { get; set; }
         public string PartnerId { get; set; }
+        public bool IssueAllowed { get; set; }
 
         public string Blockchain { get; set; }
     }

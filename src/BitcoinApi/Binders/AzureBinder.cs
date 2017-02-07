@@ -4,6 +4,7 @@ using AzureRepositories;
 using AzureRepositories.Log;
 using AzureRepositories.QueueReader;
 using AzureStorage.Tables;
+using BitcoinApi.Services;
 using Common;
 using Common.IocContainer;
 using Common.Log;
@@ -44,7 +45,9 @@ namespace BitcoinApi.Binders
 
             ioc.BindCommonServices();
             ioc.BindAzure(settings, log);
-            
+
+            ioc.RegisterType<RetryFailedTransactionService>().As<IRetryFailedTransactionService>();
+
             ioc.RegisterSource(new AnyConcreteTypeNotAlreadyRegisteredSource());
         }        
     }

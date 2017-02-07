@@ -40,8 +40,6 @@ namespace Core.Settings
         public int MinPregeneratedAssetOutputsCount { get; set; } = 50;
         public int GenerateAssetOutputsBatchSize { get; set; } = 100;
 
-        public string[] IssuedAssets { get; set; } = new string[0];
-
         public int MaxDequeueCount { get; set; } = 1000;
 
         public int MaxQueueDelay { get; set; } = 5000;
