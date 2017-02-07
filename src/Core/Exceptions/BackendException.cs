@@ -41,6 +41,7 @@ namespace Core.Exceptions
         DuplicateTransactionId,
         AnotherChannelSetupExists,
         BadChannelAmount,
-        ChannelNotFinalized
+        ChannelNotFinalized,
+        CommitmentExpired
     }
 }

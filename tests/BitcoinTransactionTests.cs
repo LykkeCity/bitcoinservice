@@ -30,6 +30,11 @@ namespace Bitcoin.Tests
             var address1 = new PubKey("03676601a24b05f5652ef4ce3616f505541d42072b28057007f43e0874bb27e47d").GetAddress(Network.TestNet);
             var address2 = new PubKey("03ebcc2d675d17c5b5e250307cb0189bfc5adf6809bfd3c2823a2884dbbcaec58b").GetAddress(Network.TestNet);
             var address3 = new PubKey("04b1ce3afeb590c6a5295475e0eb91bc10feb9ccc3277d7f0e603059cd6a6d35a6eac01d3772af5251dafad36d5004ff839d5d4d49fa5386dd57a614188f4a84ee").GetAddress(Network.TestNet);
+            var pk = new BitcoinSecret("93586ks3uwSAgJ6q3He4CkuXeVg1N4syvszP514TitfcA9mXjVo", Network.TestNet);
+            //{0491590ab4eb4b5227b82dbdb8fbf5dc850325b953a2990036e33a5f538ff17acd1d345ce3199b55a4ebc111addb1b824c4aeafc97ecffed280f1cd0fd009dd8d7}
+            var pubKey = pk.PubKey;
+
+            var script = CreateScript(new PubKey("02483c13420c9eec1846a6878fc0b41f481d4e9a66fc8038d48543a50053a71608"), new PubKey("0491590ab4eb4b5227b82dbdb8fbf5dc850325b953a2990036e33a5f538ff17acd1d345ce3199b55a4ebc111addb1b824c4aeafc97ecffed280f1cd0fd009dd8d7"), new PubKey("0491590ab4eb4b5227b82dbdb8fbf5dc850325b953a2990036e33a5f538ff17acd1d345ce3199b55a4ebc111addb1b824c4aeafc97ecffed280f1cd0fd009dd8d7"));
         }
 
         [Test]
@@ -42,6 +47,30 @@ namespace Bitcoin.Tests
             var hex =
                 "01000000030fc8d9f48344cb9496af8b77c24b6d36bff11041d37b8ee0ac5c8c8aa63e0292020000004b00000047522102593e745d594696f503acab8d8a20fe6a9b97e9f63873e124ac79113dd20a03ae210379be0eea5380e3b03ae31efcfb19eba41fa6e6fdd0dc3329d4d658eca25168f452aeffffffff399b06f441db3581576da93139700d176bd726f54e05f51ace6dfedf68ada123040000004b000000475221025a4cd2d3e5e12142df245a8bc24fa9ac0a6cb412a205ca3d31b1fef891126cbf21020f0efab8a2845a8030b3a6eb535577fd38364f0897ca32ebd956223653cc6da252aeffffffff6735d37552e63c0d1386c3bd40d687546c917326502aafbb31f8018909e41a943300000000ffffffff0600000000000000000d6a0b4f41010004310538b006008c0a00000000000017a914745d46755d712e8ec662a30f70c4830261750932878c0a00000000000017a914da617d341e35dde727780f277129df8538be7f54878c0a00000000000017a914da617d341e35dde727780f277129df8538be7f54878c0a00000000000017a914745d46755d712e8ec662a30f70c483026175093287d0200000000000001976a9144104da83ef80ce0b2e5843230f489f1455e98ef688ac00000000";
             var tr = new Transaction(hex);
+
+            var source = BitcoinAddress.Create("mj5FEqrC2P4FjFNfX8q3eZ4UABWUcRNy9r");
+            var dest = BitcoinAddress.Create("2N3QKLu6mmH9ZrvRQdf5pNg1txeTpwLhjVK");
+            var bitcoinOutService = Config.Services.GetService<IBitcoinOutputsService>();
+            var assetRepo = Config.Services.GetService<IAssetRepository>();
+            var usd = await assetRepo.GetAssetById("USD");
+            var lkk = await assetRepo.GetAssetById("LKK");
+
+
+            var usdID = new BitcoinAssetId(usd.BlockChainAssetId).AssetId;
+
+            var lkkID = new BitcoinAssetId(lkk.BlockChainAssetId).AssetId;
+            var usdCoins = (await bitcoinOutService.GetColoredUnspentOutputs("mj5FEqrC2P4FjFNfX8q3eZ4UABWUcRNy9r",
+                usdID)).ToList();
+            var lkkCoins = (await bitcoinOutService.GetColoredUnspentOutputs("mj5FEqrC2P4FjFNfX8q3eZ4UABWUcRNy9r",
+               lkkID)).ToList();
+
+            TransactionBuilder builder = new TransactionBuilder();
+            TransactionBuildContext context = new TransactionBuildContext(Network.TestNet, null);
+            helper.SendAssetWithChange(builder, context, usdCoins, dest, new AssetMoney(usdID, 100), source);
+            helper.SendAssetWithChange(builder, context, lkkCoins, dest, new AssetMoney(lkkID, 10000), source);
+            await helper.AddFee(builder, context);
+
+            var tx = builder.BuildTransaction(true).ToHex();
 
             //var multisigScriptOps = PayToMultiSigTemplate.Instance.GenerateScriptPubKey
             //(2,

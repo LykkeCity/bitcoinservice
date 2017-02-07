@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AzureStorage;
+using Core.Helpers;
 using Core.Repositories.Offchain;
 
 namespace AzureRepositories.Offchain
@@ -23,33 +24,80 @@ namespace AzureRepositories.Offchain
         public string RevokePrivateKey { get; set; }
         public string RevokePubKey { get; set; }
 
-        public decimal AddedAmount { get; set; }
+        public decimal ClientAmount { get; set; }
+        public decimal HubAmount { get; set; }
 
-        public static string GeneratePartition(string multisig, string asset)
-        {
-            return $"{multisig}_{asset}";
-        }
+        public string LockedAddress { get; set; }
+        public string LockedScript { get; set; }
 
-        public static string GenerateRowKey()
-        {
-            return Guid.NewGuid().ToString();
-        }
+        public DateTime CreateDt { get; set; }
 
-        public static CommitmentEntity Create(Guid channelTransactionId, CommitmentType type, string multisig, string asset, string revokePrivateKey, string revokePubKey, string initialTr, decimal addedAmount)
+
+        public static class ByRecord
         {
-            return new CommitmentEntity
+
+            public static string GeneratePartition(string multisig, string asset)
             {
-                PartitionKey = GeneratePartition(multisig, asset),
-                RowKey = GenerateRowKey(),
-                ChannelId = channelTransactionId,
-                Multisig = multisig,
-                AssetId = asset,
-                CommitType = (int)type,
-                RevokePrivateKey = revokePrivateKey,
-                RevokePubKey = revokePubKey,
-                InitialTransaction = initialTr,
-                AddedAmount = addedAmount
-            };
+                return $"{multisig}_{asset}";
+            }
+
+            public static string GenerateRowKey()
+            {
+                return Guid.NewGuid().ToString();
+            }
+
+            public static CommitmentEntity Create(Guid channelTransactionId, CommitmentType type, string multisig,
+                string asset, string revokePrivateKey,
+                string revokePubKey, string initialTr, decimal clientAmount, decimal hubAmount, string lockedAddress, string lockedScript)
+            {
+                return new CommitmentEntity
+                {
+                    PartitionKey = GeneratePartition(multisig, asset),
+                    RowKey = GenerateRowKey(),
+                    ChannelId = channelTransactionId,
+                    Multisig = multisig,
+                    AssetId = asset,
+                    CommitType = (int)type,
+                    RevokePrivateKey = revokePrivateKey,
+                    RevokePubKey = revokePubKey,
+                    InitialTransaction = initialTr,
+                    ClientAmount = clientAmount,
+                    HubAmount = hubAmount,
+                    LockedAddress = lockedAddress,
+                    LockedScript = lockedScript,
+                    CreateDt = DateTime.UtcNow,
+                };
+            }
+        }
+
+        public static class ByMonitoring
+        {
+
+            public static string GeneratePartitionKey()
+            {
+                return "Monitoring";
+            }
+
+            public static CommitmentEntity Create(ICommitment commitment)
+            {
+                return new CommitmentEntity
+                {
+                    PartitionKey = GeneratePartitionKey(),
+                    RowKey = commitment.CommitmentId.ToString(),
+                    ChannelId = commitment.ChannelId,
+                    Multisig = commitment.Multisig,
+                    AssetId = commitment.AssetId,
+                    CommitType = (int)commitment.Type,
+                    RevokePrivateKey = commitment.RevokePrivateKey,
+                    RevokePubKey = commitment.RevokePubKey,
+                    InitialTransaction = commitment.InitialTransaction,
+                    ClientAmount = commitment.ClientAmount,
+                    HubAmount = commitment.HubAmount,
+                    LockedAddress = commitment.LockedAddress,
+                    LockedScript = commitment.LockedScript,
+                    CreateDt = DateTime.UtcNow
+                };
+            }
         }
     }
 
@@ -64,23 +112,27 @@ namespace AzureRepositories.Offchain
             _table = table;
         }
 
-        public async Task<ICommitment> CreateCommitment(CommitmentType type, Guid channelTransactionId, string multisig, string asset, string revokePrivateKey, string revokePubKey, string initialTr, decimal addedAmount)
+        public async Task<ICommitment> CreateCommitment(CommitmentType type, Guid channelTransactionId, string multisig, string asset, string revokePrivateKey,
+            string revokePubKey, string initialTr, decimal clientAmount, decimal hubAmount, string lockedAddress, string lockedScript)
         {
-            var entity = CommitmentEntity.Create(channelTransactionId, type, multisig, asset, revokePrivateKey, revokePubKey, initialTr, addedAmount);
+            var entity = CommitmentEntity.ByRecord.Create(channelTransactionId, type, multisig, asset, revokePrivateKey, revokePubKey,
+                initialTr, clientAmount, hubAmount, lockedAddress, lockedScript);
+
             await _table.InsertAsync(entity);
+            await _table.InsertAsync(CommitmentEntity.ByMonitoring.Create(entity));
             return entity;
         }
 
         public async Task<ICommitment> GetLastCommitment(string multisig, string asset, CommitmentType type)
         {
-            var partition = CommitmentEntity.GeneratePartition(multisig, asset);
+            var partition = CommitmentEntity.ByRecord.GeneratePartition(multisig, asset);
             var commitments = await _table.GetDataAsync(partition, o => o.Type == type);
-            return commitments?.OrderByDescending(o => o.Timestamp).FirstOrDefault();
+            return commitments?.OrderByDescending(o => o.CreateDt).FirstOrDefault();
         }
 
         public async Task SetFullSignedTransaction(Guid commitmentId, string multisig, string asset, string fullSignedCommitment)
         {
-            var partition = CommitmentEntity.GeneratePartition(multisig, asset);
+            var partition = CommitmentEntity.ByRecord.GeneratePartition(multisig, asset);
 
             await _table.ReplaceAsync(partition, commitmentId.ToString(), entity =>
             {
@@ -91,13 +143,36 @@ namespace AzureRepositories.Offchain
 
         public async Task UpdateClientPrivateKey(Guid commitmentId, string multisig, string asset, string privateKey)
         {
-            var partition = CommitmentEntity.GeneratePartition(multisig, asset);
+            var partition = CommitmentEntity.ByRecord.GeneratePartition(multisig, asset);
 
             await _table.ReplaceAsync(partition, commitmentId.ToString(), entity =>
             {
                 entity.RevokePrivateKey = privateKey;
                 return entity;
             });
+        }
+
+        public async Task<IEnumerable<ICommitment>> GetMonitoringCommitments()
+        {
+            var partition = CommitmentEntity.ByMonitoring.GeneratePartitionKey();
+            return await _table.GetDataAsync(partition);
+        }
+
+        public async Task CloseCommitmentsOfChannel(string multisig, string asset, Guid channelId)
+        {
+            var partition = CommitmentEntity.ByRecord.GeneratePartition(multisig, asset);
+            var commitments = await _table.GetDataAsync(partition, o => o.ChannelId == channelId);
+            foreach (var commitment in commitments)
+            {
+                await _table.DeleteAsync(CommitmentEntity.ByMonitoring.GeneratePartitionKey(), commitment.CommitmentId.ToString());
+            }
+        }
+
+        public async Task<ICommitment> GetCommitment(string multisig, string asset, string transactionHex)
+        {
+            var partition = CommitmentEntity.ByRecord.GeneratePartition(multisig, asset);
+            return (await _table.GetDataAsync(partition, o => TransactionComparer.CompareTransactions(o.InitialTransaction, transactionHex))).FirstOrDefault();
+
         }
     }
 }

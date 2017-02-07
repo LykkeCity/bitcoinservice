@@ -9,7 +9,7 @@ namespace Core.Repositories.Offchain
 {
     public interface IOffchainChannel
     {
-        Guid TransactionId { get; }
+        Guid ChannelId { get; }
 
         string Multisig { get; }
 
@@ -24,6 +24,8 @@ namespace Core.Repositories.Offchain
         string FullySignedChannel { get; }
 
         bool IsBroadcasted { get; }
+
+        Guid? PrevChannelTrnasactionId { get; set; }
     }
 
 
@@ -38,5 +40,7 @@ namespace Core.Repositories.Offchain
         Task UpdateAmounts(string multisig, string asset, decimal clientAmount, decimal hubAmount);
 
         Task SetChannelBroadcasted(string multisig, string asset);
+
+        Task<IOffchainChannel> CloseChannel(string multisig, string asset, Guid channelId);
     }
 }

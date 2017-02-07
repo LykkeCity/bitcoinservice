@@ -72,6 +72,17 @@ namespace BitcoinApi.Controllers
             var tr = await _offchainTransactionBuilder.Finalize(model.ClientPubKey, model.HotWalletPubKey, asset, model.ClientRevokePubKey, model.SignedByClientHubCommitment);
             return new OffchainResponse(tr);
         }
+
+        [HttpPost("broadcastcommitment")]
+        [ProducesResponseType(typeof(TransactionHashResponse), 200)]
+        [ProducesResponseType(typeof(ApiException), 400)]
+        public async Task<TransactionHashResponse> BroadcastCommitment([FromBody]BroadcastCommitmentModel model)
+        {
+            var asset = await _assetRepository.GetAssetById(model.Asset);
+            if (asset == null)
+                throw new BackendException("Provided asset is missing in database", ErrorCode.AssetNotFound);
+            return new TransactionHashResponse(await _offchainTransactionBuilder.BroadcastCommitment(model.ClientPubKey, asset, model.Transaction));
+        }
     }
 
 }

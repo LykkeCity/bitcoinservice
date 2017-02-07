@@ -7,5 +7,6 @@ namespace Core.QBitNinja
     {
         Task<BalanceModel> GetAddressBalance(string walletAddress, bool colored = true, bool unspentonly = true);
         Task<GetTransactionResponse> GetTransaction(string hash);
+        Task<GetBlockResponse> GetBlock(int blockHeight);
     }
 }
