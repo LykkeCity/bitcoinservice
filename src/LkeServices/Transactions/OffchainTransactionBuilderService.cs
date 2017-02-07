@@ -343,7 +343,7 @@ namespace LkeServices.Transactions
 
             var channel = await _offchainChannelRepository.GetChannel(address.MultisigAddress, asset.Id);
             if (channel == null)
-                throw new BackendException("Channel is not found", ErrorCode.ChannelNotFound);
+                throw new BackendException("Channel is not found", ErrorCode.ShouldOpenNewChannel);
             if (!channel.IsBroadcasted)
                 throw new BackendException("Channel is not finalized", ErrorCode.ChannelNotFinalized);
 
