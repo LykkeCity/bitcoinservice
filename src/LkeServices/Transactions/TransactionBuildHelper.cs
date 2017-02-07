@@ -22,7 +22,7 @@ namespace LkeServices.Transactions
         void AddFakeInput(TransactionBuilder builder, Money fakeAmount);
         void RemoveFakeInput(Transaction tr);
         void AggregateOutputs(Transaction tr);
-        Task AddFee(Transaction tr);
+        Task AddFee(Transaction tr, TransactionBuildContext context);
     }
 
     public class TransactionBuildHelper : ITransactionBuildHelper
@@ -74,7 +74,6 @@ namespace LkeServices.Transactions
 
                 builder.SendFees(newEstimate - totalFeeSent);
                 totalFeeSent = newEstimate;
-
             } while (totalFeeSent + dustAmount > sentAmount);
 
             builder.Send(BitcoinAddress.Create(_baseSettings.ChangeAddress, _connectionParams.Network), sentAmount - dustAmount - totalFeeSent);
@@ -207,7 +206,7 @@ namespace LkeServices.Transactions
             tr.Outputs.AddRange(outputs.Select(o => o.Value));
         }
 
-        public async Task AddFee(Transaction tr)
+        public async Task AddFee(Transaction tr, TransactionBuildContext context)
         {
             var fee = await _feeProvider.CalcFeeForTransaction(tr);
             var providedAmount = Money.Zero;
@@ -215,6 +214,7 @@ namespace LkeServices.Transactions
             do
             {
                 var feeInput = await queue.DequeueCoin();
+                context.AddCoins(true, feeInput);
                 tr.Inputs.Add(new TxIn
                 {
                     PrevOut = feeInput.Outpoint
@@ -222,9 +222,10 @@ namespace LkeServices.Transactions
                 providedAmount += feeInput.Amount;
 
                 fee = await _feeProvider.CalcFeeForTransaction(tr);
-                if (fee < providedAmount)
+                if (fee <= providedAmount)
                 {
-                    tr.Outputs.Add(new TxOut(providedAmount - fee, feeInput.ScriptPubKey));
+                    if (fee < providedAmount)
+                        tr.Outputs.Add(new TxOut(providedAmount - fee, feeInput.ScriptPubKey));
                     return;
                 }
 

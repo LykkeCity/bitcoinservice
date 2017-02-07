@@ -9,6 +9,7 @@ using AzureRepositories.FeeRate;
 using AzureRepositories.Monitoring;
 using AzureRepositories.Notifiers;
 using AzureRepositories.Offchain;
+using AzureRepositories.Settings;
 using AzureRepositories.TransactionMonitoring;
 using AzureRepositories.TransactionOutputs;
 using AzureRepositories.TransactionQueueHolder;
@@ -27,6 +28,7 @@ using Core.Repositories.Assets;
 using Core.Repositories.FeeRate;
 using Core.Repositories.Monitoring;
 using Core.Repositories.Offchain;
+using Core.Repositories.Settings;
 using Core.Repositories.TransactionOutputs;
 using Core.Repositories.Transactions;
 using Core.Repositories.TransactionSign;
@@ -52,6 +54,9 @@ namespace AzureRepositories
         {
             ioc.RegisterInstance(new FeeRateRepository(new AzureTableStorage<FeeRateEntity>(settings.Db.DataConnString, "Settings", log)))
                 .As<IFeeRateRepository>();
+
+            ioc.RegisterInstance(new SettingsRepository(new AzureTableStorage<SettingsEntity>(settings.Db.DataConnString, "Settings", log)))
+                .As<ISettingsRepository>();
 
             ioc.RegisterInstance(new SpentOutputRepository(new AzureTableStorage<OutputEntity>(settings.Db.DataConnString, "SpentOutputs", log)))
                 .As<ISpentOutputRepository>();

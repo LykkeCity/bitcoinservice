@@ -10,7 +10,7 @@ namespace LkeServices.Signature
 {
     public interface ISignatureVerifier
     {
-        Task<bool> Verify(string trHex, string pubKey);
+        Task<bool> Verify(string trHex, string pubKey, SigHash hashType = SigHash.All);
         bool VerifyScriptSigs(string trHex);
     }
 
@@ -25,7 +25,7 @@ namespace LkeServices.Signature
             _rpcParams = rpcParams;
         }
 
-        public async Task<bool> Verify(string trHex, string pubKey)
+        public async Task<bool> Verify(string trHex, string pubKey, SigHash hashType = SigHash.All)
         {
             PubKey checkPubKey = new PubKey(pubKey);
             var tr = new Transaction(trHex);
@@ -43,7 +43,7 @@ namespace LkeServices.Signature
                             if (pubkeys[j] == checkPubKey)
                             {
                                 var scriptParams = PayToScriptHashTemplate.Instance.ExtractScriptSigParameters(input.ScriptSig);
-                                var hash = Script.SignatureHash(scriptParams.RedeemScript, tr, i, SigHash.All);
+                                var hash = Script.SignatureHash(scriptParams.RedeemScript, tr, i, hashType);
                                 if (!checkPubKey.Verify(hash, scriptParams.Pushes[j + 1]))
                                     return false;
                             }
@@ -60,7 +60,7 @@ namespace LkeServices.Signature
                     if (output.ScriptPubKey.GetDestinationAddress(_rpcParams.Network) ==
                         checkPubKey.GetAddress(_rpcParams.Network))
                     {
-                        var hash = Script.SignatureHash(output.ScriptPubKey, tr, i, SigHash.All);
+                        var hash = Script.SignatureHash(output.ScriptPubKey, tr, i, hashType);
                         var sign = PayToPubkeyHashTemplate.Instance.ExtractScriptSigParameters(input.ScriptSig)?.TransactionSignature?.Signature;
                         if (sign == null)
                             return false;

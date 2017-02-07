@@ -17,5 +17,7 @@ namespace Core
         public const string BroadcastingQueue = "broadcasting-transactions";
         public const string BroadcastMonitoringQueue = "broadcast-monitoring";
         public const string FeeReserveMonitoringQueue = "fee-reserve-monitoring";
+
+        public const string ProcessingBlockSetting = "ProcessingBlockSetting";
     }
 }

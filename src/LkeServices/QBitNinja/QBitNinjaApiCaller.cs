@@ -32,8 +32,15 @@ namespace LkeServices.QBitNinja
 
         public Task<GetTransactionResponse> GetTransaction(string hash)
         {
-            var client = _clientFactory();
+            var client = _clientFactory();                        
             return client.GetTransaction(uint256.Parse(hash));
+        }
+
+        public Task<GetBlockResponse> GetBlock(int blockHeight)
+        {
+            var client = _clientFactory();
+            
+            return client.GetBlock(new BlockFeature(blockHeight));
         }
     }
 }
