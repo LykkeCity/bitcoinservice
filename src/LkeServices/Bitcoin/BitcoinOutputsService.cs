@@ -34,22 +34,31 @@ namespace LkeServices.Bitcoin
             _connectionParams = connectionParams;
         }
 
-        public async Task<IEnumerable<ICoin>> GetUnspentOutputs(string walletAddress)
+        public async Task<IEnumerable<ICoin>> GetUnspentOutputs(string walletAddress, int confirmationsCount = 0)
         {
             var outputResponse = await _qBitNinjaApiCaller.GetAddressBalance(walletAddress);
-            var coins = outputResponse.Operations.SelectMany(o => o.ReceivedCoins).ToList();
+            var coins = outputResponse.Operations
+                                        .Where(x => x.Confirmations >= Math.Max(1, confirmationsCount))
+                                        .SelectMany(o => o.ReceivedCoins).ToList();
 
             //get unique saved coins
-            var internalSavedOutputs = (await _broadcastedOutputRepository.GetOutputs(walletAddress))
-                .Where(o => !coins.Any(c => c.Outpoint.Hash.ToString() == o.TransactionHash && c.Outpoint.N == o.N));
+            if (confirmationsCount == 0)
+            {
+                var internalSavedOutputs = (await _broadcastedOutputRepository.GetOutputs(walletAddress))
+                    .Where(o => !coins.Any(c => c.Outpoint.Hash.ToString() == o.TransactionHash && c.Outpoint.N == o.N));
 
-            coins.AddRange(internalSavedOutputs.Select(o =>
+                coins.AddRange(internalSavedOutputs.Select(o =>
                 {
-                    var coin = new Coin(new OutPoint(uint256.Parse(o.TransactionHash), o.N), new TxOut(new Money(o.Amount, MoneyUnit.Satoshi), o.ScriptPubKey.ToScript()));
+                    var coin = new Coin(new OutPoint(uint256.Parse(o.TransactionHash), o.N),
+                        new TxOut(new Money(o.Amount, MoneyUnit.Satoshi), o.ScriptPubKey.ToScript()));
                     if (o.AssetId != null)
-                        return (ICoin)coin.ToColoredCoin(new BitcoinAssetId(o.AssetId, _connectionParams.Network).AssetId, (ulong)o.Quantity);
+                        return
+                            (ICoin)
+                            coin.ToColoredCoin(new BitcoinAssetId(o.AssetId, _connectionParams.Network).AssetId,
+                                (ulong) o.Quantity);
                     return coin;
                 }));
+            }
 
             var unspentOutputs = await _spentOutputRepository.GetUnspentOutputs(coins.Select(o => new Output(o.Outpoint)));
 
@@ -70,19 +79,19 @@ namespace LkeServices.Bitcoin
             }
         }
 
-        public async Task<IEnumerable<ICoin>> GetUncoloredUnspentOutputs(string walletAddress)
+        public async Task<IEnumerable<ICoin>> GetUncoloredUnspentOutputs(string walletAddress, int confirmationsCount = 0)
         {
-            return (await GetUnspentOutputs(walletAddress)).OfType<Coin>();
+            return (await GetUnspentOutputs(walletAddress, confirmationsCount)).OfType<Coin>();
         }
 
-        public async Task<IEnumerable<ColoredCoin>> GetColoredUnspentOutputs(string walletAddress, AssetId assetIdObj)
+        public async Task<IEnumerable<ColoredCoin>> GetColoredUnspentOutputs(string walletAddress, AssetId assetIdObj, int confirmationsCount = 0)
         {
-            return (await GetUnspentOutputs(walletAddress)).OfType<ColoredCoin>().Where(o => o.AssetId == assetIdObj);
+            return (await GetUnspentOutputs(walletAddress, confirmationsCount)).OfType<ColoredCoin>().Where(o => o.AssetId == assetIdObj);
         }
 
-        public async Task<IEnumerable<ColoredCoin>> GetColoredUnspentOutputs(string walletAddress)
+        public async Task<IEnumerable<ColoredCoin>> GetColoredUnspentOutputs(string walletAddress, int confirmationsCount = 0)
         {
-            return (await GetUnspentOutputs(walletAddress)).OfType<ColoredCoin>().ToList();
+            return (await GetUnspentOutputs(walletAddress, confirmationsCount)).OfType<ColoredCoin>().ToList();
         }
     }
 }

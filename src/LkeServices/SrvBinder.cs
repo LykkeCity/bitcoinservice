@@ -68,6 +68,7 @@ namespace LkeServices
                 var lykkyHttpClientHandler = resolver.Resolve<LykkeHttpClientHandler>();
                 var client = new HttpClient(lykkyHttpClientHandler)
                 {
+                    Timeout = TimeSpan.FromMinutes(5),
                     BaseAddress = new Uri("https://bitcoinfees.21.co/api/v1")
                 };
                 return RestClient.For<IFeeRateApiProvider>(client);
