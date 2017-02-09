@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using BitcoinApi.Filters;
 using Core.Bitcoin;
+using Core.Exceptions;
 using Core.Providers;
 using Core.Settings;
 using LkeServices.Providers;
@@ -17,25 +19,41 @@ namespace BitcoinApi.Controllers
         private readonly IRpcBitcoinClient _rpcClient;
         private readonly Func<QBitNinjaClient> _qbitninja;
         private readonly Func<SignatureApiProviderType, ISignatureApi> _signatureApiFactory;
-        private readonly BaseSettings _settings;
 
-        public IsAliveController(IRpcBitcoinClient rpcClient, Func<QBitNinjaClient> qbitninja, Func<SignatureApiProviderType, ISignatureApi> signatureApiFactory, BaseSettings settings)
+        public IsAliveController(IRpcBitcoinClient rpcClient, Func<QBitNinjaClient> qbitninja, Func<SignatureApiProviderType, ISignatureApi> signatureApiFactory)
         {
             _rpcClient = rpcClient;
             _qbitninja = qbitninja;
             _signatureApiFactory = signatureApiFactory;
-            _settings = settings;
         }
 
         [HttpGet]
-        public async Task<IsAliveResponse> Get()
+        public async Task<IActionResult> Get()
         {
-            await _signatureApiFactory(SignatureApiProviderType.Client).IsAlive();
-            await _signatureApiFactory(SignatureApiProviderType.Exchange).IsAlive();
-            return new IsAliveResponse
+            if (!await CheckSigninService(SignatureApiProviderType.Client))
+                return BadRequest(new { Message = "Client signin service is down" });
+
+            if (!await CheckSigninService(SignatureApiProviderType.Exchange))
+                return BadRequest(new { Message = "Server signin service is down" });
+
+            return Ok(new IsAliveResponse
             {
                 Version = Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion
-            };
+            });
+        }
+
+        private async Task<bool> CheckSigninService(SignatureApiProviderType type)
+        {
+            try
+            {
+                await _signatureApiFactory(type).IsAlive();
+                return true;
+            }
+            catch
+            {
+                // ignored
+            }
+            return false;
         }
 
         [HttpGet("rpc")]
