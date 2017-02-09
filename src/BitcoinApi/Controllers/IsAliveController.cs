@@ -30,16 +30,22 @@ namespace BitcoinApi.Controllers
         [HttpGet]
         public async Task<IActionResult> Get()
         {
-            if (!await CheckSigninService(SignatureApiProviderType.Client))
-                return BadRequest(new { Message = "Client signin service is down" });
-
-            if (!await CheckSigninService(SignatureApiProviderType.Exchange))
-                return BadRequest(new { Message = "Server signin service is down" });
-
-            return Ok(new IsAliveResponse
+            var response = new IsAliveResponse()
             {
                 Version = Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion
-            });
+            };
+            
+            var clientUp = await CheckSigninService(SignatureApiProviderType.Client);
+            var serverUp = await CheckSigninService(SignatureApiProviderType.Exchange);
+
+            if (!clientUp && !serverUp)
+                response.Error = "Client and server signin services are not working!";
+            else if (!clientUp)
+                response.Error = "Client signin services is not working!";
+            else if (!serverUp)
+                response.Error = "Server signing service is not working!";
+
+            return Ok(response);
         }
 
         private async Task<bool> CheckSigninService(SignatureApiProviderType type)
@@ -71,6 +77,7 @@ namespace BitcoinApi.Controllers
         public class IsAliveResponse
         {
             public string Version { get; set; }
+            public string Error { get; set; }
         }
     }
 }
