@@ -9,6 +9,7 @@ using AzureRepositories.FeeRate;
 using AzureRepositories.Monitoring;
 using AzureRepositories.Notifiers;
 using AzureRepositories.Offchain;
+using AzureRepositories.RevokeKeys;
 using AzureRepositories.Settings;
 using AzureRepositories.TransactionMonitoring;
 using AzureRepositories.TransactionOutputs;
@@ -28,6 +29,7 @@ using Core.Repositories.Assets;
 using Core.Repositories.FeeRate;
 using Core.Repositories.Monitoring;
 using Core.Repositories.Offchain;
+using Core.Repositories.RevokeKeys;
 using Core.Repositories.Settings;
 using Core.Repositories.TransactionOutputs;
 using Core.Repositories.Transactions;
@@ -98,6 +100,9 @@ namespace AzureRepositories
 
             ioc.RegisterInstance(new TransactionBlobStorage(new AzureBlobStorage(settings.Db.DataConnString)))
                 .As<ITransactionBlobStorage>();
+
+            ioc.RegisterInstance(new RevokeKeyRepository(new AzureTableStorage<RevokeKeyEntity>(settings.Db.DataConnString, "RevokeKeys", log)))
+                .As<IRevokeKeyRepository>();
         }
 
         private static void BindQueue(this ContainerBuilder ioc, BaseSettings settings)

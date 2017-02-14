@@ -25,8 +25,7 @@ namespace BackgroundWorker.Functions
     {
         private readonly IQBitNinjaApiCaller _qBitNinjaApiCaller;
         private readonly ILog _logger;
-        private readonly ICommitmentRepository _commitmentRepository;
-        private readonly IOffchainChannelRepository _offchainChannelRepository;
+        private readonly ICommitmentRepository _commitmentRepository;        
         private readonly IOffchainTransactionBuilderService _offchainTransactionBuilderService;
         private readonly ISlackNotifier _slackNotifier;
         private readonly IAssetRepository _assetRepository;
@@ -35,8 +34,7 @@ namespace BackgroundWorker.Functions
         private readonly RpcConnectionParams _connectionParams;
         private readonly BaseSettings _baseSettings;
 
-        public OffchainCommitmentMonitoringFunction(IQBitNinjaApiCaller qBitNinjaApiCaller, ILog logger, ICommitmentRepository commitmentRepository,
-            IOffchainChannelRepository offchainChannelRepository,
+        public OffchainCommitmentMonitoringFunction(IQBitNinjaApiCaller qBitNinjaApiCaller, ILog logger, ICommitmentRepository commitmentRepository,            
             IOffchainTransactionBuilderService offchainTransactionBuilderService,
             ISlackNotifier slackNotifier,
             IAssetRepository assetRepository,
@@ -46,8 +44,7 @@ namespace BackgroundWorker.Functions
         {
             _qBitNinjaApiCaller = qBitNinjaApiCaller;
             _logger = logger;
-            _commitmentRepository = commitmentRepository;
-            _offchainChannelRepository = offchainChannelRepository;
+            _commitmentRepository = commitmentRepository;            
             _offchainTransactionBuilderService = offchainTransactionBuilderService;
             _slackNotifier = slackNotifier;
             _assetRepository = assetRepository;

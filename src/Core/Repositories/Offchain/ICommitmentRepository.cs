@@ -20,8 +20,6 @@ namespace Core.Repositories.Offchain
         string Multisig { get; }
         string AssetId { get; }
         string SignedTransaction { get; }
-
-        string RevokePrivateKey { get; }
         string RevokePubKey { get; }
 
         decimal ClientAmount { get; }
@@ -35,13 +33,12 @@ namespace Core.Repositories.Offchain
 
     public interface ICommitmentRepository
     {
-        Task<ICommitment> CreateCommitment(CommitmentType type, Guid channelTransactionId, string multisig, string asset, string revokePrivateKey, string revokePubKey,
+        Task<ICommitment> CreateCommitment(CommitmentType type, Guid channelTransactionId, string multisig, string asset, string revokePubKey,
             string initialTr, decimal clientAmount, decimal hubAmount, string lockedAddress, string lockedScript);
 
         Task<ICommitment> GetLastCommitment(string multisig, string asset, CommitmentType type);
         Task SetFullSignedTransaction(Guid commitmentId, string multisig, string asset, string fullSignedCommitment);
-
-        Task UpdateClientPrivateKey(Guid commitmentId, string multisig, string asset, string privateKey);
+        
         Task<IEnumerable<ICommitment>> GetMonitoringCommitments();
 
         Task CloseCommitmentsOfChannel(string multisig, string asset, Guid channelId);

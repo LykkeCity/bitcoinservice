@@ -20,8 +20,7 @@ namespace AzureRepositories.Offchain
         public string InitialTransaction { get; set; }
         public string Multisig { get; set; }
         public string AssetId { get; set; }
-        public string SignedTransaction { get; set; }
-        public string RevokePrivateKey { get; set; }
+        public string SignedTransaction { get; set; }        
         public string RevokePubKey { get; set; }
 
         public decimal ClientAmount { get; set; }
@@ -47,7 +46,7 @@ namespace AzureRepositories.Offchain
             }
 
             public static CommitmentEntity Create(Guid channelTransactionId, CommitmentType type, string multisig,
-                string asset, string revokePrivateKey,
+                string asset,
                 string revokePubKey, string initialTr, decimal clientAmount, decimal hubAmount, string lockedAddress, string lockedScript)
             {
                 return new CommitmentEntity
@@ -57,8 +56,7 @@ namespace AzureRepositories.Offchain
                     ChannelId = channelTransactionId,
                     Multisig = multisig,
                     AssetId = asset,
-                    CommitType = (int)type,
-                    RevokePrivateKey = revokePrivateKey,
+                    CommitType = (int)type,                    
                     RevokePubKey = revokePubKey,
                     InitialTransaction = initialTr,
                     ClientAmount = clientAmount,
@@ -87,8 +85,7 @@ namespace AzureRepositories.Offchain
                     ChannelId = commitment.ChannelId,
                     Multisig = commitment.Multisig,
                     AssetId = commitment.AssetId,
-                    CommitType = (int)commitment.Type,
-                    RevokePrivateKey = commitment.RevokePrivateKey,
+                    CommitType = (int)commitment.Type,                    
                     RevokePubKey = commitment.RevokePubKey,
                     InitialTransaction = commitment.InitialTransaction,
                     ClientAmount = commitment.ClientAmount,
@@ -112,10 +109,10 @@ namespace AzureRepositories.Offchain
             _table = table;
         }
 
-        public async Task<ICommitment> CreateCommitment(CommitmentType type, Guid channelTransactionId, string multisig, string asset, string revokePrivateKey,
+        public async Task<ICommitment> CreateCommitment(CommitmentType type, Guid channelTransactionId, string multisig, string asset,
             string revokePubKey, string initialTr, decimal clientAmount, decimal hubAmount, string lockedAddress, string lockedScript)
         {
-            var entity = CommitmentEntity.ByRecord.Create(channelTransactionId, type, multisig, asset, revokePrivateKey, revokePubKey,
+            var entity = CommitmentEntity.ByRecord.Create(channelTransactionId, type, multisig, asset, revokePubKey,
                 initialTr, clientAmount, hubAmount, lockedAddress, lockedScript);
 
             await _table.InsertAsync(entity);
@@ -139,18 +136,7 @@ namespace AzureRepositories.Offchain
                 entity.SignedTransaction = fullSignedCommitment;
                 return entity;
             });
-        }
-
-        public async Task UpdateClientPrivateKey(Guid commitmentId, string multisig, string asset, string privateKey)
-        {
-            var partition = CommitmentEntity.ByRecord.GeneratePartition(multisig, asset);
-
-            await _table.ReplaceAsync(partition, commitmentId.ToString(), entity =>
-            {
-                entity.RevokePrivateKey = privateKey;
-                return entity;
-            });
-        }
+        }        
 
         public async Task<IEnumerable<ICommitment>> GetMonitoringCommitments()
         {

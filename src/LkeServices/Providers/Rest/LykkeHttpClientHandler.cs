@@ -21,7 +21,7 @@ namespace LkeServices.Providers.Rest
         private readonly IApiRequestBlobRepository _apiRequestRepository;
 
         public LykkeHttpClientHandler(ILog logger, IApiRequestBlobRepository apiRequestRepository)
-        {
+        {            
             _logger = logger;
             _apiRequestRepository = apiRequestRepository;
         }

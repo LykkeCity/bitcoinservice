@@ -11,13 +11,13 @@ namespace Core.ScriptTemplates
         public static bool CheckScriptPubKey(Script redeemScript)
         {
             var ops = redeemScript.ToOps().ToArray();
-            if (ops.Length != 15)
+            if (ops.Length != 13)
                 return false;
             if (ops[0].Code != OpcodeType.OP_IF)
                 return false;
-            if (ops[ops.Length - 3].Code != OpcodeType.OP_ENDIF)
+            if (ops[ops.Length - 1].Code != OpcodeType.OP_ENDIF)
                 return false;
-            return ops[ops.Length - 4].Code == OpcodeType.OP_CHECKSIG;
+            return ops[ops.Length - 2].Code == OpcodeType.OP_CHECKSIG;
         }
 
 
@@ -49,15 +49,29 @@ namespace Core.ScriptTemplates
             var ops = redeemScript.ToOps().ToArray();
             var result = new OffchainPubKeysParameters
             {
-                MultisigPubKeys =
-                {
-                    [0] = new PubKey(ops[2].PushData),
-                    [1] = new PubKey(ops[3].PushData)
-                },
+                MultisigPubKeys = new[] { new PubKey(ops[2].PushData), new PubKey(ops[3].PushData) },
                 LockedPubKey = new PubKey(ops[10].PushData)
             };
 
             return result;
+        }
+
+        public static Script CreateOffchainScript(PubKey pubKey1, PubKey revokePubKey, PubKey lockedPubKey, int delay)
+        {
+            var multisigScriptOps = PayToMultiSigTemplate.Instance.GenerateScriptPubKey
+               (2, pubKey1, revokePubKey).ToOps();
+            var ops = new List<Op>();
+
+            ops.Add(OpcodeType.OP_IF);
+            ops.AddRange(multisigScriptOps);
+            ops.Add(OpcodeType.OP_ELSE);
+            ops.Add(Op.GetPushOp(delay));
+            ops.Add(OpcodeType.OP_CHECKSEQUENCEVERIFY);
+            ops.Add(OpcodeType.OP_DROP);
+            ops.Add(Op.GetPushOp(lockedPubKey.ToBytes()));
+            ops.Add(OpcodeType.OP_CHECKSIG);
+            ops.Add(OpcodeType.OP_ENDIF);
+            return new Script(ops.ToArray());
         }
     }
 

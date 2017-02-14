@@ -27,21 +27,24 @@ namespace Core.Providers
     {        
         Task<string> GeneratePubKey();
         
-        Task<string> SignTransaction(string transaction, SigHash hashType = SigHash.All);
+        Task<string> SignTransaction(string transaction, SigHash hashType = SigHash.All, string[] additionalSecrets = null);
         Task AddKey(string privateKey);
     }
 
     public class TransactionSignRequest
     {
-        public TransactionSignRequest(string transaction, byte hashType = (byte) SigHash.All)
+        public TransactionSignRequest(string transaction, byte hashType = (byte) SigHash.All, string[] additionalSecrets = null)
         {
             Transaction = transaction;
             HashType = hashType;
+            AdditionalSecrets = additionalSecrets;
         }
 
         public string Transaction { get; set; }
 
         public byte HashType { get; set; }
+
+        public string[] AdditionalSecrets { get; set; }
     }
 
     public class AddKeyRequest
