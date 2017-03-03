@@ -81,6 +81,7 @@ namespace LkeServices.Transactions
 
         public void SendWithChange(TransactionBuilder builder, TransactionBuildContext context, List<ICoin> coins, IDestination destination, Money amount, IDestination changeDestination)
         {
+            builder.DustPrevention = false;
             if (amount.Satoshi <= 0)
                 throw new BackendException("Amount can't be less or equal to zero", ErrorCode.BadInputParameter);
 
