@@ -111,6 +111,8 @@ namespace LkeServices.Transactions
 
             if (sendAmount - amount > 0)
                 builder.Send(changeDestination, sendAmount - amount);
+
+            builder.DustPrevention = true;
         }
 
         public void SendAssetWithChange(TransactionBuilder builder, TransactionBuildContext context, List<ColoredCoin> coins, IDestination destination, AssetMoney amount,
