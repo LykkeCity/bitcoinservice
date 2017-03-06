@@ -68,7 +68,7 @@ namespace Bitcoin.Tests
                lkkID)).ToList();
 
             TransactionBuilder builder = new TransactionBuilder();
-            TransactionBuildContext context = new TransactionBuildContext(Network.TestNet, null);
+            TransactionBuildContext context = new TransactionBuildContext(Network.TestNet, null, null);
             helper.SendAssetWithChange(builder, context, usdCoins, dest, new AssetMoney(usdID, 100), source);
             helper.SendAssetWithChange(builder, context, lkkCoins, dest, new AssetMoney(lkkID, 10000), source);
             await helper.AddFee(builder, context);
@@ -142,7 +142,7 @@ namespace Bitcoin.Tests
             var scriptCoin = new ScriptCoin(coin, redeem).ToColoredCoin(coin.Amount);
 
             TransactionBuilder builder = new TransactionBuilder();
-            TransactionBuildContext context = new TransactionBuildContext(Network.TestNet, null);
+            TransactionBuildContext context = new TransactionBuildContext(Network.TestNet, null, null);
 
             //builder.AddKeys(pk);
             builder.AddCoins(scriptCoin);

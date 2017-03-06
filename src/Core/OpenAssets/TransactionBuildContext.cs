@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Core.Repositories.ExtraAmounts;
 using Core.Repositories.TransactionOutputs;
 using NBitcoin;
 using NBitcoin.OpenAsset;
@@ -11,20 +12,26 @@ namespace Core.OpenAssets
     public class TransactionBuildContext
     {
         private readonly Network _network;
+        //ids of extra amount records
+        private List<Guid> _extraAmounts = new List<Guid>();
         public Network Network => _network;
 
         private readonly IPregeneratedOutputsQueueFactory _pregeneratedOutputsQueueFactory;
+        private readonly IExtraAmountRepository _extraAmountRepository;
 
-        public TransactionBuildContext(Network network, IPregeneratedOutputsQueueFactory pregeneratedOutputsQueueFactory)
+        public TransactionBuildContext(Network network, IPregeneratedOutputsQueueFactory pregeneratedOutputsQueueFactory
+            , IExtraAmountRepository extraAmountRepository)
         {
             _network = network;
             _pregeneratedOutputsQueueFactory = pregeneratedOutputsQueueFactory;
+            _extraAmountRepository = extraAmountRepository;
         }
 
 
         public List<ICoin> Coins { get; set; } = new List<ICoin>();
 
         public List<ICoin> FeeCoins { get; set; } = new List<ICoin>();
+        
 
         public AssetId IssuedAssetId { get; private set; }
 
@@ -38,6 +45,11 @@ namespace Core.OpenAssets
             Coins.AddRange(coins);
             if (feeCoin)
                 FeeCoins.AddRange(coins);
+        }
+
+        public void AddExtraAmountId(Guid id)
+        {
+            _extraAmounts.Add(id);
         }
 
         public void IssueAsset(AssetId asset)
@@ -81,6 +93,10 @@ namespace Core.OpenAssets
                 {
                     var queue = _pregeneratedOutputsQueueFactory.CreateFeeQueue();
                     await queue.EnqueueOutputs(FeeCoins.OfType<Coin>().ToArray());
+                }
+                foreach (var extraAmount in _extraAmounts)
+                {
+                    await _extraAmountRepository.Remove(extraAmount);
                 }
                 throw;
             }

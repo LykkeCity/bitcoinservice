@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Autofac;
 using AzureRepositories.ApiRequests;
 using AzureRepositories.Assets;
+using AzureRepositories.ExtraAmounts;
 using AzureRepositories.FeeRate;
 using AzureRepositories.Monitoring;
 using AzureRepositories.Notifiers;
@@ -26,6 +27,7 @@ using Core.Notifiers;
 using Core.Repositories;
 using Core.Repositories.ApiRequests;
 using Core.Repositories.Assets;
+using Core.Repositories.ExtraAmounts;
 using Core.Repositories.FeeRate;
 using Core.Repositories.Monitoring;
 using Core.Repositories.Offchain;
@@ -103,6 +105,9 @@ namespace AzureRepositories
 
             ioc.RegisterInstance(new RevokeKeyRepository(new AzureTableStorage<RevokeKeyEntity>(settings.Db.DataConnString, "RevokeKeys", log)))
                 .As<IRevokeKeyRepository>();
+
+            ioc.RegisterInstance(new ExtraAmountRepository(new AzureTableStorage<ExtraAmountEntity>(settings.Db.DataConnString, "ExtraAmounts", log)))
+                .As<IExtraAmountRepository>();
         }
 
         private static void BindQueue(this ContainerBuilder ioc, BaseSettings settings)

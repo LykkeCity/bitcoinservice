@@ -44,9 +44,10 @@ namespace LkeServices.Transactions
         private readonly ITransactionSignRequestRepository _signRequestRepository;
         private readonly IBroadcastedOutputRepository _broadcastedOutputRepository;
         private readonly ISpentOutputRepository _spentOutputRepository;
-        private readonly IPregeneratedOutputsQueueFactory _pregeneratedOutputsQueueFactory;        
+        private readonly IPregeneratedOutputsQueueFactory _pregeneratedOutputsQueueFactory;
         private readonly ILog _log;
         private readonly IFeeReserveMonitoringWriter _feeReserveMonitoringWriter;
+        private readonly TransactionBuildContextFactory _transactionBuildContextFactory;
 
         private readonly RpcConnectionParams _connectionParams;
         private readonly BaseSettings _baseSettings;
@@ -57,9 +58,10 @@ namespace LkeServices.Transactions
             ITransactionSignRequestRepository signRequestRepository,
             IBroadcastedOutputRepository broadcastedOutputRepository,
             ISpentOutputRepository spentOutputRepository,
-            IPregeneratedOutputsQueueFactory pregeneratedOutputsQueueFactory,            
+            IPregeneratedOutputsQueueFactory pregeneratedOutputsQueueFactory,
             ILog log,
             IFeeReserveMonitoringWriter feeReserveMonitoringWriter,
+            TransactionBuildContextFactory transactionBuildContextFactory,
             RpcConnectionParams connectionParams, BaseSettings baseSettings)
         {
             _transactionBuildHelper = transactionBuildHelper;
@@ -70,6 +72,7 @@ namespace LkeServices.Transactions
             _pregeneratedOutputsQueueFactory = pregeneratedOutputsQueueFactory;
             _log = log;
             _feeReserveMonitoringWriter = feeReserveMonitoringWriter;
+            _transactionBuildContextFactory = transactionBuildContextFactory;
 
             _connectionParams = connectionParams;
             _baseSettings = baseSettings;
@@ -80,13 +83,13 @@ namespace LkeServices.Transactions
         {
             return Retry.Try(async () =>
             {
-                var context = new TransactionBuildContext(_connectionParams.Network, _pregeneratedOutputsQueueFactory);
+                var context = _transactionBuildContextFactory.Create(_connectionParams.Network);
 
                 return await context.Build(async () =>
                 {
                     var builder = new TransactionBuilder();
 
-                    await TransferOneDirection(builder, context, sourceAddress, amount, asset, destAddress);
+                    await TransferOneDirection(builder, context, sourceAddress, amount, asset, destAddress, !shouldReserveFee);
 
                     await _transactionBuildHelper.AddFee(builder, context);
 
@@ -95,7 +98,7 @@ namespace LkeServices.Transactions
                     await SaveSpentOutputs(transactionId, buildedTransaction);
 
                     await _signRequestRepository.InsertTransactionId(transactionId);
-                    
+
                     await SaveNewOutputs(transactionId, buildedTransaction, context);
 
                     if (shouldReserveFee)
@@ -111,7 +114,7 @@ namespace LkeServices.Transactions
         {
             return Retry.Try(async () =>
             {
-                var context = new TransactionBuildContext(_connectionParams.Network, _pregeneratedOutputsQueueFactory);
+                var context = _transactionBuildContextFactory.Create(_connectionParams.Network);
 
                 return await context.Build(async () =>
                 {
@@ -138,7 +141,7 @@ namespace LkeServices.Transactions
         {
             return Retry.Try(async () =>
             {
-                var context = new TransactionBuildContext(_connectionParams.Network, _pregeneratedOutputsQueueFactory);
+                var context = _transactionBuildContextFactory.Create(_connectionParams.Network);
 
                 return await context.Build(async () =>
                 {
@@ -183,7 +186,7 @@ namespace LkeServices.Transactions
         {
             return Retry.Try(async () =>
             {
-                var context = new TransactionBuildContext(_connectionParams.Network, _pregeneratedOutputsQueueFactory);
+                var context = _transactionBuildContextFactory.Create(_connectionParams.Network);
 
                 return await context.Build(async () =>
                 {
@@ -236,7 +239,7 @@ namespace LkeServices.Transactions
         {
             return Retry.Try(async () =>
             {
-                var context = new TransactionBuildContext(_connectionParams.Network, _pregeneratedOutputsQueueFactory);
+                var context = _transactionBuildContextFactory.Create(_connectionParams.Network);
 
                 return await context.Build(async () =>
                 {
@@ -248,7 +251,7 @@ namespace LkeServices.Transactions
                         throw new BackendException("Address has no unspent outputs", ErrorCode.NoCoinsFound);
 
                     if (uncoloredCoins.Count > 0)
-                        _transactionBuildHelper.SendWithChange(builder, context, uncoloredCoins, to, uncoloredCoins.Sum(o => o.TxOut.Value), from);
+                        await _transactionBuildHelper.SendWithChange(builder, context, uncoloredCoins, to, uncoloredCoins.Sum(o => o.TxOut.Value), from);
                     foreach (var assetGroup in coloredCoins.GroupBy(o => o.AssetId))
                     {
                         var sum = new AssetMoney(assetGroup.Key);
@@ -274,15 +277,15 @@ namespace LkeServices.Transactions
 
 
         private async Task TransferOneDirection(TransactionBuilder builder, TransactionBuildContext context,
-            BitcoinAddress @from, decimal amount, IAsset asset, BitcoinAddress to)
+            BitcoinAddress @from, decimal amount, IAsset asset, BitcoinAddress to, bool addDust = true)
         {
             var fromStr = from.ToWif();
 
             if (OpenAssetsHelper.IsBitcoin(asset.Id))
             {
                 var coins = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(fromStr)).ToList();
-                _transactionBuildHelper.SendWithChange(builder, context, coins, to, new Money(amount, MoneyUnit.BTC),
-                    from);
+                await _transactionBuildHelper.SendWithChange(builder, context, coins, to, new Money(amount, MoneyUnit.BTC),
+                    from, addDust);
             }
             else
             {

@@ -57,6 +57,7 @@ namespace LkeServices.Transactions
         private readonly IBroadcastedOutputRepository _broadcastedOutputRepository;
         private readonly IRevokeKeyRepository _revokeKeyRepository;
         private readonly ILykkeTransactionBuilderService _lykkeTransactionBuilderService;
+        private readonly TransactionBuildContextFactory _transactionBuildContextFactory;
         private readonly IBitcoinBroadcastService _broadcastService;
 
         public OffchainTransactionBuilderService(
@@ -71,7 +72,9 @@ namespace LkeServices.Transactions
             IPregeneratedOutputsQueueFactory pregeneratedOutputsQueueFactory,
             IBroadcastedOutputRepository broadcastedOutputRepository,
             IRevokeKeyRepository revokeKeyRepository,
-            ILykkeTransactionBuilderService lykkeTransactionBuilderService, IBitcoinBroadcastService broadcastService)
+            ILykkeTransactionBuilderService lykkeTransactionBuilderService, 
+            TransactionBuildContextFactory transactionBuildContextFactory,
+            IBitcoinBroadcastService broadcastService)
         {
             _transactionBuildHelper = transactionBuildHelper;
             _multisigService = multisigService;
@@ -84,6 +87,7 @@ namespace LkeServices.Transactions
             _broadcastedOutputRepository = broadcastedOutputRepository;
             _revokeKeyRepository = revokeKeyRepository;
             _lykkeTransactionBuilderService = lykkeTransactionBuilderService;
+            _transactionBuildContextFactory = transactionBuildContextFactory;
             _broadcastService = broadcastService;
         }
 
@@ -149,7 +153,7 @@ namespace LkeServices.Transactions
             var clientAddress = new PubKey(clientPubKey).GetAddress(_connectionParams.Network);
             var hotWalletAddress = new PubKey(hotWalletPubKey).GetAddress(_connectionParams.Network);
 
-            TransactionBuildContext context = new TransactionBuildContext(_connectionParams.Network, _pregeneratedOutputsQueueFactory);
+            TransactionBuildContext context = _transactionBuildContextFactory.Create(_connectionParams.Network);
 
             var currentChannel = await _offchainChannelRepository.GetChannel(address.MultisigAddress, asset.Id);
 
@@ -309,7 +313,7 @@ namespace LkeServices.Transactions
         public async Task SpendCommitmemtByMultisig(ICommitment commitment, ICoin spendingCoin, string destination)
         {
 
-            TransactionBuildContext context = new TransactionBuildContext(_connectionParams.Network, _pregeneratedOutputsQueueFactory);
+            TransactionBuildContext context = _transactionBuildContextFactory.Create(_connectionParams.Network);
 
             var destinationAddress = BitcoinAddress.Create(destination);
 
@@ -376,7 +380,7 @@ namespace LkeServices.Transactions
             //if (commitment.CommitmentId != lastCommitment.CommitmentId)
             //    throw new BackendException("Commitment is expired", ErrorCode.CommitmentExpired);
 
-            TransactionBuildContext context = new TransactionBuildContext(_connectionParams.Network, _pregeneratedOutputsQueueFactory);
+            TransactionBuildContext context = _transactionBuildContextFactory.Create(_connectionParams.Network);
 
             return await context.Build(async () =>
             {
@@ -414,7 +418,7 @@ namespace LkeServices.Transactions
                     sendAmount = Money.FromUnit(amount, MoneyUnit.BTC);
 
                 if (sendAmount > 0)
-                    _transactionBuildHelper.SendWithChange(builder, context, unspentOutputs, toMultisig, sendAmount, from);
+                    await _transactionBuildHelper.SendWithChange(builder, context, unspentOutputs, toMultisig, sendAmount, from);
 
                 return sendAmount.ToDecimal(MoneyUnit.BTC);
             }
