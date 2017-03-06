@@ -27,14 +27,12 @@ namespace BackgroundWorker.Functions
         private readonly IAssetRepository _assetRepository;
         private readonly IFailedTransactionsManager _failedTransactionManager;
         private readonly Func<string, IQueueExt> _queueFactory;
-        private readonly BaseSettings _settings;
-        private readonly ISignatureApiProvider _clientSignatureApi;
-        private readonly ISignatureApiProvider _exchangeSignatureApi;
+        private readonly BaseSettings _settings;        
         private readonly ILog _logger;
         private readonly ITransactionBlobStorage _transactionBlobStorage;
 
         public TransactionBuildFunction(ILykkeTransactionBuilderService lykkeTransactionBuilderService,
-            IAssetRepository assetRepository, Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
+            IAssetRepository assetRepository,
             IFailedTransactionsManager failedTransactionManager,
             Func<string, IQueueExt> queueFactory, BaseSettings settings, ILog logger, ITransactionBlobStorage transactionBlobStorage)
         {
@@ -44,11 +42,7 @@ namespace BackgroundWorker.Functions
             _queueFactory = queueFactory;
             _settings = settings;
             _logger = logger;
-            _transactionBlobStorage = transactionBlobStorage;
-
-
-            _clientSignatureApi = signatureApiProviderFactory(SignatureApiProviderType.Client);
-            _exchangeSignatureApi = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
+            _transactionBlobStorage = transactionBlobStorage;            
         }
 
 
@@ -123,12 +117,9 @@ namespace BackgroundWorker.Functions
                     context.SetCountQueueBasedDelay(_settings.MaxQueueDelay, 200);
                 }
                 return;
-            }
+            }            
 
-            var signedByClientTr = await _clientSignatureApi.SignTransaction(transactionResponse.Transaction);
-            var signedByExchangeTr = await _exchangeSignatureApi.SignTransaction(signedByClientTr);
-
-            await _transactionBlobStorage.AddOrReplaceTransaction(message.TransactionId, TransactionBlobType.Signed, signedByExchangeTr);
+            await _transactionBlobStorage.AddOrReplaceTransaction(message.TransactionId, TransactionBlobType.Initial, transactionResponse.Transaction);
 
             await _queueFactory(Constants.BroadcastingQueue).PutRawMessageAsync(new BroadcastingTransaction
             {

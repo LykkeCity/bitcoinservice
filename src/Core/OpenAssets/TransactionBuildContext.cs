@@ -11,9 +11,8 @@ namespace Core.OpenAssets
 {
     public class TransactionBuildContext
     {
-        private readonly Network _network;
-        //ids of extra amount records
-        private List<Guid> _extraAmounts = new List<Guid>();
+        private readonly Network _network;        
+        private readonly List<IExtraAmount> _extraAmounts = new List<IExtraAmount>();
         public Network Network => _network;
 
         private readonly IPregeneratedOutputsQueueFactory _pregeneratedOutputsQueueFactory;
@@ -47,9 +46,9 @@ namespace Core.OpenAssets
                 FeeCoins.AddRange(coins);
         }
 
-        public void AddExtraAmountId(Guid id)
+        public void AddExtraAmount(IExtraAmount extraAmount)
         {
-            _extraAmounts.Add(id);
+            _extraAmounts.Add(extraAmount);
         }
 
         public void IssueAsset(AssetId asset)
@@ -96,7 +95,7 @@ namespace Core.OpenAssets
                 }
                 foreach (var extraAmount in _extraAmounts)
                 {
-                    await _extraAmountRepository.Remove(extraAmount);
+                    await _extraAmountRepository.Decrease(extraAmount);
                 }
                 throw;
             }

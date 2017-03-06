@@ -5,10 +5,12 @@ using Common;
 using Common.Log;
 using Core;
 using Core.Bitcoin;
+using Core.Providers;
 using Core.Repositories.Transactions;
 using Core.Settings;
 using Core.TransactionMonitoring;
 using Core.TransactionQueueWriter;
+using LkeServices.Providers;
 using LkeServices.Transactions;
 using LkeServices.Triggers.Attributes;
 using LkeServices.Triggers.Bindings;
@@ -24,10 +26,13 @@ namespace BackgroundWorker.Functions
         private readonly ITransactionBlobStorage _transactionBlobStorage;
         private readonly BaseSettings _settings;
         private readonly ILog _logger;
+        private readonly ISignatureApiProvider _clientSignatureApi;
+        private readonly ISignatureApiProvider _exchangeSignatureApi;
 
         public BroadcastingTransactionFunction(IBitcoinBroadcastService broadcastService,
             IFailedTransactionsManager failedTransactionManager,
             ITransactionBlobStorage transactionBlobStorage,
+            Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
             BaseSettings settings, ILog logger)
         {
             _broadcastService = broadcastService;
@@ -35,6 +40,8 @@ namespace BackgroundWorker.Functions
             _transactionBlobStorage = transactionBlobStorage;
             _settings = settings;
             _logger = logger;
+            _clientSignatureApi = signatureApiProviderFactory(SignatureApiProviderType.Client);
+            _exchangeSignatureApi = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
         }
 
         [QueueTrigger(Constants.BroadcastingQueue, 100, true)]
@@ -42,8 +49,12 @@ namespace BackgroundWorker.Functions
         {
             try
             {
-                var transactionHex = await _transactionBlobStorage.GetTransaction(transaction.TransactionId, TransactionBlobType.Signed);
-                var tr = new Transaction(transactionHex);
+                var transactionHex = await _transactionBlobStorage.GetTransaction(transaction.TransactionId, TransactionBlobType.Initial);
+
+                var signedByClientTr = await _clientSignatureApi.SignTransaction(transactionHex);
+                var signedByExchangeTr = await _exchangeSignatureApi.SignTransaction(signedByClientTr);
+
+                var tr = new Transaction(signedByExchangeTr);
                 await _broadcastService.BroadcastTransaction(transaction.TransactionId, tr);
             }
             catch (RPCException e)

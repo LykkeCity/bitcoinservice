@@ -13,7 +13,7 @@ namespace Core.Repositories.ExtraAmounts
 
     public interface IExtraAmountRepository
     {
-        Task<Guid> Add(string address, long amount);
-        Task Remove(Guid id);
+        Task<IExtraAmount> Add(string address, long amount);
+        Task Decrease(IExtraAmount extraAmount);
     }
 }

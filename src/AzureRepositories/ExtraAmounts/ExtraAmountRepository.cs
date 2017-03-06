@@ -13,7 +13,7 @@ namespace AzureRepositories.ExtraAmounts
     {
         public static string Partition = "ExtraAmount";
 
-        public string Address { get; set; }
+        public string Address => RowKey;
 
         public long Amount { get; set; }
 
@@ -22,8 +22,7 @@ namespace AzureRepositories.ExtraAmounts
             return new ExtraAmountEntity
             {
                 PartitionKey = Partition,
-                RowKey = Guid.NewGuid().ToString(),
-                Address = address,
+                RowKey = address,
                 Amount = amount
             };
         }
@@ -40,16 +39,29 @@ namespace AzureRepositories.ExtraAmounts
             _table = table;
         }
 
-        public async Task<Guid> Add(string address, long amount)
+        public async Task<IExtraAmount> Add(string address, long amount)
         {
             var entity = ExtraAmountEntity.Create(address, amount);
-            await _table.InsertAsync(entity);
-            return Guid.Parse(entity.RowKey);
+
+            var old = await _table.GetDataAsync(ExtraAmountEntity.Partition, address);
+            if (old == null)
+                await _table.InsertAsync(entity);
+            else
+                await _table.ReplaceAsync(ExtraAmountEntity.Partition, address, amountEntity =>
+                {                    
+                    amountEntity.Amount += amount;
+                    return amountEntity;
+                });
+            return entity;
         }
 
-        public Task Remove(Guid id)
+        public Task Decrease(IExtraAmount extraAmount)
         {
-            return _table.DeleteAsync(ExtraAmountEntity.Partition, id.ToString());
+            return _table.ReplaceAsync(ExtraAmountEntity.Partition, extraAmount.Address, amountEntity =>
+           {
+               amountEntity.Amount -= extraAmount.Amount;
+               return amountEntity;
+           });
         }
     }
 }
