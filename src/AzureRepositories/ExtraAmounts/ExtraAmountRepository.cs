@@ -43,15 +43,12 @@ namespace AzureRepositories.ExtraAmounts
         {
             var entity = ExtraAmountEntity.Create(address, amount);
 
-            var old = await _table.GetDataAsync(ExtraAmountEntity.Partition, address);
-            if (old == null)
-                await _table.InsertAsync(entity);
-            else
-                await _table.ReplaceAsync(ExtraAmountEntity.Partition, address, amountEntity =>
-                {                    
-                    amountEntity.Amount += amount;
-                    return amountEntity;
-                });
+            await _table.InsertOrModifyAsync(ExtraAmountEntity.Partition, address, () => entity, x =>
+            {
+                x.Amount += amount;
+                return x;
+            });
+
             return entity;
         }
 
