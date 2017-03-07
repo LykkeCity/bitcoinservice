@@ -60,5 +60,10 @@ namespace AzureRepositories.ExtraAmounts
                return amountEntity;
            });
         }
+
+        public async Task<IEnumerable<IExtraAmount>> GetData()
+        {
+            return await _table.GetDataAsync(ExtraAmountEntity.Partition);
+        }
     }
 }

@@ -15,5 +15,6 @@ namespace Core.Repositories.ExtraAmounts
     {
         Task<IExtraAmount> Add(string address, long amount);
         Task Decrease(IExtraAmount extraAmount);
+        Task<IEnumerable<IExtraAmount>> GetData();
     }
 }

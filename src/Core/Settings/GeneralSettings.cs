@@ -51,6 +51,8 @@ namespace Core.Settings
         public int NumberOfChangeInputsForTransaction { get; set; } = 200;
 
         public int FeeReservePeriodSeconds { get; set; } = 5 * 60;
+
+        public decimal MaxExtraAmount { get; set; } = 0.001M;
     }
 
     public class DbSettings
