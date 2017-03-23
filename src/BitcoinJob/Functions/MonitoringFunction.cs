@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Common;
 using Common.Log;
 using Core.Repositories.Monitoring;
-using LkeServices.Triggers.Attributes;
+using Lykke.JobTriggers.Triggers.Attributes;
 
 namespace BackgroundWorker.Functions
 {

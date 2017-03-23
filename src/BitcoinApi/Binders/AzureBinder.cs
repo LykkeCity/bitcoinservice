@@ -2,14 +2,12 @@
 using Autofac.Features.ResolveAnything;
 using AzureRepositories;
 using AzureRepositories.Log;
-using AzureRepositories.QueueReader;
 using AzureStorage.Tables;
 using BitcoinApi.Services;
 using Common;
 using Common.IocContainer;
 using Common.Log;
 using Core.Bitcoin;
-using Core.QueueReader;
 using Core.Settings;
 using LkeServices;
 using Microsoft.Extensions.Configuration;

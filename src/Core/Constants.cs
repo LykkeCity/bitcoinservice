@@ -18,6 +18,10 @@ namespace Core
         public const string BroadcastMonitoringQueue = "broadcast-monitoring";
         public const string FeeReserveMonitoringQueue = "fee-reserve-monitoring";
 
+        public const string ClientSignedTransactionQueue = "client-signed-transactions";
+        public const string ClientSignMonitoringQueue = "client-sign-monitoring";
+        public const string TransactionsForClientSignatureQueue = "transaction-out";
+
         public const string ProcessingBlockSetting = "ProcessingBlockSetting";
     }
 }

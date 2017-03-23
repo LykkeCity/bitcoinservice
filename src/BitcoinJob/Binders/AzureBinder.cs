@@ -8,7 +8,6 @@ using Autofac.Features.ResolveAnything;
 using AzureRepositories;
 using AzureRepositories.Log;
 using AzureRepositories.Notifiers;
-using AzureRepositories.QueueReader;
 using AzureStorage.Tables;
 using Common;
 using Common.Cache;
@@ -17,9 +16,12 @@ using Common.Log;
 using Core.Bitcoin;
 using Core.Settings;
 using Microsoft.Extensions.Configuration;
-
-using Core.QueueReader;
 using LkeServices;
+using Lykke.JobTriggers.Abstractions.QueueReader;
+using Lykke.JobTriggers.Implementations.QueueReader;
+using Microsoft.Extensions.DependencyInjection;
+using Lykke.JobTriggers.Extenstions;
+using Autofac.Extensions.DependencyInjection;
 
 namespace BackgroundWorker.Binders
 {
@@ -46,6 +48,16 @@ namespace BackgroundWorker.Binders
             log.WriteInfoAsync("BackgroundWorker", "App start", null, $"BaseSettings : private").Wait();
 #endif
 
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton(log);
+
+            serviceCollection.AddTriggers(pool =>
+            {
+                pool.AddDefaultConnection(settings.Db.DataConnString);
+                pool.AddConnection("client", settings.Db.ClientSignatureConnString);
+            });
+            ioc.Populate(serviceCollection);
+
             ioc.RegisterInstance(log);
             ioc.RegisterInstance(settings);
             ioc.RegisterInstance(new RpcConnectionParams(settings));
@@ -53,8 +65,7 @@ namespace BackgroundWorker.Binders
             ioc.BindCommonServices();
             ioc.BindAzure(settings, log);
 
-            ioc.RegisterInstance(new AzureQueueReaderFactory(settings.Db.DataConnString)).As<IQueueReaderFactory>();
-
+                       
             ioc.RegisterSource(new AnyConcreteTypeNotAlreadyRegisteredSource());
         }
     }

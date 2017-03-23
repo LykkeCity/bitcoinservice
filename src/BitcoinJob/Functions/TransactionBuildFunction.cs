@@ -16,8 +16,8 @@ using Core.TransactionQueueWriter;
 using Core.TransactionQueueWriter.Commands;
 using LkeServices.Providers;
 using LkeServices.Transactions;
-using LkeServices.Triggers.Attributes;
-using LkeServices.Triggers.Bindings;
+using Lykke.JobTriggers.Triggers.Attributes;
+using Lykke.JobTriggers.Triggers.Bindings;
 using static Core.OpenAssets.OpenAssetsHelper;
 namespace BackgroundWorker.Functions
 {
@@ -27,7 +27,7 @@ namespace BackgroundWorker.Functions
         private readonly IAssetRepository _assetRepository;
         private readonly IFailedTransactionsManager _failedTransactionManager;
         private readonly Func<string, IQueueExt> _queueFactory;
-        private readonly BaseSettings _settings;        
+        private readonly BaseSettings _settings;
         private readonly ILog _logger;
         private readonly ITransactionBlobStorage _transactionBlobStorage;
 
@@ -42,7 +42,7 @@ namespace BackgroundWorker.Functions
             _queueFactory = queueFactory;
             _settings = settings;
             _logger = logger;
-            _transactionBlobStorage = transactionBlobStorage;            
+            _transactionBlobStorage = transactionBlobStorage;
         }
 
 
@@ -117,14 +117,29 @@ namespace BackgroundWorker.Functions
                     context.SetCountQueueBasedDelay(_settings.MaxQueueDelay, 200);
                 }
                 return;
-            }            
+            }
 
             await _transactionBlobStorage.AddOrReplaceTransaction(message.TransactionId, TransactionBlobType.Initial, transactionResponse.Transaction);
 
-            await _queueFactory(Constants.BroadcastingQueue).PutRawMessageAsync(new BroadcastingTransaction
+
+            await _queueFactory(Constants.ClientSignMonitoringQueue).PutRawMessageAsync(new WaitClientSignatureMessage
             {
-                TransactionId = message.TransactionId
+                TransactionId = message.TransactionId,
+                PutDateTime = DateTime.UtcNow
             }.ToJson());
+
+            try
+            {
+                await _queueFactory(Constants.TransactionsForClientSignatureQueue).PutRawMessageAsync(new
+                {
+                    TransactionId = message.TransactionId,
+                    Transaction = transactionResponse.Transaction
+                }.ToJson());
+            }
+            catch (Exception ex)
+            {
+                await _logger.WriteErrorAsync("TransactionBuildFunction", "ProcessMessage", message.ToJson(), ex);
+            }
         }
     }
 }
