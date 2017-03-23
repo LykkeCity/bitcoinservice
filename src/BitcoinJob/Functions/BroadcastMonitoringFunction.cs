@@ -11,8 +11,8 @@ using Core.QBitNinja;
 using Core.Settings;
 using Core.TransactionMonitoring;
 using LkeServices.Transactions;
-using LkeServices.Triggers.Attributes;
-using LkeServices.Triggers.Bindings;
+using Lykke.JobTriggers.Triggers.Attributes;
+using Lykke.JobTriggers.Triggers.Bindings;
 using QBitNinja.Client.Models;
 
 namespace BackgroundWorker.Functions

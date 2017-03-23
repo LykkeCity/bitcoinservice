@@ -12,9 +12,10 @@ using AzureRepositories;
 using BackgroundWorker.Binders;
 using Common.IocContainer;
 using Core.Settings;
-using LkeServices.Triggers;
 using Microsoft.Extensions.Configuration;
 using System.Runtime.Loader;
+using Lykke.JobTriggers.Triggers;
+
 namespace BackgroundWorker
 {
     public class AppHost
@@ -58,7 +59,7 @@ namespace BackgroundWorker
                 end.WaitOne();
             };
 
-            triggerHost.StartAndBlock();
+            triggerHost.Start().Wait();
             end.Set();
         }
     }

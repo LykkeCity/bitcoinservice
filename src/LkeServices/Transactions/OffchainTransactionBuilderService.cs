@@ -77,6 +77,7 @@ namespace LkeServices.Transactions
             IBitcoinBroadcastService broadcastService)
         {
             _transactionBuildHelper = transactionBuildHelper;
+            _connectionParams = connectionParams;
             _multisigService = multisigService;
             _bitcoinOutputsService = bitcoinOutputsService;
             _offchainChannelRepository = offchainChannelRepository;

@@ -40,6 +40,7 @@ using Core.Repositories.Wallets;
 using Core.Settings;
 using Core.TransactionMonitoring;
 using Core.TransactionQueueWriter;
+using Lykke.JobTriggers.Abstractions;
 
 namespace AzureRepositories
 {
@@ -51,7 +52,7 @@ namespace AzureRepositories
             ioc.BindQueue(settings);
 
             ioc.RegisterType<EmailNotifier>().As<IEmailNotifier>();
-            ioc.RegisterType<SlackNotifier>().As<ISlackNotifier>();
+            ioc.RegisterType<SlackNotifier>().As<ISlackNotifier>().As<IPoisionQueueNotifier>();
         }
 
         private static void BindRepo(this ContainerBuilder ioc, BaseSettings settings, ILog log)
@@ -120,6 +121,8 @@ namespace AzureRepositories
                     case Constants.SlackNotifierQueue:
                     case Constants.EmailNotifierQueue:
                         return new AzureQueueExt(settings.Db.SharedConnString, queueName);
+                    case Constants.TransactionsForClientSignatureQueue:
+                        return new AzureQueueExt(settings.Db.ClientSignatureConnString, queueName);
                     default:
                         return new AzureQueueExt(settings.Db.DataConnString, queueName);
                 }

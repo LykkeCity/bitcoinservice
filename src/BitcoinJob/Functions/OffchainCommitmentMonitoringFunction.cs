@@ -14,7 +14,7 @@ using Core.Repositories.Offchain;
 using Core.Repositories.Settings;
 using Core.Settings;
 using LkeServices.Transactions;
-using LkeServices.Triggers.Attributes;
+using Lykke.JobTriggers.Triggers.Attributes;
 using NBitcoin;
 using NBitcoin.OpenAsset;
 using QBitNinja.Client.Models;

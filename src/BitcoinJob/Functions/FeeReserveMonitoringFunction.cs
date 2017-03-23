@@ -10,8 +10,8 @@ using Core.Repositories.Transactions;
 using Core.Repositories.TransactionSign;
 using Core.Settings;
 using Core.TransactionMonitoring;
-using LkeServices.Triggers.Attributes;
-using LkeServices.Triggers.Bindings;
+using Lykke.JobTriggers.Triggers.Attributes;
+using Lykke.JobTriggers.Triggers.Bindings;
 using NBitcoin;
 
 namespace BackgroundWorker.Functions

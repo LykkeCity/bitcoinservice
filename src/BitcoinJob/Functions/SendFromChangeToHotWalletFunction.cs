@@ -8,7 +8,7 @@ using Core.Providers;
 using Core.Settings;
 using LkeServices.Providers;
 using LkeServices.Transactions;
-using LkeServices.Triggers.Attributes;
+using Lykke.JobTriggers.Triggers.Attributes;
 using NBitcoin;
 
 namespace BackgroundWorker.Functions
