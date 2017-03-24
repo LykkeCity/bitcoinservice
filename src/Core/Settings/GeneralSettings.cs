@@ -7,7 +7,6 @@ namespace Core.Settings
 {
     public class GeneralSettings
     {
-        public BaseSettings BitcoinApi { get; set; }
-        public BaseSettings BitcoinJobs { get; set; }
+        public BaseSettings BitcoinService { get; set; }
     }
 }

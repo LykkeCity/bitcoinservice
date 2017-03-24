@@ -47,7 +47,7 @@ namespace BitcoinApi
             settings = GeneralSettingsReader.ReadGeneralSettingsLocal<BaseSettings>(Configuration.GetConnectionString("Settings"));
 #else
             var generalSettings = GeneralSettingsReader.ReadGeneralSettings<GeneralSettings>(Configuration.GetConnectionString("Settings"));
-            settings = generalSettings.BitcoinApi;
+            settings = generalSettings.BitcoinService;
 #endif
 
             services.AddMvc(o =>

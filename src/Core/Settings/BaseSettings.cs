@@ -54,7 +54,7 @@ namespace Core.Settings
 
         public decimal MaxExtraAmount { get; set; } = 0.001M;
 
-        public int ClientSignatureTimeoutSeconds { get; set; } = 3000;
+        public int ClientSignatureTimeoutSeconds { get; set; } = 60;
     }
 
     public class DbSettings
