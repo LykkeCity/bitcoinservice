@@ -22,12 +22,6 @@ namespace BackgroundWorker
     {
         public IConfigurationRoot Configuration { get; }
 
-#if DEBUG
-        const string SettingsBlobName = "bitcoinsettings.json";
-#else
-        const string SettingsBlobName = "globalsettings.json";
-#endif
-
         public AppHost()
         {
             var builder = new ConfigurationBuilder()
@@ -40,7 +34,13 @@ namespace BackgroundWorker
 
         public void Run()
         {
-            var settings = GeneralSettingsReader.ReadGeneralSettings<BaseSettings>(Configuration.GetConnectionString("Azure"), SettingsBlobName);
+            BaseSettings settings;
+#if DEBUG
+            settings = GeneralSettingsReader.ReadGeneralSettingsLocal<BaseSettings>(Configuration.GetConnectionString("Settings"));
+#else
+            var generalSettings = GeneralSettingsReader.ReadGeneralSettings<GeneralSettings>(Configuration.GetConnectionString("Settings"));
+            settings = generalSettings.BitcoinJobs;
+#endif
 
             var containerBuilder = new AzureBinder().Bind(settings);
             var ioc = containerBuilder.Build();

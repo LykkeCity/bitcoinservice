@@ -42,7 +42,7 @@ namespace BackgroundWorker.Functions
         public async Task ProcessMessage(WaitClientSignatureMessage message, QueueTriggeringContext context)
         {
             var signedByClient = await _transactionBlobStorage.GetTransaction(message.TransactionId, TransactionBlobType.Client);
-            if (string.IsNullOrEmpty(signedByClient))
+            if (!string.IsNullOrEmpty(signedByClient))
             {
                 await SendToBroadcast(message.TransactionId);
                 return;
@@ -58,7 +58,7 @@ namespace BackgroundWorker.Functions
             else
             {
                 context.MoveMessageToEnd(message.ToJson());
-                context.SetCountQueueBasedDelay(10000, 100);
+                context.SetCountQueueBasedDelay(5000, 100);
             }
         }
 
