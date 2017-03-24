@@ -39,7 +39,7 @@ namespace BackgroundWorker
             settings = GeneralSettingsReader.ReadGeneralSettingsLocal<BaseSettings>(Configuration.GetConnectionString("Settings"));
 #else
             var generalSettings = GeneralSettingsReader.ReadGeneralSettings<GeneralSettings>(Configuration.GetConnectionString("Settings"));
-            settings = generalSettings.BitcoinService;
+            settings = generalSettings.BitcoinJobs;
 #endif
 
             var containerBuilder = new AzureBinder().Bind(settings);
