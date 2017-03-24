@@ -6,7 +6,7 @@ using Core.Providers;
 using Core.Repositories.FeeRate;
 using Core.Repositories.TransactionOutputs;
 using Core.Settings;
-using LkeServices.Triggers.Attributes;
+using Lykke.JobTriggers.Triggers.Attributes;
 
 namespace BackgroundWorker.Functions
 {

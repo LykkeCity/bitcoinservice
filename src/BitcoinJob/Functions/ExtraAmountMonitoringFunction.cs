@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Core.Notifiers;
 using Core.Repositories.ExtraAmounts;
 using Core.Settings;
-using LkeServices.Triggers.Attributes;
+using Lykke.JobTriggers.Triggers.Attributes;
 using NBitcoin;
 
 namespace BackgroundWorker.Functions

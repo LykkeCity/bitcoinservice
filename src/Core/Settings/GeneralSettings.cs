@@ -53,6 +53,8 @@ namespace Core.Settings
         public int FeeReservePeriodSeconds { get; set; } = 5 * 60;
 
         public decimal MaxExtraAmount { get; set; } = 0.001M;
+
+        public int ClientSignatureTimeoutSeconds { get; set; } = 30;
     }
 
     public class DbSettings
@@ -63,5 +65,6 @@ namespace Core.Settings
         public string SharedConnString { get; set; }
         public string ClientPersonalInfoConnString { get; set; }
         public string BackofficeConnString { get; set; }
+        public string ClientSignatureConnString { get; set; }
     }
 }

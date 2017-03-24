@@ -6,7 +6,7 @@ using Common.Log;
 using Core.Repositories.Assets;
 using Core.Repositories.TransactionOutputs;
 using Core.Settings;
-using LkeServices.Triggers.Attributes;
+using Lykke.JobTriggers.Triggers.Attributes;
 
 namespace BackgroundWorker.Functions
 {

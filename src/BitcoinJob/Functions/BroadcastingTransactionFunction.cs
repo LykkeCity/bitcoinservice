@@ -12,8 +12,8 @@ using Core.TransactionMonitoring;
 using Core.TransactionQueueWriter;
 using LkeServices.Providers;
 using LkeServices.Transactions;
-using LkeServices.Triggers.Attributes;
-using LkeServices.Triggers.Bindings;
+using Lykke.JobTriggers.Triggers.Attributes;
+using Lykke.JobTriggers.Triggers.Bindings;
 using NBitcoin;
 using NBitcoin.RPC;
 
@@ -25,8 +25,7 @@ namespace BackgroundWorker.Functions
         private readonly IFailedTransactionsManager _failedTransactionManager;
         private readonly ITransactionBlobStorage _transactionBlobStorage;
         private readonly BaseSettings _settings;
-        private readonly ILog _logger;
-        private readonly ISignatureApiProvider _clientSignatureApi;
+        private readonly ILog _logger;        
         private readonly ISignatureApiProvider _exchangeSignatureApi;
 
         public BroadcastingTransactionFunction(IBitcoinBroadcastService broadcastService,
@@ -40,7 +39,7 @@ namespace BackgroundWorker.Functions
             _transactionBlobStorage = transactionBlobStorage;
             _settings = settings;
             _logger = logger;
-            _clientSignatureApi = signatureApiProviderFactory(SignatureApiProviderType.Client);
+            
             _exchangeSignatureApi = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
         }
 
@@ -49,9 +48,8 @@ namespace BackgroundWorker.Functions
         {
             try
             {
-                var transactionHex = await _transactionBlobStorage.GetTransaction(transaction.TransactionId, TransactionBlobType.Initial);
-
-                var signedByClientTr = await _clientSignatureApi.SignTransaction(transactionHex);
+                var signedByClientTr = await _transactionBlobStorage.GetTransaction(transaction.TransactionId, TransactionBlobType.Client);
+                               
                 var signedByExchangeTr = await _exchangeSignatureApi.SignTransaction(signedByClientTr);
 
                 var tr = new Transaction(signedByExchangeTr);

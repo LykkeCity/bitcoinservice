@@ -7,8 +7,9 @@ namespace Core.Repositories.Transactions
 {
     public enum TransactionBlobType
     {
-        Initial,
-        Signed
+        Initial = 0,        
+        Signed = 1,
+        Client = 2
     }
 
     public interface ITransactionBlobStorage
