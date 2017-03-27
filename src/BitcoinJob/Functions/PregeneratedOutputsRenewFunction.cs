@@ -26,7 +26,7 @@ namespace BackgroundWorker.Functions
             _baseSettings = baseSettings;
         }
 
-        [TimerTrigger("23:00:00")]
+        [TimerTrigger("1.00:00:00")]
         public async Task RenewPool()
         {
             await RenewFee();
