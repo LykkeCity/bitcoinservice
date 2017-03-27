@@ -44,8 +44,7 @@ namespace Bitcoin.Tests
         [OneTimeSetUp]
         public void Initialize()
         {
-            var settings = GeneralSettingsReader.ReadGeneralSettings<BaseSettings>("UseDevelopmentStorage=true",
-                "bitcoinsettings.json");
+            var settings = GeneralSettingsReader.ReadGeneralSettingsLocal<BaseSettings>("../../settings/bitcoinsettings.json");
 
             var log = new LogToConsole();
 

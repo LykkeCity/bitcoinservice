@@ -26,12 +26,6 @@ namespace BitcoinApi
 {
     public class Startup
     {
-#if DEBUG
-        const string SettingsBlobName = "bitcoinsettings.json";
-#else
-        const string SettingsBlobName = "globalsettings.json";
-#endif
-
         public IConfigurationRoot Configuration { get; }
 
         public Startup(IHostingEnvironment env)
@@ -48,8 +42,14 @@ namespace BitcoinApi
         // For more information on how to configure your application, visit http://go.microsoft.com/fwlink/?LinkID=398940
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
-            var settings = GeneralSettingsReader.ReadGeneralSettings<BaseSettings>(Configuration.GetConnectionString("Azure"), SettingsBlobName);
-     
+            BaseSettings settings;
+#if DEBUG
+            settings = GeneralSettingsReader.ReadGeneralSettingsLocal<BaseSettings>(Configuration.GetConnectionString("Settings"));
+#else
+            var generalSettings = GeneralSettingsReader.ReadGeneralSettings<GeneralSettings>(Configuration.GetConnectionString("Settings"));
+            settings = generalSettings.BitcoinApi;
+#endif
+
             services.AddMvc(o =>
             {
                 o.Filters.Add(new HandleAllExceptionsFilterFactory());

@@ -19,9 +19,12 @@ namespace AzureRepositories.Transactions
             _blobStorage = blobStorage;
         }
 
-        public Task<string> GetTransaction(Guid transactionId, TransactionBlobType type)
+        public async Task<string> GetTransaction(Guid transactionId, TransactionBlobType type)
         {
-            return _blobStorage.GetAsTextAsync(BlobContainer, $"{transactionId}.{type}.txt");
+            var key = GenerateKey(transactionId, type);
+            if (await _blobStorage.HasBlobAsync(BlobContainer, key))
+                return await _blobStorage.GetAsTextAsync(BlobContainer, key);
+            return null;
         }
 
         public async Task AddOrReplaceTransaction(Guid transactionId, TransactionBlobType type, string transactionHex)
