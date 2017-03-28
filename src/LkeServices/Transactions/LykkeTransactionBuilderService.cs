@@ -34,7 +34,7 @@ namespace LkeServices.Transactions
 
         Task SaveSpentOutputs(Guid transactionId, Transaction transaction);
 
-        Task<Guid> AddTransactionId(Guid? transactionId);
+        Task<Guid> AddTransactionId(Guid? transactionId, string rawRequest);
     }
 
     public class LykkeTransactionBuilderService : ILykkeTransactionBuilderService
@@ -97,8 +97,6 @@ namespace LkeServices.Transactions
 
                     await SaveSpentOutputs(transactionId, buildedTransaction);
 
-                    await _signRequestRepository.InsertTransactionId(transactionId);
-
                     await SaveNewOutputs(transactionId, buildedTransaction, context);
 
                     if (shouldReserveFee)
@@ -127,8 +125,6 @@ namespace LkeServices.Transactions
                     var buildedTransaction = builder.BuildTransaction(true);
 
                     await SaveSpentOutputs(transactionId, buildedTransaction);
-
-                    await _signRequestRepository.InsertTransactionId(transactionId);
 
                     await SaveNewOutputs(transactionId, buildedTransaction, context);
 
@@ -226,8 +222,6 @@ namespace LkeServices.Transactions
 
                     await SaveSpentOutputs(transactionId, tx);
 
-                    await _signRequestRepository.InsertTransactionId(transactionId);
-
                     await SaveNewOutputs(transactionId, tx, context);
 
                     return new CreateTransactionResponse(tx.ToHex(), transactionId);
@@ -265,8 +259,6 @@ namespace LkeServices.Transactions
                     var buildedTransaction = builder.BuildTransaction(true);
 
                     await SaveSpentOutputs(transactionId, buildedTransaction);
-
-                    await _signRequestRepository.InsertTransactionId(transactionId);
 
                     await SaveNewOutputs(transactionId, buildedTransaction, context);
 
@@ -313,10 +305,10 @@ namespace LkeServices.Transactions
             }
         }
 
-        public async Task<Guid> AddTransactionId(Guid? transactionId)
+        public async Task<Guid> AddTransactionId(Guid? transactionId, string rawRequest)
         {
             await CheckDuplicatedTransactionId(transactionId);
-            return await _signRequestRepository.InsertTransactionId(transactionId);
+            return await _signRequestRepository.InsertTransactionId(transactionId, rawRequest);
         }
 
         private async Task CheckDuplicatedTransactionId(Guid? transactionId)

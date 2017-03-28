@@ -13,6 +13,7 @@ using Core.Repositories.Assets;
 using LkeServices.Transactions;
 using NBitcoin;
 using System.Reflection;
+using Common;
 using Core.Helpers;
 using Core.Repositories.Transactions;
 using Core.Repositories.TransactionSign;
@@ -75,7 +76,7 @@ namespace BitcoinApi.Controllers
             if (asset == null)
                 throw new BackendException("Provided asset is missing in database", ErrorCode.AssetNotFound);
 
-            var transactionId = await _builder.AddTransactionId(model.TransactionId);
+            var transactionId = await _builder.AddTransactionId(model.TransactionId, model.ToJson());
 
             var createTransactionResponse = await _builder.GetTransferTransaction(sourceAddress, destAddress, model.Amount, asset, transactionId, true);
 

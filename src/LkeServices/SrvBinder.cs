@@ -61,7 +61,7 @@ namespace LkeServices
 
         private static void BindApiProviders(ContainerBuilder ioc)
         {
-            ioc.RegisterType<LykkeHttpClientHandler>().SingleInstance();
+            ioc.RegisterType<LykkeHttpClientHandler>();
             ioc.Register(x =>
             {
                 var resolver = x.Resolve<IComponentContext>();

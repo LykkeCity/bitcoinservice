@@ -64,7 +64,7 @@ namespace BitcoinApi.Controllers
             if (asset == null)
                 throw new BackendException("Provided asset is missing in database", ErrorCode.AssetNotFound);
 
-            var transactionId = await _builder.AddTransactionId(model.TransactionId);
+            var transactionId = await _builder.AddTransactionId(model.TransactionId, model.ToJson());
 
             await _transactionQueueWriter.AddCommand(transactionId, TransactionCommandType.Transfer, new TransferCommand
             {
@@ -100,7 +100,7 @@ namespace BitcoinApi.Controllers
             var destAddress = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(model.DestinationAddress);
             if (destAddress == null)
                 throw new BackendException("Invalid destination address provided", ErrorCode.InvalidAddress);
-            var transactionId = await _builder.AddTransactionId(model.TransactionId);
+            var transactionId = await _builder.AddTransactionId(model.TransactionId, model.ToJson());
 
             await _transactionQueueWriter.AddCommand(transactionId, TransactionCommandType.TransferAll, new TransferAllCommand
             {
@@ -149,7 +149,7 @@ namespace BitcoinApi.Controllers
             if (asset2 == null)
                 throw new BackendException("Provided Asset2 is missing in database", ErrorCode.AssetNotFound);
 
-            var transactionId = await _builder.AddTransactionId(model.TransactionId);
+            var transactionId = await _builder.AddTransactionId(model.TransactionId, model.ToJson());
 
             await _transactionQueueWriter.AddCommand(transactionId, TransactionCommandType.Swap, new SwapCommand
             {
@@ -191,7 +191,7 @@ namespace BitcoinApi.Controllers
             if (asset == null)
                 throw new BackendException("Provided Asset is missing in database", ErrorCode.AssetNotFound);
 
-            var transactionId = await _builder.AddTransactionId(model.TransactionId);
+            var transactionId = await _builder.AddTransactionId(model.TransactionId, model.ToJson());
 
             await _transactionQueueWriter.AddCommand(transactionId, TransactionCommandType.Issue, new IssueCommand
             {
@@ -231,7 +231,7 @@ namespace BitcoinApi.Controllers
             if (asset == null)
                 throw new BackendException("Provided Asset is missing in database", ErrorCode.AssetNotFound);
 
-            var transactionId = await _builder.AddTransactionId(model.TransactionId);
+            var transactionId = await _builder.AddTransactionId(model.TransactionId, model.ToJson());
 
             await _transactionQueueWriter.AddCommand(transactionId, TransactionCommandType.Destroy, new DestroyCommand
             {

@@ -12,14 +12,16 @@ namespace AzureRepositories.TransactionSign
     {
         public Guid TransactionId => Guid.Parse(RowKey);
         public bool? Invalidated { get; set; }
+        public string RawRequest { get; set; }
 
 
-        public static TransactionSignRequestEntity Create(Guid transactionId)
+        public static TransactionSignRequestEntity Create(Guid transactionId, string rawRequest)
         {
             return new TransactionSignRequestEntity
             {
                 RowKey = transactionId.ToString(),
-                PartitionKey = GeneratePartition()
+                PartitionKey = GeneratePartition(),
+                RawRequest = rawRequest
             };
         }
 
@@ -43,10 +45,10 @@ namespace AzureRepositories.TransactionSign
             return await _table.GetDataAsync(TransactionSignRequestEntity.GeneratePartition(), transactionId.ToString());
         }
 
-        public async Task<Guid> InsertTransactionId(Guid? transactionId)
+        public async Task<Guid> InsertTransactionId(Guid? transactionId, string rawRequest)
         {
             var guid = transactionId ?? Guid.NewGuid();
-            await _table.InsertOrReplaceAsync(TransactionSignRequestEntity.Create(guid));
+            await _table.InsertOrReplaceAsync(TransactionSignRequestEntity.Create(guid, rawRequest));
             return guid;
         }
 
