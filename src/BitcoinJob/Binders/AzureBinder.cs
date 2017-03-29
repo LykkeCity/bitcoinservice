@@ -48,24 +48,19 @@ namespace BackgroundWorker.Binders
             log.WriteInfoAsync("BackgroundWorker", "App start", null, $"BaseSettings : private").Wait();
 #endif
 
-            var serviceCollection = new ServiceCollection();
-            serviceCollection.AddSingleton(log);
+            ioc.RegisterInstance(log);
+            ioc.RegisterInstance(settings);
+            ioc.RegisterInstance(new RpcConnectionParams(settings));
+            
+            ioc.BindCommonServices();
+            ioc.BindAzure(settings, log);
 
-            serviceCollection.AddTriggers(pool =>
+            ioc.AddTriggers(pool =>
             {
                 pool.AddDefaultConnection(settings.Db.DataConnString);
                 pool.AddConnection("client", settings.Db.ClientSignatureConnString);
             });
-            ioc.Populate(serviceCollection);
-
-            ioc.RegisterInstance(log);
-            ioc.RegisterInstance(settings);
-            ioc.RegisterInstance(new RpcConnectionParams(settings));
-
-            ioc.BindCommonServices();
-            ioc.BindAzure(settings, log);
-
-                       
+            
             ioc.RegisterSource(new AnyConcreteTypeNotAlreadyRegisteredSource());
         }
     }

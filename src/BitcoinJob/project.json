@@ -10,8 +10,7 @@
     "Microsoft.Extensions.Configuration.Json": "1.0.0",
     "AzureRepositories": "1.0.0-*",
     "System.Reflection": "4.3.0",
-    "System.Runtime.Loader": "4.3.0",
-    "Lykke.JobTriggers": "1.0.11"
+    "System.Runtime.Loader": "4.3.0"
   },
 
   "frameworks": {
