@@ -120,7 +120,7 @@ namespace LkeServices.Transactions
             var secret = new BitcoinSecret(clientPrevPrivateKey);
 
             if (prevCommitment.RevokePubKey != secret.PubKey.ToHex())
-                throw new BackendException("Client private key for previous commitment is invalid", ErrorCode.ShouldOpenNewChannel);
+                throw new BackendException("Client private key for previous commitment is invalid", ErrorCode.PrivateKeyIsBad);
 
             await _revokeKeyRepository.AddPrivateKey(prevCommitment.RevokePubKey, clientPrevPrivateKey);
 
