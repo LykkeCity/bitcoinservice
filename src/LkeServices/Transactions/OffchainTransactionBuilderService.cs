@@ -449,7 +449,8 @@ namespace LkeServices.Transactions
             {
                 var money = new Money(amount, MoneyUnit.BTC);
                 return tr.Outputs.AsCoins().FirstOrDefault(o => o.Amount == money &&
-                        o.ScriptPubKey.GetDestinationAddress(_connectionParams.Network).ToWif() == multisig);
+                        o.ScriptPubKey.GetDestinationAddress(_connectionParams.Network).ToWif() == multisig)
+                        .ToScriptCoin(new Script(walletRedeemScript));
             }
             var assetMoney = new AssetMoney(new BitcoinAssetId(asset.BlockChainAssetId), amount, asset.MultiplierPower);
             uint markerPosition;

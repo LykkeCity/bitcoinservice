@@ -20,31 +20,10 @@ namespace Bitcoin.Tests
         public static IServiceProvider Services { get; set; }
         public static ILog Logger => Services.GetService<ILog>();
 
-        private BaseSettings ReadSettings()
-        {
-            try
-            {
-                var json = File.ReadAllText(@"..\settings\settings.json");
-                if (string.IsNullOrWhiteSpace(json))
-                {
-
-                    return null;
-                }
-                BaseSettings settings = json.DeserializeJson<BaseSettings>();
-
-                return settings;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-
         [OneTimeSetUp]
         public void Initialize()
         {
-            var settings = GeneralSettingsReader.ReadGeneralSettingsLocal<BaseSettings>("../../settings/bitcoinsettings.json");
+            var settings = GeneralSettingsReader.ReadGeneralSettingsLocal<BaseSettings>("../settings/bitcoinsettings.json");
 
             var log = new LogToConsole();
 
