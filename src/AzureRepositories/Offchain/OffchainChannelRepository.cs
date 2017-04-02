@@ -78,7 +78,8 @@ namespace AzureRepositories.Offchain
                     InitialTransaction = channel.InitialTransaction,
                     HubAmount = channel.HubAmount,
                     ClientAmount = channel.ClientAmount,
-                    FullySignedChannel = channel.FullySignedChannel
+                    FullySignedChannel = channel.FullySignedChannel,
+                    IsBroadcasted = channel.IsBroadcasted
                 };
             }
         }
