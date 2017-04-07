@@ -414,7 +414,7 @@ namespace LkeServices.Transactions
                 var unspentOutputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(from.ToWif())).ToList();
 
                 if (amount < 0)
-                    sendAmount = unspentOutputs.OfType<Coin>().DefaultIfEmpty().Sum(o => o.Amount);
+                    sendAmount = unspentOutputs.OfType<Coin>().DefaultIfEmpty().Sum(o => o?.Amount ?? Money.Zero);
                 else
                     sendAmount = Money.FromUnit(amount, MoneyUnit.BTC);
 
