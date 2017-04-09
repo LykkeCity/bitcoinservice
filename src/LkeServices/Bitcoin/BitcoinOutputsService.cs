@@ -44,8 +44,10 @@ namespace LkeServices.Bitcoin
             //get unique saved coins
             if (confirmationsCount == 0)
             {
+                var set = new HashSet<OutPoint>(coins.Select(x => x.Outpoint));
+
                 var internalSavedOutputs = (await _broadcastedOutputRepository.GetOutputs(walletAddress))
-                    .Where(o => !coins.Any(c => c.Outpoint.Hash.ToString() == o.TransactionHash && c.Outpoint.N == o.N));
+                    .Where(o => !set.Contains(new OutPoint(uint256.Parse(o.TransactionHash), o.N)));
 
                 coins.AddRange(internalSavedOutputs.Select(o =>
                 {
@@ -55,15 +57,19 @@ namespace LkeServices.Bitcoin
                         return
                             (ICoin)
                             coin.ToColoredCoin(new BitcoinAssetId(o.AssetId, _connectionParams.Network).AssetId,
-                                (ulong) o.Quantity);
+                                (ulong)o.Quantity);
                     return coin;
                 }));
             }
 
             var unspentOutputs = await _spentOutputRepository.GetUnspentOutputs(coins.Select(o => new Output(o.Outpoint)));
 
-            coins = coins.Where(o => unspentOutputs.Any(un => un.N == o.Outpoint.N && un.TransactionHash == o.Outpoint.Hash.ToString())).ToList();
+            var unspentSet = new HashSet<OutPoint>(unspentOutputs.Select(x => new OutPoint(uint256.Parse(x.TransactionHash), x.N)));
+
+            coins = coins.Where(o => unspentSet.Contains(o.Outpoint)).ToList();
+            
             var address = BitcoinAddress.Create(walletAddress);
+
             switch (address.Type)
             {
                 case Base58Type.PUBKEY_ADDRESS:
