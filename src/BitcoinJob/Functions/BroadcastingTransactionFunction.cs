@@ -57,10 +57,10 @@ namespace BackgroundWorker.Functions
             }
             catch (RPCException e)
             {
-                if (e.RPCCodeMessage != transaction.LastError)
-                    await _logger.WriteWarningAsync("BroadcastingTransactionFunction", "BroadcastTransaction", $"Id: [{transaction.TransactionId}]", $"Message: {e.RPCCodeMessage} Code:{e.RPCCode}");
+                if (e.Message != transaction.LastError)
+                    await _logger.WriteWarningAsync("BroadcastingTransactionFunction", "BroadcastTransaction", $"Id: [{transaction.TransactionId}]", $"Message: {e.Message} Code:{e.RPCCode} CodeMessage:{e.RPCCodeMessage}");
 
-                transaction.LastError = e.RPCCodeMessage;
+                transaction.LastError = e.Message;
 
                 if (transaction.DequeueCount >= _settings.MaxDequeueCount)
                 {
