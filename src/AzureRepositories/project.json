@@ -3,7 +3,7 @@
 
   "dependencies": {
     "Core": "1.0.0-*",
-    "Lykke.AzureStorage": "1.2.5",
+    "Lykke.AzureStorage": "1.2.18",
     "System.Reflection.TypeExtensions": "4.3.0"
   },
   "frameworks": {

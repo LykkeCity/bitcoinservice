@@ -4,7 +4,9 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Common.Log;
 using LkeServices.Triggers.Bindings;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LkeServices.Triggers
 {
@@ -32,12 +34,14 @@ namespace LkeServices.Triggers
 
             var tasks = _bindings.Select(o => o.RunAsync(_cancellationTokenSource.Token)).ToArray();
             Task.WaitAll(tasks);
+
+            var logger = _serviceProvider.GetService<ILog>();
+            logger.WriteInfoAsync("TriggerHost", "StartAndBlock", "", "All tasks are exited").Wait();
         }
 
         public void ProvideAssembly(params Assembly[] assemblies)
         {
             _assemblies = assemblies;
-
         }
 
         private IEnumerable<Assembly> CollectAssemblies()
