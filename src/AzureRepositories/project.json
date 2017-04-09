@@ -3,9 +3,8 @@
 
   "dependencies": {
     "Core": "1.0.0-*",
-    "Lykke.AzureStorage": "1.2.5",
     "System.Reflection.TypeExtensions": "4.3.0",
-    "Lykke.JobTriggers": "1.1.0"
+    "Lykke.JobTriggers": "1.1.2"
   },
   "frameworks": {
     "netcoreapp1.1": {

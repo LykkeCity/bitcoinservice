@@ -7,7 +7,6 @@
     "Microsoft.AspNetCore.Mvc": "1.1.0",
     "Microsoft.AspNetCore.Server.IISIntegration": "1.1.0",
     "Microsoft.AspNetCore.Server.Kestrel": "1.1.0",
-    "Lykke.Common": "1.1.37",
     "Core": "1.0.0-*",
     "LkeServices": "1.0.0",
     "Swashbuckle.SwaggerGen": "6.0.0-beta902",
