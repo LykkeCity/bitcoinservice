@@ -25,7 +25,7 @@ namespace Core.Repositories.Offchain
 
         bool IsBroadcasted { get; }
 
-        Guid? PrevChannelTrnasactionId { get; set; }
+        Guid? PrevChannelTrnasactionId { get; set; }        
     }
 
 
@@ -42,5 +42,6 @@ namespace Core.Repositories.Offchain
         Task SetChannelBroadcasted(string multisig, string asset);
 
         Task<IOffchainChannel> CloseChannel(string multisig, string asset, Guid channelId);
+        Task RevertChannel(string multisig, string asset, Guid channelId);
     }
 }

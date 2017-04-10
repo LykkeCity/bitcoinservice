@@ -109,6 +109,9 @@ namespace AzureRepositories
 
             ioc.RegisterInstance(new ExtraAmountRepository(new AzureTableStorage<ExtraAmountEntity>(settings.Db.DataConnString, "ExtraAmounts", log)))
                 .As<IExtraAmountRepository>();
+
+            ioc.RegisterInstance(new OffchainTransferRepository(new AzureTableStorage<OffchainTransferEntity>(settings.Db.DataConnString, "Transfers", log)))
+                .As<IOffchainTransferRepository>();
         }
 
         private static void BindQueue(this ContainerBuilder ioc, BaseSettings settings)

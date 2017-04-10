@@ -14,5 +14,9 @@ namespace BitcoinApi.Models.Offchain
         public string Asset { get; set; }
         
         public string ClientPrevPrivateKey { get; set; }
+
+        public bool RequiredOperation { get; set; }
+
+        public Guid? TransferId { get; set; }
     }
 }

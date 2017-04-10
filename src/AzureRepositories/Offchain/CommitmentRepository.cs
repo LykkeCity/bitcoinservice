@@ -20,7 +20,7 @@ namespace AzureRepositories.Offchain
         public string InitialTransaction { get; set; }
         public string Multisig { get; set; }
         public string AssetId { get; set; }
-        public string SignedTransaction { get; set; }        
+        public string SignedTransaction { get; set; }
         public string RevokePubKey { get; set; }
 
         public decimal ClientAmount { get; set; }
@@ -30,7 +30,6 @@ namespace AzureRepositories.Offchain
         public string LockedScript { get; set; }
 
         public DateTime CreateDt { get; set; }
-
 
         public static class ByRecord
         {
@@ -56,7 +55,7 @@ namespace AzureRepositories.Offchain
                     ChannelId = channelTransactionId,
                     Multisig = multisig,
                     AssetId = asset,
-                    CommitType = (int)type,                    
+                    CommitType = (int)type,
                     RevokePubKey = revokePubKey,
                     InitialTransaction = initialTr,
                     ClientAmount = clientAmount,
@@ -85,7 +84,7 @@ namespace AzureRepositories.Offchain
                     ChannelId = commitment.ChannelId,
                     Multisig = commitment.Multisig,
                     AssetId = commitment.AssetId,
-                    CommitType = (int)commitment.Type,                    
+                    CommitType = (int)commitment.Type,
                     RevokePubKey = commitment.RevokePubKey,
                     InitialTransaction = commitment.InitialTransaction,
                     ClientAmount = commitment.ClientAmount,
@@ -136,7 +135,7 @@ namespace AzureRepositories.Offchain
                 entity.SignedTransaction = fullSignedCommitment;
                 return entity;
             });
-        }        
+        }
 
         public async Task<IEnumerable<ICommitment>> GetMonitoringCommitments()
         {
@@ -159,6 +158,17 @@ namespace AzureRepositories.Offchain
             var partition = CommitmentEntity.ByRecord.GeneratePartition(multisig, asset);
             return (await _table.GetDataAsync(partition, o => TransactionComparer.CompareTransactions(o.InitialTransaction, transactionHex))).FirstOrDefault();
 
+        }
+
+        public async Task RemoveCommitmentsOfChannel(string multisig, string asset, Guid channelId)
+        {
+            var partition = CommitmentEntity.ByRecord.GeneratePartition(multisig, asset);
+            var commitments = await _table.GetDataAsync(partition, o => o.ChannelId == channelId);
+            foreach (var commitment in commitments)
+            {
+                await _table.DeleteAsync(CommitmentEntity.ByMonitoring.GeneratePartitionKey(), commitment.CommitmentId.ToString());
+                await _table.DeleteAsync(partition, commitment.CommitmentId.ToString());
+            }
         }
     }
 }

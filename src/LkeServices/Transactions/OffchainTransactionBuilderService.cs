@@ -23,15 +23,23 @@ using LkeServices.Signature;
 
 namespace LkeServices.Transactions
 {
+
+    public class OffchainResponse
+    {
+        public Guid TransferId { get; set; }
+
+        public string TransactionHex { get; set; }
+    }
+
     public interface IOffchainTransactionBuilderService
     {
-        Task<string> CreateTransfer(string clientPubKey, decimal amount, IAsset asset, string clientPrevPrivateKey);
+        Task<OffchainResponse> CreateTransfer(string clientPubKey, decimal amount, IAsset asset, string clientPrevPrivateKey, bool requiredTransfer, Guid? transferId);
 
-        Task<string> CreateUnsignedChannel(string clientPubKey, string hotWalletPubKey, decimal clientAmount, decimal hubAmount, IAsset asset);
+        Task<OffchainResponse> CreateUnsignedChannel(string clientPubKey, string hotWalletPubKey, decimal clientAmount, decimal hubAmount, IAsset asset, bool requiredTransfer, Guid? transferId);
 
-        Task<string> CreateHubCommitment(string clientPubKey, IAsset asset, decimal amount, string signedByClientChannel);
+        Task<OffchainResponse> CreateHubCommitment(string clientPubKey, IAsset asset, decimal amount, string signedByClientChannel);
 
-        Task<string> Finalize(string clientPubKey, string hotWalletPubKey, IAsset asset, string clientRevokePubKey, string signedByClientHubCommitment);
+        Task<OffchainResponse> Finalize(string clientPubKey, string hotWalletPubKey, IAsset asset, string clientRevokePubKey, string signedByClientHubCommitment);
 
         Task SpendCommitmemtByMultisig(ICommitment commitment, ICoin spendingCoin, string destination);
 
@@ -57,6 +65,7 @@ namespace LkeServices.Transactions
         private readonly IBroadcastedOutputRepository _broadcastedOutputRepository;
         private readonly IRevokeKeyRepository _revokeKeyRepository;
         private readonly ILykkeTransactionBuilderService _lykkeTransactionBuilderService;
+        private readonly IOffchainTransferRepository _offchainTransferRepository;
         private readonly TransactionBuildContextFactory _transactionBuildContextFactory;
         private readonly IBitcoinBroadcastService _broadcastService;
 
@@ -72,7 +81,8 @@ namespace LkeServices.Transactions
             IPregeneratedOutputsQueueFactory pregeneratedOutputsQueueFactory,
             IBroadcastedOutputRepository broadcastedOutputRepository,
             IRevokeKeyRepository revokeKeyRepository,
-            ILykkeTransactionBuilderService lykkeTransactionBuilderService, 
+            ILykkeTransactionBuilderService lykkeTransactionBuilderService,
+            IOffchainTransferRepository offchainTransferRepository,
             TransactionBuildContextFactory transactionBuildContextFactory,
             IBitcoinBroadcastService broadcastService)
         {
@@ -88,23 +98,45 @@ namespace LkeServices.Transactions
             _broadcastedOutputRepository = broadcastedOutputRepository;
             _revokeKeyRepository = revokeKeyRepository;
             _lykkeTransactionBuilderService = lykkeTransactionBuilderService;
+            _offchainTransferRepository = offchainTransferRepository;
             _transactionBuildContextFactory = transactionBuildContextFactory;
             _broadcastService = broadcastService;
         }
 
-        public async Task<string> CreateTransfer(string clientPubKey, decimal amount, IAsset asset, string clientPrevPrivateKey)
+        private async Task CheckTransferFinalization(string multisig, string assetId, Guid? transferId, bool throwOpenNewChannelException)
+        {
+            var transfer = await _offchainTransferRepository.GetLastTransfer(multisig, assetId);
+            if (transfer == null)
+                return;
+            if (transfer.Completed)
+                return;
+            if (!transfer.Completed && transfer.Required && transfer.TransferId != transferId)
+                throw new BackendException("Channel is not finalized", ErrorCode.ChannelNotFinalized);
+
+            await _offchainTransferRepository.CloseTransfer(multisig, assetId, transfer.TransferId);
+
+            var channel = await _offchainChannelRepository.GetChannel(multisig, assetId);
+            if (channel != null && !channel.IsBroadcasted)
+            {
+                await _offchainChannelRepository.RevertChannel(multisig, assetId, channel.ChannelId);
+                await _commitmentRepository.RemoveCommitmentsOfChannel(multisig, assetId, channel.ChannelId);
+            }
+            if (throwOpenNewChannelException)
+                throw new BackendException("Should open new channel", ErrorCode.ShouldOpenNewChannel);
+        }
+
+        public async Task<OffchainResponse> CreateTransfer(string clientPubKey, decimal amount, IAsset asset, string clientPrevPrivateKey, bool requiredTransfer, Guid? transferId)
         {
             var address = await _multisigService.GetMultisig(clientPubKey);
 
             if (address == null)
                 throw new BackendException($"Client {clientPubKey} is not registered", ErrorCode.BadInputParameter);
 
+            await CheckTransferFinalization(address.MultisigAddress, asset.Id, transferId, true);
+
             var channel = await _offchainChannelRepository.GetChannel(address.MultisigAddress, asset.Id);
             if (channel == null)
                 throw new BackendException("Channel is not found", ErrorCode.ShouldOpenNewChannel);
-
-            if (!channel.IsBroadcasted)
-                throw new BackendException("Channel is not finalized", ErrorCode.ChannelNotFinalized);
 
             if (amount < 0 && channel.ClientAmount < Math.Abs(amount))
                 throw new BackendException("Client amount in channel is low than required", ErrorCode.ShouldOpenNewChannel);
@@ -133,16 +165,21 @@ namespace LkeServices.Transactions
             var commitmentResult = CreateCommitmentTransaction(address, new PubKey(address.ExchangePubKey), new PubKey(clientPubKey), hubRevokeKey.PubKey, new PubKey(clientPubKey), asset,
                 newHubAmount, newClientAmount, channel.FullySignedChannel);
 
+            var transfer = await _offchainTransferRepository.CreateTransfer(address.MultisigAddress, asset.Id, requiredTransfer);
 
             await _commitmentRepository.CreateCommitment(CommitmentType.Hub, channel.ChannelId, address.MultisigAddress, asset.Id,
                                                          hubRevokeKey.PubKey.ToHex(), commitmentResult.Transaction.ToHex(), newClientAmount,
                                                          newHubAmount, commitmentResult.LockedAddress, commitmentResult.LockedScript);
             await _revokeKeyRepository.AddRevokeKey(hubRevokeKey.PubKey.ToHex(), RevokeKeyType.Exchange, hubRevokeKey.ToString(_connectionParams.Network));
 
-            return commitmentResult.Transaction.ToHex();
+            return new OffchainResponse
+            {
+                TransactionHex = commitmentResult.Transaction.ToHex(),
+                TransferId = transfer.TransferId
+            };
         }
 
-        public async Task<string> CreateUnsignedChannel(string clientPubKey, string hotWalletPubKey, decimal clientAmount, decimal hubAmount, IAsset asset)
+        public async Task<OffchainResponse> CreateUnsignedChannel(string clientPubKey, string hotWalletPubKey, decimal clientAmount, decimal hubAmount, IAsset asset, bool requiredTransfer, Guid? transferId)
         {
             var address = await _multisigService.GetMultisig(clientPubKey);
 
@@ -154,13 +191,14 @@ namespace LkeServices.Transactions
             var clientAddress = new PubKey(clientPubKey).GetAddress(_connectionParams.Network);
             var hotWalletAddress = new PubKey(hotWalletPubKey).GetAddress(_connectionParams.Network);
 
-            TransactionBuildContext context = _transactionBuildContextFactory.Create(_connectionParams.Network);
+            await CheckTransferFinalization(address.MultisigAddress, asset.Id, transferId, false);
 
             var currentChannel = await _offchainChannelRepository.GetChannel(address.MultisigAddress, asset.Id);
 
             if (currentChannel != null && !currentChannel.IsBroadcasted)
                 throw new BackendException("There is another pending channel setup", ErrorCode.AnotherChannelSetupExists);
 
+            var context = _transactionBuildContextFactory.Create(_connectionParams.Network);
             return await context.Build(async () =>
             {
                 var builder = new TransactionBuilder();
@@ -195,16 +233,22 @@ namespace LkeServices.Transactions
                 _transactionBuildHelper.AggregateOutputs(tr);
 
                 var hex = tr.ToHex();
+
+                var transfer = await _offchainTransferRepository.CreateTransfer(multisig.ToWif(), asset.Id, requiredTransfer);
                 var channel = await _offchainChannelRepository.CreateChannel(multisig.ToWif(), asset.Id, hex, clientChannelAmount, hubChannelAmount);
 
                 await _broadcastedOutputRepository.InsertOutputs(OpenAssetsHelper.OrderBasedColoringOutputs(tr, context)
                     .Select(o => new BroadcastedOutput(o, channel.ChannelId, _connectionParams.Network)));
 
-                return hex;
+                return new OffchainResponse
+                {
+                    TransactionHex = hex,
+                    TransferId = transfer.TransferId
+                };
             });
         }
 
-        public async Task<string> CreateHubCommitment(string clientPubKey, IAsset asset, decimal amount, string signedByClientChannel)
+        public async Task<OffchainResponse> CreateHubCommitment(string clientPubKey, IAsset asset, decimal amount, string signedByClientChannel)
         {
             var address = await _multisigService.GetMultisig(clientPubKey);
 
@@ -246,10 +290,16 @@ namespace LkeServices.Transactions
                                                          newHubAmount, commitmentResult.LockedAddress, commitmentResult.LockedScript);
             await _revokeKeyRepository.AddRevokeKey(hubRevokeKey.PubKey.ToHex(), RevokeKeyType.Exchange, hubRevokeKey.ToString(_connectionParams.Network));
 
-            return commitmentResult.Transaction.ToHex();
+            var transfer = await _offchainTransferRepository.GetLastTransfer(address.MultisigAddress, asset.Id);
+
+            return new OffchainResponse
+            {
+                TransactionHex = commitmentResult.Transaction.ToHex(),
+                TransferId = transfer.TransferId
+            };
         }
 
-        public async Task<string> Finalize(string clientPubKey, string hotWalletPubKey, IAsset asset, string clientRevokePubKey, string signedByClientHubCommitment)
+        public async Task<OffchainResponse> Finalize(string clientPubKey, string hotWalletPubKey, IAsset asset, string clientRevokePubKey, string signedByClientHubCommitment)
         {
             var address = await _multisigService.GetMultisig(clientPubKey);
 
@@ -307,8 +357,13 @@ namespace LkeServices.Transactions
             }
 
             await _offchainChannelRepository.UpdateAmounts(address.MultisigAddress, asset.Id, hubCommitment.ClientAmount, hubCommitment.HubAmount);
-
-            return signedByHubCommitment;
+            var transfer = await _offchainTransferRepository.GetLastTransfer(address.MultisigAddress, asset.Id);
+            await _offchainTransferRepository.CompleteTransfer(address.MultisigAddress, asset.Id, transfer.TransferId);
+            return new OffchainResponse
+            {
+                TransactionHex = signedByHubCommitment,
+                TransferId = transfer.TransferId
+            };
         }
 
         public async Task SpendCommitmemtByMultisig(ICommitment commitment, ICoin spendingCoin, string destination)
