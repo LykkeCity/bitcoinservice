@@ -26,8 +26,16 @@ namespace BackgroundWorker.Functions
         [TimerTrigger("1:00:00")]
         public async Task FeeRateUpdate()
         {
-            var feeRate = await _feerateApiProvider.GetFee();
-
+            FeeResult feeRate = null;
+            try
+            {
+                feeRate = await _feerateApiProvider.GetFee();
+            }
+            catch (TaskCanceledException)
+            {
+                //ignored                
+                return;
+            }            
             int newFeeRate;
             switch (_settings.FeeType)
             {

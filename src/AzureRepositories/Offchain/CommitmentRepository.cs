@@ -91,7 +91,36 @@ namespace AzureRepositories.Offchain
                     HubAmount = commitment.HubAmount,
                     LockedAddress = commitment.LockedAddress,
                     LockedScript = commitment.LockedScript,
-                    CreateDt = DateTime.UtcNow
+                    CreateDt =commitment.CreateDt
+                };
+            }
+        }
+
+        public static class Archive
+        {
+
+            public static string GeneratePartitionKey()
+            {
+                return "Archive";
+            }
+
+            public static CommitmentEntity Create(ICommitment commitment)
+            {
+                return new CommitmentEntity
+                {
+                    PartitionKey = GeneratePartitionKey(),
+                    RowKey = commitment.CommitmentId.ToString(),
+                    ChannelId = commitment.ChannelId,
+                    Multisig = commitment.Multisig,
+                    AssetId = commitment.AssetId,
+                    CommitType = (int)commitment.Type,
+                    RevokePubKey = commitment.RevokePubKey,
+                    InitialTransaction = commitment.InitialTransaction,
+                    ClientAmount = commitment.ClientAmount,
+                    HubAmount = commitment.HubAmount,
+                    LockedAddress = commitment.LockedAddress,
+                    LockedScript = commitment.LockedScript,
+                    CreateDt = commitment.CreateDt
                 };
             }
         }
@@ -149,7 +178,9 @@ namespace AzureRepositories.Offchain
             var commitments = await _table.GetDataAsync(partition, o => o.ChannelId == channelId);
             foreach (var commitment in commitments)
             {
+                await _table.InsertAsync(CommitmentEntity.Archive.Create(commitment));
                 await _table.DeleteAsync(CommitmentEntity.ByMonitoring.GeneratePartitionKey(), commitment.CommitmentId.ToString());
+                await _table.DeleteAsync(commitment);
             }
         }
 

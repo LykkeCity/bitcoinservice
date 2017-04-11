@@ -22,20 +22,50 @@ namespace AzureRepositories.Offchain
 
         public DateTime CreateDt { get; set; }
 
-        public static string GeneratePartition(string multisig, string asset)
+
+        public static class ByRecord
         {
-            return asset + "_" + multisig;
+
+            public static string GeneratePartition(string multisig, string asset)
+            {
+                return asset + "_" + multisig;
+            }
+
+            public static OffchainTransferEntity Create(string multisig, string asset, bool required)
+            {
+                return new OffchainTransferEntity
+                {
+                    RowKey = Guid.NewGuid().ToString(),
+                    PartitionKey = GeneratePartition(multisig, asset),
+                    CreateDt = DateTime.UtcNow,
+                    AssetId = asset,
+                    Multisig = multisig,
+                    Required = required
+                };
+            }
         }
 
-        public static OffchainTransferEntity Create(string multisig, string asset, bool required)
+        public static class Archive
         {
-            return new OffchainTransferEntity
+            public static string GeneratePartition()
             {
-                RowKey = Guid.NewGuid().ToString(),
-                PartitionKey = GeneratePartition(multisig, asset),
-                CreateDt = DateTime.UtcNow,
-                Required = required
-            };
+                return "Archive";
+            }
+
+            public static OffchainTransferEntity Create(IOffchainTransfer transfer)
+            {
+                return new OffchainTransferEntity
+                {
+                    RowKey = transfer.TransferId.ToString(),
+                    PartitionKey = GeneratePartition(),
+                    CreateDt = transfer.CreateDt,
+                    Required = transfer.Required,
+                    AssetId = transfer.AssetId,
+                    Multisig = transfer.Multisig,
+                    Completed = transfer.Completed,
+                    Closed = transfer.Closed
+                };
+            }
         }
     }
 
@@ -51,38 +81,45 @@ namespace AzureRepositories.Offchain
 
         public async Task<IOffchainTransfer> CreateTransfer(string multisig, string asset, bool required)
         {
-            var entity = OffchainTransferEntity.Create(multisig, asset, required);
+            var entity = OffchainTransferEntity.ByRecord.Create(multisig, asset, required);
             await _table.InsertAsync(entity);
             return entity;
         }
 
         public async Task<IOffchainTransfer> GetTransfer(string multisig, string asset, Guid transferId)
         {
-            return await _table.GetDataAsync(OffchainTransferEntity.GeneratePartition(multisig, asset), transferId.ToString());
+            return await _table.GetDataAsync(OffchainTransferEntity.ByRecord.GeneratePartition(multisig, asset), transferId.ToString());
         }
 
         public async Task<IOffchainTransfer> GetLastTransfer(string multisig, string assetId)
         {
-            return (await _table.GetDataAsync(OffchainTransferEntity.GeneratePartition(multisig, assetId))).Where(o => !o.Closed).OrderByDescending(o => o.CreateDt)
+            return (await _table.GetDataAsync(OffchainTransferEntity.ByRecord.GeneratePartition(multisig, assetId))).OrderByDescending(o => o.CreateDt)
                     .FirstOrDefault();
         }
 
-        public Task CompleteTransfer(string multisig, string asset, Guid transferId)
+        public async Task CompleteTransfer(string multisig, string asset, Guid transferId)
         {
-            return _table.ReplaceAsync(OffchainTransferEntity.GeneratePartition(multisig, asset), transferId.ToString(), entity =>
+
+            var entity = await _table.GetDataAsync(OffchainTransferEntity.ByRecord.GeneratePartition(multisig, asset), transferId.ToString());
+            if (entity != null)
             {
-                entity.Completed = true;
-                return entity;
-            });
+                var archive = OffchainTransferEntity.Archive.Create(entity);
+                archive.Completed = true;
+                await _table.InsertAsync(archive);
+                await _table.DeleteAsync(entity);
+            }            
         }
 
-        public Task CloseTransfer(string multisig, string asset, Guid transferId)
+        public async Task CloseTransfer(string multisig, string asset, Guid transferId)
         {
-            return _table.ReplaceAsync(OffchainTransferEntity.GeneratePartition(multisig, asset), transferId.ToString(), entity =>
+            var entity = await _table.GetDataAsync(OffchainTransferEntity.ByRecord.GeneratePartition(multisig, asset), transferId.ToString());
+            if (entity != null)
             {
-                entity.Closed = true;
-                return entity;
-            });
+                var archive = OffchainTransferEntity.Archive.Create(entity);
+                archive.Closed = true;
+                await _table.InsertAsync(archive);
+                await _table.DeleteAsync(entity);
+            }
         }
     }
 }
