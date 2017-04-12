@@ -25,7 +25,7 @@ namespace Core.Repositories.Offchain
 
         bool IsBroadcasted { get; }
 
-        Guid? PrevChannelTrnasactionId { get; set; }        
+        Guid? PrevChannelTransactionId { get; set; }        
     }
 
 

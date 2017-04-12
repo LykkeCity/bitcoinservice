@@ -10,6 +10,7 @@ using Core.Repositories.Transactions;
 using Core.Repositories.TransactionSign;
 using Core.Settings;
 using Core.TransactionMonitoring;
+using LkeServices.Transactions;
 using Lykke.JobTriggers.Triggers.Attributes;
 using Lykke.JobTriggers.Triggers.Bindings;
 using NBitcoin;
@@ -19,6 +20,7 @@ namespace BackgroundWorker.Functions
     public class FeeReserveMonitoringFunction
     {
         private readonly BaseSettings _settings;
+        private readonly ILykkeTransactionBuilderService _lykkeTransactionBuilderService;
         private readonly IBroadcastedTransactionRepository _broadcastedTransactionRepository;
         private readonly ITransactionSignRequestRepository _transactionSignRequestRepository;
         private readonly IPregeneratedOutputsQueueFactory _pregeneratedOutputsQueueFactory;
@@ -26,9 +28,10 @@ namespace BackgroundWorker.Functions
         private readonly ISpentOutputRepository _spentOutputRepository;
         private readonly ILog _logger;
 
-        public FeeReserveMonitoringFunction(BaseSettings settings, IBroadcastedTransactionRepository broadcastedTransactionRepository, ITransactionSignRequestRepository transactionSignRequestRepository, IPregeneratedOutputsQueueFactory pregeneratedOutputsQueueFactory, ITransactionBlobStorage transactionBlobStorage, ISpentOutputRepository spentOutputRepository, ILog logger)
+        public FeeReserveMonitoringFunction(BaseSettings settings, ILykkeTransactionBuilderService lykkeTransactionBuilderService, IBroadcastedTransactionRepository broadcastedTransactionRepository, ITransactionSignRequestRepository transactionSignRequestRepository, IPregeneratedOutputsQueueFactory pregeneratedOutputsQueueFactory, ITransactionBlobStorage transactionBlobStorage, ISpentOutputRepository spentOutputRepository, ILog logger)
         {
             _settings = settings;
+            _lykkeTransactionBuilderService = lykkeTransactionBuilderService;
             _broadcastedTransactionRepository = broadcastedTransactionRepository;
             _transactionSignRequestRepository = transactionSignRequestRepository;
             _pregeneratedOutputsQueueFactory = pregeneratedOutputsQueueFactory;
@@ -58,7 +61,7 @@ namespace BackgroundWorker.Functions
 
                 var tr = new Transaction(transaction);
 
-                await _spentOutputRepository.RemoveSpentOutputs(tr.Inputs.Select(x => new Output(x.PrevOut)));
+                await _lykkeTransactionBuilderService.RemoveSpenOutputs(tr);                
 
                 var queue = _pregeneratedOutputsQueueFactory.CreateFeeQueue();
 

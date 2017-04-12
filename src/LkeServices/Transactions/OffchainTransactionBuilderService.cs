@@ -60,13 +60,12 @@ namespace LkeServices.Transactions
         private readonly IOffchainChannelRepository _offchainChannelRepository;
         private readonly ISignatureVerifier _signatureVerifier;
         private readonly ISignatureApiProvider _signatureApiProvider;
-        private readonly ICommitmentRepository _commitmentRepository;
-        private readonly IPregeneratedOutputsQueueFactory _pregeneratedOutputsQueueFactory;
+        private readonly ICommitmentRepository _commitmentRepository;        
         private readonly IBroadcastedOutputRepository _broadcastedOutputRepository;
         private readonly IRevokeKeyRepository _revokeKeyRepository;
         private readonly ILykkeTransactionBuilderService _lykkeTransactionBuilderService;
         private readonly IOffchainTransferRepository _offchainTransferRepository;
-        private readonly TransactionBuildContextFactory _transactionBuildContextFactory;
+        private readonly TransactionBuildContextFactory _transactionBuildContextFactory;        
         private readonly IBitcoinBroadcastService _broadcastService;
 
         public OffchainTransactionBuilderService(
@@ -77,13 +76,12 @@ namespace LkeServices.Transactions
             IOffchainChannelRepository offchainChannelRepository,
             ISignatureVerifier signatureVerifier,
             Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
-            ICommitmentRepository commitmentRepository,
-            IPregeneratedOutputsQueueFactory pregeneratedOutputsQueueFactory,
+            ICommitmentRepository commitmentRepository,            
             IBroadcastedOutputRepository broadcastedOutputRepository,
             IRevokeKeyRepository revokeKeyRepository,
             ILykkeTransactionBuilderService lykkeTransactionBuilderService,
             IOffchainTransferRepository offchainTransferRepository,
-            TransactionBuildContextFactory transactionBuildContextFactory,
+            TransactionBuildContextFactory transactionBuildContextFactory,            
             IBitcoinBroadcastService broadcastService)
         {
             _transactionBuildHelper = transactionBuildHelper;
@@ -93,13 +91,12 @@ namespace LkeServices.Transactions
             _offchainChannelRepository = offchainChannelRepository;
             _signatureVerifier = signatureVerifier;
             _signatureApiProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
-            _commitmentRepository = commitmentRepository;
-            _pregeneratedOutputsQueueFactory = pregeneratedOutputsQueueFactory;
+            _commitmentRepository = commitmentRepository;            
             _broadcastedOutputRepository = broadcastedOutputRepository;
             _revokeKeyRepository = revokeKeyRepository;
             _lykkeTransactionBuilderService = lykkeTransactionBuilderService;
             _offchainTransferRepository = offchainTransferRepository;
-            _transactionBuildContextFactory = transactionBuildContextFactory;
+            _transactionBuildContextFactory = transactionBuildContextFactory;           
             _broadcastService = broadcastService;
         }
 
@@ -120,6 +117,7 @@ namespace LkeServices.Transactions
             {
                 await _offchainChannelRepository.RevertChannel(multisig, assetId, channel.ChannelId);
                 await _commitmentRepository.RemoveCommitmentsOfChannel(multisig, assetId, channel.ChannelId);
+                await _lykkeTransactionBuilderService.RemoveSpenOutputs(new Transaction(channel.InitialTransaction));
             }
             if (throwOpenNewChannelException)
                 throw new BackendException("Should open new channel", ErrorCode.ShouldOpenNewChannel);
@@ -237,6 +235,8 @@ namespace LkeServices.Transactions
                 var transfer = await _offchainTransferRepository.CreateTransfer(multisig.ToWif(), asset.Id, requiredTransfer);
                 var channel = await _offchainChannelRepository.CreateChannel(multisig.ToWif(), asset.Id, hex, clientChannelAmount, hubChannelAmount);
 
+                await _lykkeTransactionBuilderService.SaveSpentOutputs(channel.ChannelId, tr);
+
                 await _broadcastedOutputRepository.InsertOutputs(OpenAssetsHelper.OrderBasedColoringOutputs(tr, context)
                     .Select(o => new BroadcastedOutput(o, channel.ChannelId, _connectionParams.Network)));
 
@@ -346,14 +346,12 @@ namespace LkeServices.Transactions
             {
                 var channelTr = new Transaction(channel.FullySignedChannel);
 
-                await _lykkeTransactionBuilderService.SaveSpentOutputs(channel.ChannelId, channelTr);
-
                 await _broadcastService.BroadcastTransaction(channel.ChannelId, channelTr);
 
                 await _offchainChannelRepository.SetChannelBroadcasted(address.MultisigAddress, asset.Id);
 
-                if (channel.PrevChannelTrnasactionId.HasValue)
-                    await _commitmentRepository.CloseCommitmentsOfChannel(address.MultisigAddress, asset.Id, channel.PrevChannelTrnasactionId.Value);
+                if (channel.PrevChannelTransactionId.HasValue)
+                    await _commitmentRepository.CloseCommitmentsOfChannel(address.MultisigAddress, asset.Id, channel.PrevChannelTransactionId.Value);
             }
 
             await _offchainChannelRepository.UpdateAmounts(address.MultisigAddress, asset.Id, hubCommitment.ClientAmount, hubCommitment.HubAmount);
