@@ -16,5 +16,9 @@ namespace BitcoinApi.Models.Offchain
         public decimal HubAmount { get; set; }
 
         public string Asset { get; set; }
+
+        public bool RequiredOperation { get; set; }
+
+        public Guid? TransferId { get; set; }
     }
 }

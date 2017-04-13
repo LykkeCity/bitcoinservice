@@ -8,7 +8,7 @@ using Core.Providers;
 using Core.Settings;
 using LkeServices.Providers;
 using LkeServices.Transactions;
-using LkeServices.Triggers.Attributes;
+using Lykke.JobTriggers.Triggers.Attributes;
 using NBitcoin;
 
 namespace BackgroundWorker.Functions
@@ -43,7 +43,7 @@ namespace BackgroundWorker.Functions
             _baseSettings = baseSettings;
         }
 
-        [TimerTrigger("23:00:00")]
+        [TimerTrigger("1.00:00:00")]
         public async Task Send()
         {
             var feePerByte = (await _feeProvider.GetFeeRate()).FeePerK.Satoshi * _baseSettings.SpendChangeFeeRateMultiplier / 1000;

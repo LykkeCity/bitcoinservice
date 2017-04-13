@@ -3,11 +3,12 @@ using System.Threading.Tasks;
 using AzureStorage.Queue;
 using Core;
 using Core.Notifiers;
+using Lykke.JobTriggers.Abstractions;
 using Newtonsoft.Json;
 
 namespace AzureRepositories.Notifiers
 {
-	public class SlackNotifier : ISlackNotifier
+	public class SlackNotifier : ISlackNotifier, IPoisionQueueNotifier
     {
 		private readonly IQueueExt _queue;
 
@@ -50,6 +51,11 @@ namespace AzureRepositories.Notifiers
             };
 
             await _queue.PutRawMessageAsync(JsonConvert.SerializeObject(obj));
+        }
+
+        public Task NotifyAsync(string message)
+        {
+            return ErrorAsync(message);
         }
     }
 }

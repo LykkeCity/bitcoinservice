@@ -6,7 +6,7 @@ using Common.Log;
 using Core.Repositories.Assets;
 using Core.Repositories.TransactionOutputs;
 using Core.Settings;
-using LkeServices.Triggers.Attributes;
+using Lykke.JobTriggers.Triggers.Attributes;
 
 namespace BackgroundWorker.Functions
 {
@@ -26,7 +26,7 @@ namespace BackgroundWorker.Functions
             _baseSettings = baseSettings;
         }
 
-        [TimerTrigger("23:00:00")]
+        [TimerTrigger("1.00:00:00")]
         public async Task RenewPool()
         {
             await RenewFee();

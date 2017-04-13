@@ -42,8 +42,7 @@ namespace LkeServices.Providers.Rest
 
             await _apiRequestRepository.LogToBlob(requestGuid, "request", info.ToString());
 
-            await _logger.WriteInfoAsync("LykkeHttpClientHandler", "SendAsync", "", requestLog);
-
+            await _logger.WriteInfoAsync("LykkeHttpClientHandler", "SendAsync", "", requestLog);            
             var response = await base.SendAsync(request, cancellationToken);
             try
             {
@@ -52,8 +51,7 @@ namespace LkeServices.Providers.Rest
                 var content = await response.Content.ReadAsStringAsync();
                 await _logger.WriteInfoAsync("LykkeHttpClientHandler", "SendAsync", "", $"Response reqId={reqId}, guid: {requestGuid}");
 
-                await _apiRequestRepository.LogToBlob(requestGuid, "response", content);
-
+                await _apiRequestRepository.LogToBlob(requestGuid, "response", content);                
                 return response;
             }
             catch (Exception ex)

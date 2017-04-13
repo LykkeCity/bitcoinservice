@@ -12,20 +12,15 @@ using AzureRepositories;
 using BackgroundWorker.Binders;
 using Common.IocContainer;
 using Core.Settings;
-using LkeServices.Triggers;
 using Microsoft.Extensions.Configuration;
 using System.Runtime.Loader;
+using Lykke.JobTriggers.Triggers;
+
 namespace BackgroundWorker
 {
     public class AppHost
     {
         public IConfigurationRoot Configuration { get; }
-
-#if DEBUG
-        const string SettingsBlobName = "bitcoinsettings.json";
-#else
-        const string SettingsBlobName = "globalsettings.json";
-#endif
 
         public AppHost()
         {
@@ -39,7 +34,13 @@ namespace BackgroundWorker
 
         public void Run()
         {
-            var settings = GeneralSettingsReader.ReadGeneralSettings<BaseSettings>(Configuration.GetConnectionString("Azure"), SettingsBlobName);
+            BaseSettings settings;
+#if DEBUG
+            settings = GeneralSettingsReader.ReadGeneralSettingsLocal<BaseSettings>(Configuration.GetConnectionString("Settings"));
+#else
+            var generalSettings = GeneralSettingsReader.ReadGeneralSettings<GeneralSettings>(Configuration.GetConnectionString("Settings"));
+            settings = generalSettings.BitcoinJobs;
+#endif
 
             var containerBuilder = new AzureBinder().Bind(settings);
             var ioc = containerBuilder.Build();
@@ -58,7 +59,7 @@ namespace BackgroundWorker
                 end.WaitOne();
             };
 
-            triggerHost.StartAndBlock();
+            triggerHost.Start().Wait();
             end.Set();
         }
     }

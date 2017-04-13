@@ -10,12 +10,11 @@
     "Microsoft.Extensions.Configuration.Json": "1.0.0",
     "AzureRepositories": "1.0.0-*",
     "System.Reflection": "4.3.0",
-    "System.Runtime.Loader": "4.3.0",
-    "Microsoft.Extensions.DependencyInjection": "1.1.0" 
+    "System.Runtime.Loader": "4.3.0"
   },
 
   "frameworks": {
-    "netcoreapp1.0": {
+    "netcoreapp1.1": {
       "dependencies": {
         "Microsoft.NETCore.App": {
           "type": "platform",
