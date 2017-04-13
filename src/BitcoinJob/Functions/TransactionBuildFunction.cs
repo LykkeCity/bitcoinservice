@@ -128,18 +128,19 @@ namespace BackgroundWorker.Functions
                 PutDateTime = DateTime.UtcNow
             }.ToJson());
 
-            try
-            {
-                await _queueFactory(Constants.TransactionsForClientSignatureQueue).PutRawMessageAsync(new
-                {
-                    TransactionId = message.TransactionId,
-                    Transaction = transactionResponse.Transaction
-                }.ToJson());
-            }
-            catch (Exception ex)
-            {
-                await _logger.WriteErrorAsync("TransactionBuildFunction", "ProcessMessage", message.ToJson(), ex);
-            }
+            //TODO: uncomment for client signatures
+            //try
+            //{
+            //    await _queueFactory(Constants.TransactionsForClientSignatureQueue).PutRawMessageAsync(new
+            //    {
+            //        TransactionId = message.TransactionId,
+            //        Transaction = transactionResponse.Transaction
+            //    }.ToJson());
+            //}
+            //catch (Exception ex)
+            //{
+            //    await _logger.WriteErrorAsync("TransactionBuildFunction", "ProcessMessage", message.ToJson(), ex);
+            //}
         }
     }
 }
