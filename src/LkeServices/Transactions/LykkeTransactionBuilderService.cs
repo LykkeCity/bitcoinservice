@@ -34,6 +34,8 @@ namespace LkeServices.Transactions
 
         Task SaveSpentOutputs(Guid transactionId, Transaction transaction);
 
+        Task RemoveSpenOutputs(Transaction transaction);
+
         Task<Guid> AddTransactionId(Guid? transactionId, string rawRequest);
     }
 
@@ -303,6 +305,11 @@ namespace LkeServices.Transactions
             {
                 await _broadcastedOutputRepository.DeleteOutput(outPoint.Hash.ToString(), (int)outPoint.N);
             }
+        }
+
+        public Task RemoveSpenOutputs(Transaction transaction)
+        {
+            return _spentOutputRepository.RemoveSpentOutputs(transaction.Inputs.Select(o => new Output(o.PrevOut)));
         }
 
         public async Task<Guid> AddTransactionId(Guid? transactionId, string rawRequest)

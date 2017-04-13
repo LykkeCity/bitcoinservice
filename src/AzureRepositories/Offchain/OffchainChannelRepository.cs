@@ -26,7 +26,7 @@ namespace AzureRepositories.Offchain
 
         public bool IsBroadcasted { get; set; }
 
-        public Guid? PrevChannelTrnasactionId { get; set; }
+        public Guid? PrevChannelTransactionId { get; set; }
 
         public class CurrentChannel
         {
@@ -54,7 +54,7 @@ namespace AzureRepositories.Offchain
                     HubAmount = hubAmount,
                     ClientAmount = clientAmount,
                     FullySignedChannel = null,
-                    PrevChannelTrnasactionId = prevChannelTransactionId
+                    PrevChannelTransactionId = prevChannelTransactionId
                 };
             }
 
@@ -71,7 +71,8 @@ namespace AzureRepositories.Offchain
                     HubAmount = channel.HubAmount,
                     ClientAmount = channel.ClientAmount,
                     FullySignedChannel = channel.FullySignedChannel,
-                    IsBroadcasted = channel.IsBroadcasted
+                    IsBroadcasted = channel.IsBroadcasted,
+                    PrevChannelTransactionId = channel.PrevChannelTransactionId
                 };
             }
         }
@@ -96,7 +97,8 @@ namespace AzureRepositories.Offchain
                     HubAmount = channel.HubAmount,
                     ClientAmount = channel.ClientAmount,
                     FullySignedChannel = channel.FullySignedChannel,
-                    IsBroadcasted = channel.IsBroadcasted
+                    IsBroadcasted = channel.IsBroadcasted,
+                    PrevChannelTransactionId = channel.PrevChannelTransactionId
                 };
             }
         }
@@ -184,9 +186,9 @@ namespace AzureRepositories.Offchain
             if (current != null && current.ChannelId == channelId)
             {
                 await _table.DeleteAsync(current);
-                if (!current.PrevChannelTrnasactionId.HasValue)
+                if (!current.PrevChannelTransactionId.HasValue)
                     return;
-                var archived = await _table.GetDataAsync(OffchainChannelEntity.Archived.GeneratePartitionKey(multisig, asset), current.PrevChannelTrnasactionId.ToString());
+                var archived = await _table.GetDataAsync(OffchainChannelEntity.Archived.GeneratePartitionKey(multisig, asset), current.PrevChannelTransactionId.ToString());
                 if (archived != null)
                 {
                     var entity = OffchainChannelEntity.CurrentChannel.Create(archived);
