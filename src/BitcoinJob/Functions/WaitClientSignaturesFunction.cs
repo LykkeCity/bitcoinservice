@@ -38,7 +38,7 @@ namespace BackgroundWorker.Functions
             _clientSignatureApi = signatureApiProviderFactory(SignatureApiProviderType.Client);
         }
 
-        [QueueTrigger(Constants.ClientSignMonitoringQueue)]
+        [QueueTrigger(Constants.ClientSignMonitoringQueue, 100, true)]
         public async Task ProcessMessage(WaitClientSignatureMessage message, QueueTriggeringContext context)
         {
             var signedByClient = await _transactionBlobStorage.GetTransaction(message.TransactionId, TransactionBlobType.Client);
