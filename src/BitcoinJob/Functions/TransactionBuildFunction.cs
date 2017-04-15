@@ -30,11 +30,13 @@ namespace BackgroundWorker.Functions
         private readonly BaseSettings _settings;
         private readonly ILog _logger;
         private readonly ITransactionBlobStorage _transactionBlobStorage;
+        private readonly ITransactionSignRequestRepository _signRequestRepository;
 
         public TransactionBuildFunction(ILykkeTransactionBuilderService lykkeTransactionBuilderService,
             IAssetRepository assetRepository,
             IFailedTransactionsManager failedTransactionManager,
-            Func<string, IQueueExt> queueFactory, BaseSettings settings, ILog logger, ITransactionBlobStorage transactionBlobStorage)
+            Func<string, IQueueExt> queueFactory, BaseSettings settings, ILog logger, ITransactionBlobStorage transactionBlobStorage,
+            ITransactionSignRequestRepository signRequestRepository)
         {
             _lykkeTransactionBuilderService = lykkeTransactionBuilderService;
             _assetRepository = assetRepository;
@@ -43,6 +45,7 @@ namespace BackgroundWorker.Functions
             _settings = settings;
             _logger = logger;
             _transactionBlobStorage = transactionBlobStorage;
+            _signRequestRepository = signRequestRepository;
         }
 
 
@@ -52,6 +55,15 @@ namespace BackgroundWorker.Functions
             CreateTransactionResponse transactionResponse;
             try
             {
+                var request = await _signRequestRepository.GetSignRequest(message.TransactionId);
+
+                if (request?.Invalidated == true)
+                {
+                    context.MoveMessageToPoison(message.ToJson());
+                    await _failedTransactionManager.InsertFailedTransaction(message.TransactionId, null, "Transaction was invalidated");
+                    return;
+                }
+
                 switch (message.Type)
                 {
                     case TransactionCommandType.Issue:

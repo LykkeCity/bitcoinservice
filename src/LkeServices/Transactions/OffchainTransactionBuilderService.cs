@@ -552,7 +552,7 @@ namespace LkeServices.Transactions
                 }
                 if (lockedAmount > 0)
                 {
-                    builder.Send(lockedAddress, new AssetMoney(assetId, lockedAmount, asset.MultiplierPower));
+                    builder.SendAsset(lockedAddress, new AssetMoney(assetId, lockedAmount, asset.MultiplierPower));
                     dustAmount += new TxOut(Money.Zero, lockedAddress.ScriptPubKey).GetDustThreshold(builder.StandardTransactionPolicy.MinRelayTxFee);
                 }
                 additionalBtc = dustAmount - sendAmount;
