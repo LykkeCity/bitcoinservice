@@ -48,6 +48,21 @@ namespace BitcoinApi.Controllers
             return new OffchainApiResponse(tr);
         }
 
+
+        [HttpPost("createcashin")]
+        [ProducesResponseType(typeof(OffchainApiResponse), 200)]
+        [ProducesResponseType(typeof(ApiException), 400)]
+        public async Task<OffchainApiResponse> CreateCashin([FromBody]CreateCashinModel model)
+        {
+            var asset = await _assetRepository.GetAssetById(model.Asset);
+            if (asset == null)
+                throw new BackendException("Provided asset is missing in database", ErrorCode.AssetNotFound);
+
+            var tr = await _offchainTransactionBuilder.CreateCashin(model.ClientPubKey, model.Amount, asset, model.CashinAddress, model.TransferId);
+            return new OffchainApiResponse(tr);
+        }
+
+
         [HttpPost("createhubcommitment")]
         [ProducesResponseType(typeof(OffchainApiResponse), 200)]
         [ProducesResponseType(typeof(ApiException), 400)]
