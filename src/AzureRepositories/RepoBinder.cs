@@ -112,6 +112,9 @@ namespace AzureRepositories
 
             ioc.RegisterInstance(new OffchainTransferRepository(new AzureTableStorage<OffchainTransferEntity>(settings.Db.DataConnString, "Transfers", log)))
                 .As<IOffchainTransferRepository>();
+
+            ioc.RegisterInstance(new ClosingChannelRepository(new AzureTableStorage<ClosingChannelEntity>(settings.Db.DataConnString, "ClosingChannel", log)))
+                .As<IClosingChannelRepository>();
         }
 
         private static void BindQueue(this ContainerBuilder ioc, BaseSettings settings)

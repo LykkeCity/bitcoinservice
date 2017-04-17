@@ -5,18 +5,15 @@ using System.Threading.Tasks;
 
 namespace BitcoinApi.Models.Offchain
 {
-    public class CreateChannelModel
+    public class CloseChannelModel
     {
         public string ClientPubKey { get; set; }
 
+        public string CashoutAddress { get; set; }
+
         public string HotWalletPubKey { get; set; }
-        
-        public decimal HubAmount { get; set; }
 
         public string Asset { get; set; }
 
-        public bool RequiredOperation { get; set; }
-
-        public Guid? TransferId { get; set; }
     }
 }

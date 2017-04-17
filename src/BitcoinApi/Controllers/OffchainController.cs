@@ -43,7 +43,7 @@ namespace BitcoinApi.Controllers
             if (asset == null)
                 throw new BackendException("Provided asset is missing in database", ErrorCode.AssetNotFound);
 
-            var tr = await _offchainTransactionBuilder.CreateUnsignedChannel(model.ClientPubKey, model.HotWalletPubKey, model.ClientAmount, model.HubAmount, asset
+            var tr = await _offchainTransactionBuilder.CreateUnsignedChannel(model.ClientPubKey, model.HotWalletPubKey, model.HubAmount, asset
                 , model.RequiredOperation, model.TransferId);
             return new OffchainApiResponse(tr);
         }
@@ -99,6 +99,31 @@ namespace BitcoinApi.Controllers
                 throw new BackendException("Provided asset is missing in database", ErrorCode.AssetNotFound);
             return new TransactionHashResponse(await _offchainTransactionBuilder.BroadcastCommitment(model.ClientPubKey, asset, model.Transaction));
         }
+
+        [HttpPost("closechannel")]
+        [ProducesResponseType(typeof(OffchainApiResponse), 200)]
+        [ProducesResponseType(typeof(ApiException), 400)]
+        public async Task<OffchainApiResponse> CloseChannel([FromBody]CloseChannelModel model)
+        {
+            var asset = await _assetRepository.GetAssetById(model.Asset);
+            if (asset == null)
+                throw new BackendException("Provided asset is missing in database", ErrorCode.AssetNotFound);
+            return new OffchainApiResponse(await _offchainTransactionBuilder.CloseChannel(model.ClientPubKey, model.CashoutAddress,
+                model.HotWalletPubKey, asset));
+        }
+
+
+        [HttpPost("broadcastclosing")]
+        [ProducesResponseType(typeof(TransactionHashResponse), 200)]
+        [ProducesResponseType(typeof(ApiException), 400)]
+        public async Task<TransactionHashResponse> BroadcastClosing([FromBody]BroadcastClosingChannelModel model)
+        {
+            var asset = await _assetRepository.GetAssetById(model.Asset);
+            if (asset == null)
+                throw new BackendException("Provided asset is missing in database", ErrorCode.AssetNotFound);
+            return new TransactionHashResponse(await _offchainTransactionBuilder.BroadcastClosingChannel(model.ClientPubKey, asset, model.SignedByClientTransaction));
+        }
+
     }
 
 }

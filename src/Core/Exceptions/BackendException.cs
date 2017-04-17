@@ -45,6 +45,8 @@ namespace Core.Exceptions
         CommitmentExpired = 25,
         KeyUsedAlready = 26,
         NotEnoughtClientFunds = 27,
-        PrivateKeyIsBad = 28
+        PrivateKeyIsBad = 28,
+        ClosingChannelNotFound = 29,
+        ClosingChannelExpired = 30
     }
 }
