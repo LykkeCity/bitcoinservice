@@ -220,11 +220,11 @@ namespace LkeServices.Transactions
                     clientChannelAmount = multisigAmount;
                     hubChannelAmount = hubAmount;
 
-                    await SendToMultisig(hotWalletAddress, multisig, asset, builder, context, hubAmount);                    
+                    await SendToMultisig(hotWalletAddress, multisig, asset, builder, context, hubAmount);
                 }
                 else
                 {
-                    clientChannelAmount = currentChannel.ClientAmount;
+                    clientChannelAmount = currentChannel.ClientAmount + Math.Max(0, multisigAmount - currentChannel.ClientAmount - currentChannel.HubAmount);
                     hubChannelAmount = Math.Max(0, hubAmount - currentChannel.HubAmount);
 
                     await SendToMultisig(hotWalletAddress, multisig, asset, builder, context, hubChannelAmount);
@@ -510,7 +510,7 @@ namespace LkeServices.Transactions
 
             if (address == null)
                 throw new BackendException($"Client {clientPubKey} is not registered", ErrorCode.BadInputParameter);
-            
+
             await CheckTransferFinalization(address.MultisigAddress, asset.Id, null, false);
 
             var channel = await _offchainChannelRepository.GetChannel(address.MultisigAddress, asset.Id);
