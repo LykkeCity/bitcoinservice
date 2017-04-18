@@ -27,24 +27,21 @@ namespace BitcoinApi.Controllers
     {
         private readonly ILykkeTransactionBuilderService _builder;
         private readonly IAssetRepository _assetRepository;
-        private readonly ISignatureApiProvider _signatureApiProvider;
-        private readonly ILog _log;
+        private readonly ISignatureApiProvider _signatureApiProvider;        
         private readonly ITransactionSignRequestRepository _transactionSignRequestRepository;
         private readonly ITransactionBlobStorage _transactionBlobStorage;
         private readonly IBitcoinBroadcastService _broadcastService;
 
         public TransactionController(ILykkeTransactionBuilderService builder,
             IAssetRepository assetRepository,
-            Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
-            ILog log,
+            Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,            
             ITransactionSignRequestRepository transactionSignRequestRepository,
             ITransactionBlobStorage transactionBlobStorage,
             IBitcoinBroadcastService broadcastService)
         {
             _builder = builder;
             _assetRepository = assetRepository;
-            _signatureApiProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
-            _log = log;
+            _signatureApiProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);            
             _transactionSignRequestRepository = transactionSignRequestRepository;
             _transactionBlobStorage = transactionBlobStorage;
             _broadcastService = broadcastService;
@@ -59,8 +56,6 @@ namespace BitcoinApi.Controllers
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<IActionResult> CreateCashout([FromBody]TransferRequest model)
         {
-            await Log("Transfer", "Begin", model);
-
             if (model.Amount <= 0)
                 throw new BackendException("Amount can't be less or equal to zero", ErrorCode.BadInputParameter);
 
@@ -81,9 +76,7 @@ namespace BitcoinApi.Controllers
             var createTransactionResponse = await _builder.GetTransferTransaction(sourceAddress, destAddress, model.Amount, asset, transactionId, true);
 
             await _transactionBlobStorage.AddOrReplaceTransaction(transactionId, TransactionBlobType.Initial, createTransactionResponse.Transaction);
-
-            await Log("Transfer", "End", model, createTransactionResponse.TransactionId);
-
+         
             return Ok(new TransactionResponse
             {
                 Transaction = createTransactionResponse.Transaction,
@@ -99,9 +92,7 @@ namespace BitcoinApi.Controllers
         [ProducesResponseType(200)]
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task Broadcast([FromBody] BroadcastTransactionRequest model)
-        {
-            await Log("Broadcast", "Begin", model);
-
+        {         
             var signRequest = await _transactionSignRequestRepository.GetSignRequest(model.TransactionId);
 
             if (signRequest == null)
@@ -121,22 +112,7 @@ namespace BitcoinApi.Controllers
 
             var fullSigned = new Transaction(fullSignedHex);
 
-            await _broadcastService.BroadcastTransaction(model.TransactionId, fullSigned);
-
-            await Log("Broadcast", "End", model);
-        }
-
-        private async Task Log(string method, string status, object model, Guid? transactionId = null)
-        {
-            var properties = model.GetType().GetTypeInfo().GetProperties();
-            var builder = new StringBuilder();
-            foreach (var prop in properties)
-                builder.Append($"{prop.Name}: [{prop.GetValue(model)}], ");
-
-            if (transactionId.HasValue)
-                builder.Append($"Transaction: [{transactionId}]");
-
-            await _log.WriteInfoAsync("TransactionController", method, status, builder.ToString());
-        }
+            await _broadcastService.BroadcastTransaction(model.TransactionId, fullSigned);            
+        }     
     }
 }

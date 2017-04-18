@@ -22,18 +22,15 @@ namespace BitcoinApi.Controllers
     {
         private readonly ILykkeTransactionBuilderService _builder;
         private readonly IAssetRepository _assetRepository;
-        private readonly ILog _log;
         private readonly ITransactionQueueWriter _transactionQueueWriter;
         private readonly IRetryFailedTransactionService _retryFailedService;
 
         public EnqueueTransactionController(ILykkeTransactionBuilderService builder,
             IAssetRepository assetRepository,
-            ILog log,
             ITransactionQueueWriter transactionQueueWriter, IRetryFailedTransactionService retryFailedService)
         {
             _builder = builder;
             _assetRepository = assetRepository;
-            _log = log;
             _transactionQueueWriter = transactionQueueWriter;
             _retryFailedService = retryFailedService;
         }
@@ -47,8 +44,6 @@ namespace BitcoinApi.Controllers
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<IActionResult> CreateCashout([FromBody]TransferRequest model)
         {
-            await Log("Transfer", "Begin", model);
-
             if (model.Amount <= 0)
                 throw new BackendException("Amount can't be less or equal to zero", ErrorCode.BadInputParameter);
 
@@ -74,8 +69,6 @@ namespace BitcoinApi.Controllers
                 DestinationAddress = model.DestinationAddress
             }.ToJson());
 
-            await Log("Transfer", "End", model, transactionId);
-
             return Ok(new TransactionIdResponse
             {
                 TransactionId = transactionId
@@ -91,8 +84,6 @@ namespace BitcoinApi.Controllers
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<IActionResult> CreateTransferAll([FromBody]TransferAllRequest model)
         {
-            await Log("TransferAll", "Begin", model);
-
             var sourceAddress = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(model.SourceAddress);
             if (sourceAddress == null)
                 throw new BackendException("Invalid source address provided", ErrorCode.InvalidAddress);
@@ -108,8 +99,6 @@ namespace BitcoinApi.Controllers
                 DestinationAddress = model.DestinationAddress,
             }.ToJson());
 
-
-            await Log("TransferAll", "End", model, transactionId);
             return Ok(new TransactionIdResponse
             {
                 TransactionId = transactionId
@@ -127,8 +116,6 @@ namespace BitcoinApi.Controllers
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<IActionResult> CreateSwap([FromBody]SwapRequest model)
         {
-            await Log("Swap", "Begin", model);
-
             if (model.Amount1 <= 0 || model.Amount2 <= 0)
                 throw new BackendException("Amount can't be less or equal to zero", ErrorCode.BadInputParameter);
 
@@ -161,8 +148,6 @@ namespace BitcoinApi.Controllers
                 Asset2 = model.Asset2
             }.ToJson());
 
-            await Log("Swap", "End", model, transactionId);
-
             return Ok(new TransactionIdResponse
             {
                 TransactionId = transactionId
@@ -178,8 +163,6 @@ namespace BitcoinApi.Controllers
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<IActionResult> Issue([FromBody] IssueRequest model)
         {
-            await Log("Issue", "Begin", model);
-
             if (model.Amount <= 0)
                 throw new BackendException("Amount can't be less or equal to zero", ErrorCode.BadInputParameter);
 
@@ -200,9 +183,6 @@ namespace BitcoinApi.Controllers
                 Address = model.Address
             }.ToJson());
 
-
-            await Log("Issue", "End", model, transactionId);
-
             return Ok(new TransactionIdResponse
             {
                 TransactionId = transactionId
@@ -218,8 +198,6 @@ namespace BitcoinApi.Controllers
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<IActionResult> Destroy([FromBody] DestroyRequest model)
         {
-            await Log("Destroy", "Begin", model);
-
             if (model.Amount <= 0)
                 throw new BackendException("Amount can't be less or equal to zero", ErrorCode.BadInputParameter);
 
@@ -240,8 +218,6 @@ namespace BitcoinApi.Controllers
                 Address = model.Address,
             }.ToJson());
 
-            await Log("Destroy", "End", model, transactionId);
-
             return Ok(new TransactionIdResponse
             {
                 TransactionId = transactionId
@@ -253,27 +229,9 @@ namespace BitcoinApi.Controllers
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<IActionResult> Retry([FromBody] RetryFailedRequest model)
         {
-            await Log("Retry", "Begin", model);
-
             await _retryFailedService.RetryTransaction(model.TransactionId);
-
-            await Log("Retry", "End", model);
 
             return Ok();
         }
-
-        private async Task Log(string method, string status, object model, Guid? transactionId = null)
-        {
-            var properties = model.GetType().GetTypeInfo().GetProperties();
-            var builder = new StringBuilder();
-            foreach (var prop in properties)
-                builder.Append($"{prop.Name}: [{prop.GetValue(model)}], ");
-
-            if (transactionId.HasValue)
-                builder.Append($"Transaction: [{transactionId}]");
-
-            await _log.WriteInfoAsync("EnqueueTransactionController", method, status, builder.ToString());
-        }
-
     }
 }
