@@ -22,16 +22,18 @@ namespace LkeServices.Bitcoin
         private readonly ISpentOutputRepository _spentOutputRepository;
         private readonly IWalletAddressRepository _walletAddressRepository;
         private readonly RpcConnectionParams _connectionParams;
+        private readonly INinjaOutputBlobStorage _ninjaBlobStorage;
 
         public BitcoinOutputsService(IQBitNinjaApiCaller qBitNinjaApiCaller,
             IBroadcastedOutputRepository broadcastedOutputRepository,
-            ISpentOutputRepository spentOutputRepository, IWalletAddressRepository walletAddressRepository, RpcConnectionParams connectionParams)
+            ISpentOutputRepository spentOutputRepository, IWalletAddressRepository walletAddressRepository, RpcConnectionParams connectionParams, INinjaOutputBlobStorage ninjaBlobStorage)
         {
             _qBitNinjaApiCaller = qBitNinjaApiCaller;
             _broadcastedOutputRepository = broadcastedOutputRepository;
             _spentOutputRepository = spentOutputRepository;
             _walletAddressRepository = walletAddressRepository;
             _connectionParams = connectionParams;
+            _ninjaBlobStorage = ninjaBlobStorage;
         }
 
         public async Task<IEnumerable<ICoin>> GetUnspentOutputs(string walletAddress, int confirmationsCount = 0)
@@ -40,6 +42,8 @@ namespace LkeServices.Bitcoin
             var coins = outputResponse.Operations
                                         .Where(x => x.Confirmations >= Math.Max(1, confirmationsCount))
                                         .SelectMany(o => o.ReceivedCoins).ToList();
+
+            await _ninjaBlobStorage.Save(walletAddress, coins);
 
             //get unique saved coins
             if (confirmationsCount == 0)

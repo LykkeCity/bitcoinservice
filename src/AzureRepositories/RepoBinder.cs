@@ -18,6 +18,7 @@ using AzureRepositories.TransactionQueueHolder;
 using AzureRepositories.Transactions;
 using AzureRepositories.TransactionSign;
 using AzureRepositories.Walelts;
+using AzureStorage;
 using AzureStorage.Blob;
 using AzureStorage.Queue;
 using AzureStorage.Tables;
@@ -115,6 +116,9 @@ namespace AzureRepositories
 
             ioc.RegisterInstance(new ClosingChannelRepository(new AzureTableStorage<ClosingChannelEntity>(settings.Db.DataConnString, "ClosingChannel", log)))
                 .As<IClosingChannelRepository>();
+
+            ioc.RegisterInstance(new NinjaOutputBlobStorage(new AzureBlobStorage(settings.Db.DataConnString)))
+                .As<INinjaOutputBlobStorage>();
         }
 
         private static void BindQueue(this ContainerBuilder ioc, BaseSettings settings)
