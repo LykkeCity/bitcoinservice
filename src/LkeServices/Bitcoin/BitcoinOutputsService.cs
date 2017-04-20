@@ -21,29 +21,56 @@ namespace LkeServices.Bitcoin
         private readonly IBroadcastedOutputRepository _broadcastedOutputRepository;
         private readonly ISpentOutputRepository _spentOutputRepository;
         private readonly IWalletAddressRepository _walletAddressRepository;
+        private readonly BaseSettings _settings;
         private readonly RpcConnectionParams _connectionParams;
         private readonly INinjaOutputBlobStorage _ninjaBlobStorage;
 
         public BitcoinOutputsService(IQBitNinjaApiCaller qBitNinjaApiCaller,
             IBroadcastedOutputRepository broadcastedOutputRepository,
-            ISpentOutputRepository spentOutputRepository, IWalletAddressRepository walletAddressRepository, RpcConnectionParams connectionParams, INinjaOutputBlobStorage ninjaBlobStorage)
+            ISpentOutputRepository spentOutputRepository, IWalletAddressRepository walletAddressRepository,
+            BaseSettings settings,
+            RpcConnectionParams connectionParams, INinjaOutputBlobStorage ninjaBlobStorage)
         {
             _qBitNinjaApiCaller = qBitNinjaApiCaller;
             _broadcastedOutputRepository = broadcastedOutputRepository;
             _spentOutputRepository = spentOutputRepository;
             _walletAddressRepository = walletAddressRepository;
+            _settings = settings;
             _connectionParams = connectionParams;
             _ninjaBlobStorage = ninjaBlobStorage;
         }
 
+
+        //temp method for workaround ninja bug
+        private async Task<List<ICoin>> GetNinjaCoins(string walletAddress, int confirmationsCount)
+        {
+            var coinsArray = new IEnumerable<ICoin>[_settings.RepeatNinjaCount];
+            var coinsMap = new HashSet<OutPoint>[_settings.RepeatNinjaCount];
+
+            for (var i = 0; i < _settings.RepeatNinjaCount; i++)
+            {
+                var outputResponse = await _qBitNinjaApiCaller.GetAddressBalance(walletAddress);
+                var coins = outputResponse.Operations
+                                            .Where(x => x.Confirmations >= Math.Max(1, confirmationsCount))
+                                            .SelectMany(o => o.ReceivedCoins).ToList();
+                coinsArray[i] = coins;
+                coinsMap[i] = new HashSet<OutPoint>(coins.Select(o => o.Outpoint));
+                await Task.Delay(100);
+            }
+
+            var intersect = coinsMap[0];
+            for (var i = 1; i < _settings.RepeatNinjaCount; i++)
+                intersect.IntersectWith(coinsMap[i]);
+
+            var result = coinsArray[0].Where(o => intersect.Contains(o.Outpoint)).ToList();
+            await _ninjaBlobStorage.Save(walletAddress, result);
+            return result;
+        }
+
+
         public async Task<IEnumerable<ICoin>> GetUnspentOutputs(string walletAddress, int confirmationsCount = 0)
         {
-            var outputResponse = await _qBitNinjaApiCaller.GetAddressBalance(walletAddress);
-            var coins = outputResponse.Operations
-                                        .Where(x => x.Confirmations >= Math.Max(1, confirmationsCount))
-                                        .SelectMany(o => o.ReceivedCoins).ToList();
-
-            await _ninjaBlobStorage.Save(walletAddress, coins);
+            var coins = await GetNinjaCoins(walletAddress, confirmationsCount);
 
             //get unique saved coins
             if (confirmationsCount == 0)
@@ -71,7 +98,7 @@ namespace LkeServices.Bitcoin
             var unspentSet = new HashSet<OutPoint>(unspentOutputs.Select(x => new OutPoint(uint256.Parse(x.TransactionHash), x.N)));
 
             coins = coins.Where(o => unspentSet.Contains(o.Outpoint)).ToList();
-            
+
             var address = BitcoinAddress.Create(walletAddress);
 
             switch (address.Type)
