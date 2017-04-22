@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AzureStorage;
+using Core.Exceptions;
 using Core.Repositories.Offchain;
+using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 
 namespace AzureRepositories.Offchain
@@ -64,6 +66,7 @@ namespace AzureRepositories.Offchain
                 {
                     RowKey = transfer.TransferId.ToString(),
                     PartitionKey = GeneratePartition(),
+                    TransferId = transfer.TransferId,
                     CreateDt = transfer.CreateDt,
                     Required = transfer.Required,
                     AssetId = transfer.AssetId,
@@ -87,9 +90,29 @@ namespace AzureRepositories.Offchain
 
         public async Task<IOffchainTransfer> CreateTransfer(string multisig, string asset, bool required)
         {
-            var entity = OffchainTransferEntity.ByRecord.Create(multisig, asset, required);
-            await _table.InsertAsync(entity);
-            return entity;
+            Action<StorageException> throwIfBackend = (exception) =>
+            {
+                if (exception != null && exception.RequestInformation.HttpStatusCode == 409)
+                    throw new BackendException("entity already exists", ErrorCode.DuplicateRequest);
+            };
+
+            try
+            {
+                var entity = OffchainTransferEntity.ByRecord.Create(multisig, asset, required);
+                await _table.InsertAsync(entity);
+                return entity;
+            }
+            catch (AggregateException e)
+            {
+                var exception = e.InnerExceptions[0] as StorageException;
+                throwIfBackend(exception);
+                throw;
+            }
+            catch (StorageException e)
+            {
+                throwIfBackend(e);
+                throw;
+            }
         }
 
 

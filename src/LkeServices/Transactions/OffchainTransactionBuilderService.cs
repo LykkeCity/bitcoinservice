@@ -109,7 +109,7 @@ namespace LkeServices.Transactions
             _closingChannelRepository = closingChannelRepository;
         }
 
-        private async Task CheckTransferFinalization(string multisig, string assetId, Guid? transferId, bool throwOpenNewChannelException)
+        private async Task CheckTransferFinalization(string multisig, string assetId, Guid? transferId, bool channelSetup)
         {
             var transfer = await _offchainTransferRepository.GetLastTransfer(multisig, assetId);
             if (transfer == null)
@@ -124,12 +124,15 @@ namespace LkeServices.Transactions
             var channel = await _offchainChannelRepository.GetChannel(multisig, assetId);
             if (channel != null && !channel.IsBroadcasted)
             {
-                await _offchainChannelRepository.RevertChannel(multisig, assetId, channel.ChannelId);
-                await _commitmentRepository.RemoveCommitmentsOfChannel(multisig, assetId, channel.ChannelId);
-                await _lykkeTransactionBuilderService.RemoveSpenOutputs(new Transaction(channel.InitialTransaction));
+                if (channelSetup)
+                {
+                    await _offchainChannelRepository.RevertChannel(multisig, assetId, channel.ChannelId);
+                    await _commitmentRepository.RemoveCommitmentsOfChannel(multisig, assetId, channel.ChannelId);
+                    await _lykkeTransactionBuilderService.RemoveSpenOutputs(new Transaction(channel.InitialTransaction));
+                }
+                else
+                    throw new BackendException("Should open new channel", ErrorCode.ShouldOpenNewChannel);
             }
-            if (throwOpenNewChannelException)
-                throw new BackendException("Should open new channel", ErrorCode.ShouldOpenNewChannel);
         }
 
         public async Task<OffchainResponse> CreateTransfer(string clientPubKey, decimal amount, IAsset asset, string clientPrevPrivateKey, bool requiredTransfer, Guid? transferId)
@@ -139,7 +142,7 @@ namespace LkeServices.Transactions
             if (address == null)
                 throw new BackendException($"Client {clientPubKey} is not registered", ErrorCode.BadInputParameter);
 
-            await CheckTransferFinalization(address.MultisigAddress, asset.Id, transferId, true);
+            await CheckTransferFinalization(address.MultisigAddress, asset.Id, transferId, false);
 
             var channel = await _offchainChannelRepository.GetChannel(address.MultisigAddress, asset.Id);
             if (channel == null)
@@ -201,7 +204,7 @@ namespace LkeServices.Transactions
 
             var hotWalletAddress = new PubKey(hotWalletPubKey).GetAddress(_connectionParams.Network);
 
-            await CheckTransferFinalization(address.MultisigAddress, asset.Id, transferId, false);
+            await CheckTransferFinalization(address.MultisigAddress, asset.Id, transferId, true);
 
             var currentChannel = await _offchainChannelRepository.GetChannel(address.MultisigAddress, asset.Id);
 
@@ -330,7 +333,7 @@ namespace LkeServices.Transactions
                 throw new BackendException("Client amount in channel is low than required", ErrorCode.BadChannelAmount);
 
             if (amount > 0 && channel.HubAmount < amount)
-                throw new BackendException("Hub amount in channel is low than required", ErrorCode.BadChannelAmount);
+                throw new BackendException("Hub amount in channel is low than required", ErrorCode.ShouldOpenNewChannel);
 
             if (!TransactionComparer.CompareTransactions(channel.InitialTransaction, signedByClientChannel))
                 throw new BackendException("Provided signed transaction is not equal initial transaction", ErrorCode.BadTransaction);
@@ -357,12 +360,9 @@ namespace LkeServices.Transactions
                                                          newHubAmount, commitmentResult.LockedAddress, commitmentResult.LockedScript);
             await _revokeKeyRepository.AddRevokeKey(hubRevokeKey.PubKey.ToHex(), RevokeKeyType.Exchange, hubRevokeKey.ToString(_connectionParams.Network));
 
-            var transfer = await _offchainTransferRepository.GetLastTransfer(address.MultisigAddress, asset.Id);
-
             return new OffchainResponse
             {
                 TransactionHex = commitmentResult.Transaction.ToHex(),
-                TransferId = transfer.TransferId
             };
         }
 
@@ -423,11 +423,11 @@ namespace LkeServices.Transactions
 
             await _offchainChannelRepository.UpdateAmounts(address.MultisigAddress, asset.Id, hubCommitment.ClientAmount, hubCommitment.HubAmount);
             var transfer = await _offchainTransferRepository.GetLastTransfer(address.MultisigAddress, asset.Id);
-            await _offchainTransferRepository.CompleteTransfer(address.MultisigAddress, asset.Id, transfer.TransferId);
+            if (transfer != null)
+                await _offchainTransferRepository.CompleteTransfer(address.MultisigAddress, asset.Id, transfer.TransferId);
             return new OffchainResponse
             {
-                TransactionHex = signedByHubCommitment,
-                TransferId = transfer.TransferId
+                TransactionHex = signedByHubCommitment
             };
         }
 
