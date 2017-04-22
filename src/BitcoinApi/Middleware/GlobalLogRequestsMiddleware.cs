@@ -13,7 +13,8 @@ namespace BitcoinApi.Middleware
     {
         private readonly List<string> _ignorePathes = new List<string>
         {
-            "swagger"
+            "swagger",
+            "isalive"
         };
 
         private readonly ILog _log;
