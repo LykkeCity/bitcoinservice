@@ -47,6 +47,7 @@ namespace Core.Exceptions
         NotEnoughtClientFunds = 27,
         PrivateKeyIsBad = 28,
         ClosingChannelNotFound = 29,
-        ClosingChannelExpired = 30
+        ClosingChannelExpired = 30,
+        DuplicateRequest = 31
     }
 }
