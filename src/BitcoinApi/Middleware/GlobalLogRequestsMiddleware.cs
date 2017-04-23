@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -28,17 +29,22 @@ namespace BitcoinApi.Middleware
 
         public async Task Invoke(HttpContext context)
         {
-            string request = await ReadRequest(context.Request.Body);
+            var sw = Stopwatch.StartNew();
+
+            var request = await ReadRequest(context.Request.Body);
 
             if (_ignorePathes.Any(o => context.Request.Path.Value.Contains(o)))
             {
                 await _next.Invoke(context);
+                sw.Stop();
                 return;
             }
 
             string response = await ReadResponse(context);
 
-            await _log.WriteInfoAsync("GlobalLogRequestsMiddleware", context.Request.Path, response, request);
+            sw.Stop();
+
+            await _log.WriteInfoAsync("GlobalLogRequestsMiddleware", context.Request.Path, $"{sw.ElapsedMilliseconds}ms {response}", request);
         }
 
         private async Task<string> ReadResponse(HttpContext context)
