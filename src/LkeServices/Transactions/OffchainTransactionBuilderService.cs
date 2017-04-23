@@ -118,19 +118,23 @@ namespace LkeServices.Transactions
                 return;
             if (!transfer.Completed && transfer.Required && transfer.TransferId != transferId)
                 throw new BackendException("Channel is not finalized", ErrorCode.ChannelNotFinalized);
+            var channel = await _offchainChannelRepository.GetChannel(multisig, assetId);
+            if (channel == null)
+                return;
+
+            if (channel.IsBroadcasted && transfer.TransferId == transferId)
+                return;
 
             await _offchainTransferRepository.CloseTransfer(multisig, assetId, transfer.TransferId);
 
-            var channel = await _offchainChannelRepository.GetChannel(multisig, assetId);
-            if (channel != null && !channel.IsBroadcasted)
+            if (!channel.IsBroadcasted)
             {
-                if (channelSetup)
-                {
-                    await _offchainChannelRepository.RevertChannel(multisig, assetId, channel.ChannelId);
-                    await _commitmentRepository.RemoveCommitmentsOfChannel(multisig, assetId, channel.ChannelId);
-                    await _lykkeTransactionBuilderService.RemoveSpenOutputs(new Transaction(channel.InitialTransaction));
-                }
-                else
+
+                await _offchainChannelRepository.RevertChannel(multisig, assetId, channel.ChannelId);
+                await _commitmentRepository.RemoveCommitmentsOfChannel(multisig, assetId, channel.ChannelId);
+                await _lykkeTransactionBuilderService.RemoveSpenOutputs(new Transaction(channel.InitialTransaction));
+
+                if (!channelSetup)
                     throw new BackendException("Should open new channel", ErrorCode.ShouldOpenNewChannel);
             }
         }
@@ -149,7 +153,7 @@ namespace LkeServices.Transactions
                 throw new BackendException("Channel is not found", ErrorCode.ShouldOpenNewChannel);
 
             if (amount < 0 && channel.ClientAmount < Math.Abs(amount))
-                throw new BackendException("Client amount in channel is low than required", ErrorCode.ShouldOpenNewChannel);
+                throw new BackendException("Client amount in channel is low than required", ErrorCode.NotEnoughtClientFunds);
 
             if (amount > 0 && channel.HubAmount < amount)
                 throw new BackendException("Hub amount in channel is low than required", ErrorCode.ShouldOpenNewChannel);
@@ -330,7 +334,7 @@ namespace LkeServices.Transactions
                 throw new BackendException("Channel is not found", ErrorCode.ShouldOpenNewChannel);
 
             if (amount < 0 && channel.ClientAmount < Math.Abs(amount))
-                throw new BackendException("Client amount in channel is low than required", ErrorCode.BadChannelAmount);
+                throw new BackendException("Client amount in channel is low than required", ErrorCode.NotEnoughtClientFunds);
 
             if (amount > 0 && channel.HubAmount < amount)
                 throw new BackendException("Hub amount in channel is low than required", ErrorCode.ShouldOpenNewChannel);
