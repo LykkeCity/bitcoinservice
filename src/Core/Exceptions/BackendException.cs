@@ -48,6 +48,8 @@ namespace Core.Exceptions
         PrivateKeyIsBad = 28,
         ClosingChannelNotFound = 29,
         ClosingChannelExpired = 30,
-        DuplicateRequest = 31
+        DuplicateRequest = 31,
+        TransferNotFound = 32,
+        WrongTransferId = 33
     }
 }

@@ -41,7 +41,7 @@ namespace LkeServices.Transactions
 
         Task<OffchainResponse> CreateHubCommitment(string clientPubKey, IAsset asset, decimal amount, string signedByClientChannel);
 
-        Task<OffchainResponse> Finalize(string clientPubKey, string hotWalletPubKey, IAsset asset, string clientRevokePubKey, string signedByClientHubCommitment);
+        Task<OffchainResponse> Finalize(string clientPubKey, string hotWalletPubKey, IAsset asset, string clientRevokePubKey, string signedByClientHubCommitment, Guid transferId);
 
         Task<OffchainResponse> CloseChannel(string clientPubKey, string cashoutAddress, string hotWalletPubKey, IAsset asset);
 
@@ -370,7 +370,7 @@ namespace LkeServices.Transactions
             };
         }
 
-        public async Task<OffchainResponse> Finalize(string clientPubKey, string hotWalletPubKey, IAsset asset, string clientRevokePubKey, string signedByClientHubCommitment)
+        public async Task<OffchainResponse> Finalize(string clientPubKey, string hotWalletPubKey, IAsset asset, string clientRevokePubKey, string signedByClientHubCommitment, Guid transferId)
         {
             var address = await _multisigService.GetMultisig(clientPubKey);
 
@@ -384,6 +384,12 @@ namespace LkeServices.Transactions
             var hubCommitment = await _commitmentRepository.GetLastCommitment(address.MultisigAddress, asset.Id, CommitmentType.Hub);
             if (hubCommitment == null)
                 throw new BackendException("Commitment is not found", ErrorCode.CommitmentNotFound);
+
+            var transfer = await _offchainTransferRepository.GetLastTransfer(address.MultisigAddress, asset.Id);
+            if (transfer == null)
+                throw new BackendException("Transfer is not found", ErrorCode.TransferNotFound);
+            if (transfer.TransferId != transferId)
+                throw new BackendException("Wrong transfer id", ErrorCode.WrongTransferId);
 
             if (await _revokeKeyRepository.GetRevokeKey(clientRevokePubKey) != null)
                 throw new BackendException("Client revoke public key was used already", ErrorCode.KeyUsedAlready);
@@ -426,9 +432,8 @@ namespace LkeServices.Transactions
             }
 
             await _offchainChannelRepository.UpdateAmounts(address.MultisigAddress, asset.Id, hubCommitment.ClientAmount, hubCommitment.HubAmount);
-            var transfer = await _offchainTransferRepository.GetLastTransfer(address.MultisigAddress, asset.Id);
-            if (transfer != null)
-                await _offchainTransferRepository.CompleteTransfer(address.MultisigAddress, asset.Id, transfer.TransferId);
+
+            await _offchainTransferRepository.CompleteTransfer(address.MultisigAddress, asset.Id, transfer.TransferId);
             return new OffchainResponse
             {
                 TransactionHex = signedByHubCommitment

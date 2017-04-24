@@ -16,5 +16,7 @@ namespace BitcoinApi.Models.Offchain
         public string ClientRevokePubKey { get; set; }
 
         public string SignedByClientHubCommitment { get; set; }
+
+        public Guid TransferId { get; set; }
     }
 }
