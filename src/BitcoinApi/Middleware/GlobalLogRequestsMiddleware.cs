@@ -29,6 +29,7 @@ namespace BitcoinApi.Middleware
 
         public async Task Invoke(HttpContext context)
         {
+            var dt = DateTime.UtcNow;
             var sw = Stopwatch.StartNew();
 
             var request = await ReadRequest(context.Request.Body);
@@ -44,7 +45,7 @@ namespace BitcoinApi.Middleware
 
             sw.Stop();
 
-            await _log.WriteInfoAsync("GlobalLogRequestsMiddleware", context.Request.Path, $"{sw.ElapsedMilliseconds}ms {response}", request);
+            await _log.WriteInfoAsync("GlobalLogRequestsMiddleware", context.Request.Path, $"{sw.ElapsedMilliseconds}ms {response}", request, dt);
         }
 
         private async Task<string> ReadResponse(HttpContext context)
