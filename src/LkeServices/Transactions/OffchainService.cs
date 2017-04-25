@@ -658,7 +658,7 @@ namespace LkeServices.Transactions
             if (OpenAssetsHelper.IsBitcoin(assetEntity.Id))
             {
                 Money sendAmount;
-                var unspentOutputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(from.ToWif(), 1)).ToList();
+                var unspentOutputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(from.ToWif())).ToList();
 
                 if (amount < 0)
                     sendAmount = unspentOutputs.OfType<Coin>().DefaultIfEmpty().Sum(o => o?.Amount ?? Money.Zero);
@@ -675,7 +675,7 @@ namespace LkeServices.Transactions
                 var asset = new BitcoinAssetId(assetEntity.BlockChainAssetId, _connectionParams.Network).AssetId;
                 long sendAmount;
 
-                var unspentOutputs = (await _bitcoinOutputsService.GetColoredUnspentOutputs(from.ToWif(), asset, 1)).ToList();
+                var unspentOutputs = (await _bitcoinOutputsService.GetColoredUnspentOutputs(from.ToWif(), asset)).ToList();
                 if (amount < 0)
                     sendAmount = unspentOutputs.Sum(o => o.Amount.Quantity);
                 else
