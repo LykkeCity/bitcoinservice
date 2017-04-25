@@ -34,7 +34,11 @@ namespace BackgroundWorker.Binders
             var logToTable = new LogToTable(new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LogBitcoinJobError", null),
                                             new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LogBitcoinJobWarning", null),
                                             new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LogBitcoinJobInfo", null));
+#if DEBUG
             var log = new LogToTableAndConsole(logToTable, new LogToConsole());
+#else
+            var log = logToTable;
+#endif
             var ioc = new ContainerBuilder();
             InitContainer(ioc, settings, log);
             return ioc;
@@ -46,8 +50,7 @@ namespace BackgroundWorker.Binders
             log.WriteInfoAsync("BackgroundWorker", "App start", null, $"BaseSettings : {settings.ToJson()}").Wait();
 #else
             log.WriteInfoAsync("BackgroundWorker", "App start", null, $"BaseSettings : private").Wait();
-#endif
-
+#endif            
             ioc.RegisterInstance(log);
             ioc.RegisterInstance(settings);
             ioc.RegisterInstance(new RpcConnectionParams(settings));
