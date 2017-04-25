@@ -46,11 +46,11 @@ namespace LkeServices
             ioc.RegisterType<FeeProvider>().As<IFeeProvider>();
 
             ioc.RegisterType<LykkeTransactionBuilderService>().As<ILykkeTransactionBuilderService>();
-            ioc.RegisterType<OffchainTransactionBuilderService>().As<IOffchainTransactionBuilderService>();
+            ioc.RegisterType<OffchainService>().As<IOffchainService>();
             ioc.RegisterType<MultisigService>().As<IMultisigService>();
             ioc.RegisterType<TransactionBuildHelper>().As<ITransactionBuildHelper>();
             ioc.RegisterType<BitcoinTransactionService>().As<IBitcoinTransactionService>();
-            ioc.RegisterType<OffchainTransactionBuilderService>().As<IOffchainTransactionBuilderService>();
+            ioc.RegisterType<OffchainService>().As<IOffchainService>();
             ioc.RegisterType<SignatureVerifier>().As<ISignatureVerifier>();
             ioc.RegisterType<BitcoinBroadcastService>().As<IBitcoinBroadcastService>();
             ioc.RegisterType<FailedTransactionsManager>().As<IFailedTransactionsManager>();

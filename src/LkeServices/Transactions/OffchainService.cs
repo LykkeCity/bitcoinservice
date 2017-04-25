@@ -23,15 +23,7 @@ using LkeServices.Signature;
 
 namespace LkeServices.Transactions
 {
-
-    public class OffchainResponse
-    {
-        public Guid TransferId { get; set; }
-
-        public string TransactionHex { get; set; }
-    }
-
-    public interface IOffchainTransactionBuilderService
+    public interface IOffchainService
     {
         Task<OffchainResponse> CreateTransfer(string clientPubKey, decimal amount, IAsset asset, string clientPrevPrivateKey, bool requiredTransfer, Guid? transferId);
 
@@ -45,6 +37,10 @@ namespace LkeServices.Transactions
 
         Task<OffchainResponse> CloseChannel(string clientPubKey, string cashoutAddress, string hotWalletPubKey, IAsset asset);
 
+        Task<decimal> GetClientBalance(string multisig, IAsset asset);
+
+        Task<OffchainBalance> GetBalances(string multisig);
+
         Task<string> BroadcastClosingChannel(string clientPubKey, IAsset asset, string signedByClientTransaction);
 
         Task SpendCommitmemtByMultisig(ICommitment commitment, ICoin spendingCoin, string destination);
@@ -55,7 +51,7 @@ namespace LkeServices.Transactions
 
     }
 
-    public class OffchainTransactionBuilderService : IOffchainTransactionBuilderService
+    public class OffchainService : IOffchainService
     {
         private const int OneDayDelay = 6 * 24; // 24 hours * 6 blocks in hour
 
@@ -73,9 +69,10 @@ namespace LkeServices.Transactions
         private readonly IOffchainTransferRepository _offchainTransferRepository;
         private readonly TransactionBuildContextFactory _transactionBuildContextFactory;
         private readonly IBitcoinBroadcastService _broadcastService;
+        private readonly IAssetRepository _assetRepository;
         private readonly IClosingChannelRepository _closingChannelRepository;
 
-        public OffchainTransactionBuilderService(
+        public OffchainService(
             ITransactionBuildHelper transactionBuildHelper,
             RpcConnectionParams connectionParams,
             IMultisigService multisigService,
@@ -90,6 +87,7 @@ namespace LkeServices.Transactions
             IOffchainTransferRepository offchainTransferRepository,
             TransactionBuildContextFactory transactionBuildContextFactory,
             IBitcoinBroadcastService broadcastService,
+            IAssetRepository assetRepository,
             IClosingChannelRepository closingChannelRepository)
         {
             _transactionBuildHelper = transactionBuildHelper;
@@ -106,6 +104,7 @@ namespace LkeServices.Transactions
             _offchainTransferRepository = offchainTransferRepository;
             _transactionBuildContextFactory = transactionBuildContextFactory;
             _broadcastService = broadcastService;
+            _assetRepository = assetRepository;
             _closingChannelRepository = closingChannelRepository;
         }
 
@@ -166,7 +165,7 @@ namespace LkeServices.Transactions
             var secret = new BitcoinSecret(clientPrevPrivateKey);
 
             if (prevCommitment.RevokePubKey != secret.PubKey.ToHex())
-                throw new BackendException("Client private key for previous commitment is invalid", ErrorCode.PrivateKeyIsBad);
+                throw new BackendException("Client private key for previous commitment is invalid", ErrorCode.ShouldOpenNewChannel);
 
             var closing = await _closingChannelRepository.GetClosingChannel(address.MultisigAddress, asset.Id);
             if (closing != null)
@@ -513,6 +512,7 @@ namespace LkeServices.Transactions
 
         }
 
+
         public async Task<string> BroadcastClosingChannel(string clientPubKey, IAsset asset, string signedByClientTransaction)
         {
             var address = await _multisigService.GetMultisig(clientPubKey);
@@ -763,6 +763,35 @@ namespace LkeServices.Transactions
             return new CreationCommitmentResult(tr, lockedAddress.ToWif(), script.ToHex());
         }
 
+        public async Task<decimal> GetClientBalance(string multisig, IAsset asset)
+        {
+            var channel = await _offchainChannelRepository.GetChannel(multisig, asset.Id);
+
+            if (channel == null)
+                throw new BackendException("Channel is not found", ErrorCode.ShouldOpenNewChannel);
+            return channel.ClientAmount;
+        }
+
+        public async Task<OffchainBalance> GetBalances(string multisig)
+        {
+            var result = new OffchainBalance();
+            var assets = await _assetRepository.GetBitcoinAssets();
+            foreach (var asset in assets)
+            {
+                var channel = await _offchainChannelRepository.GetChannel(multisig, asset.Id);
+                if (channel != null)
+                {
+                    result.Channels[asset.Id] = new OffchainBalancePair
+                    {
+                        ClientAmount = channel.ClientAmount,
+                        HubAmount = channel.HubAmount
+                    };
+                }
+            }
+            return result;
+        }
+
+
         private class CreationCommitmentResult
         {
             public Transaction Transaction { get; }
@@ -776,5 +805,24 @@ namespace LkeServices.Transactions
                 LockedScript = lockedScript;
             }
         }
+    }
+
+    public class OffchainResponse
+    {
+        public Guid TransferId { get; set; }
+
+        public string TransactionHex { get; set; }
+    }
+
+    public class OffchainBalance
+    {
+        public Dictionary<string, OffchainBalancePair> Channels { get; set; } = new Dictionary<string, OffchainBalancePair>();
+    }
+
+    public class OffchainBalancePair
+    {
+        public decimal ClientAmount { get; set; }
+
+        public decimal HubAmount { get; set; }
     }
 }
