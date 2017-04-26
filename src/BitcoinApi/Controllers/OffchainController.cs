@@ -37,7 +37,7 @@ namespace BitcoinApi.Controllers
         public async Task<OffchainApiResponse> CreateUnsignedChannel([FromBody]CreateChannelModel model)
         {
             var asset = await GetAsset(model.Asset);
-            var tr = await _offchain.CreateUnsignedChannel(model.ClientPubKey, model.HotWalletPubKey, model.HubAmount, asset
+            var tr = await _offchain.CreateUnsignedChannel(model.ClientPubKey, model.HotWalletAddress, model.HubAmount, asset
                 , model.RequiredOperation, model.TransferId);
             return new OffchainApiResponse(tr);
         }
@@ -70,7 +70,7 @@ namespace BitcoinApi.Controllers
         public async Task<OffchainApiResponse> Finalize([FromBody] FinalizeChannelModel model)
         {
             var asset = await GetAsset(model.Asset);
-            var tr = await _offchain.Finalize(model.ClientPubKey, model.HotWalletPubKey, asset, model.ClientRevokePubKey, model.SignedByClientHubCommitment, model.TransferId);
+            var tr = await _offchain.Finalize(model.ClientPubKey, model.HotWalletAddress, asset, model.ClientRevokePubKey, model.SignedByClientHubCommitment, model.TransferId);
             return new OffchainApiResponse(tr);
         }
 
@@ -90,7 +90,7 @@ namespace BitcoinApi.Controllers
         {
             var asset = await GetAsset(model.Asset);
             return new CashoutOffchainApiResponse(await _offchain.CreateCashout(model.ClientPubKey, model.CashoutAddress,
-                model.HotWalletPubKey, model.Amount, asset));
+                model.HotWalletAddress, model.Amount, asset));
         }
 
 

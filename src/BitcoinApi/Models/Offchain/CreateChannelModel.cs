@@ -9,7 +9,7 @@ namespace BitcoinApi.Models.Offchain
     {
         public string ClientPubKey { get; set; }
 
-        public string HotWalletPubKey { get; set; }
+        public string HotWalletAddress { get; set; }
         
         public decimal HubAmount { get; set; }
 

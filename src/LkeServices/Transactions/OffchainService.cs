@@ -27,15 +27,15 @@ namespace LkeServices.Transactions
     {
         Task<OffchainResponse> CreateTransfer(string clientPubKey, decimal amount, IAsset asset, string clientPrevPrivateKey, bool requiredTransfer, Guid? transferId);
 
-        Task<OffchainResponse> CreateUnsignedChannel(string clientPubKey, string hotWalletPubKey, decimal hubAmount, IAsset asset, bool requiredTransfer, Guid? transferId);
+        Task<OffchainResponse> CreateUnsignedChannel(string clientPubKey, string hotWalletAddr, decimal hubAmount, IAsset asset, bool requiredTransfer, Guid? transferId);
 
         Task<OffchainResponse> CreateCashin(string clientPubKey, decimal amount, IAsset asset, string cashinAddress, Guid? transferId);
 
         Task<OffchainResponse> CreateHubCommitment(string clientPubKey, IAsset asset, decimal amount, string signedByClientChannel);
 
-        Task<OffchainResponse> Finalize(string clientPubKey, string hotWalletPubKey, IAsset asset, string clientRevokePubKey, string signedByClientHubCommitment, Guid transferId);
+        Task<OffchainResponse> Finalize(string clientPubKey, string hotWalletAddr, IAsset asset, string clientRevokePubKey, string signedByClientHubCommitment, Guid transferId);
 
-        Task<CashoutOffchainResponse> CreateCashout(string clientPubKey, string cashoutAddress, string hotWalletPubKey, decimal amount, IAsset asset);
+        Task<CashoutOffchainResponse> CreateCashout(string clientPubKey, string cashoutAddress, string hotWalletAddr, decimal amount, IAsset asset);
 
         Task<decimal> GetClientBalance(string multisig, IAsset asset);
 
@@ -179,7 +179,7 @@ namespace LkeServices.Transactions
             var newHubAmount = channel.HubAmount - amount;
             var newClientAmount = channel.ClientAmount + amount;
 
-            var commitmentResult = CreateCommitmentTransaction(address, new PubKey(address.ExchangePubKey), new PubKey(clientPubKey), hubRevokeKey.PubKey, new PubKey(clientPubKey), asset,
+            var commitmentResult = CreateCommitmentTransaction(address, new PubKey(address.ExchangePubKey), new PubKey(clientPubKey).GetAddress(_connectionParams.Network), hubRevokeKey.PubKey, new PubKey(clientPubKey), asset,
                 newHubAmount, newClientAmount, channel.FullySignedChannel);
 
             var transfer = await _offchainTransferRepository.CreateTransfer(address.MultisigAddress, asset.Id, requiredTransfer);
@@ -196,7 +196,7 @@ namespace LkeServices.Transactions
             };
         }
 
-        public async Task<OffchainResponse> CreateUnsignedChannel(string clientPubKey, string hotWalletPubKey, decimal hubAmount, IAsset asset, bool requiredTransfer, Guid? transferId)
+        public async Task<OffchainResponse> CreateUnsignedChannel(string clientPubKey, string hotWalletAddr, decimal hubAmount, IAsset asset, bool requiredTransfer, Guid? transferId)
         {
             var address = await _multisigService.GetMultisig(clientPubKey);
 
@@ -205,7 +205,7 @@ namespace LkeServices.Transactions
 
             var multisig = new BitcoinScriptAddress(address.MultisigAddress, _connectionParams.Network);
 
-            var hotWalletAddress = new PubKey(hotWalletPubKey).GetAddress(_connectionParams.Network);
+            var hotWalletAddress = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(hotWalletAddr);
 
             await CheckTransferFinalization(address.MultisigAddress, asset.Id, transferId, true);
 
@@ -355,7 +355,7 @@ namespace LkeServices.Transactions
 
             var newHubAmount = channel.HubAmount - amount;
             var newClientAmount = channel.ClientAmount + amount;
-            var commitmentResult = CreateCommitmentTransaction(address, new PubKey(address.ExchangePubKey), new PubKey(clientPubKey), hubRevokeKey.PubKey, new PubKey(clientPubKey), asset,
+            var commitmentResult = CreateCommitmentTransaction(address, new PubKey(address.ExchangePubKey), new PubKey(clientPubKey).GetAddress(_connectionParams.Network), hubRevokeKey.PubKey, new PubKey(clientPubKey), asset,
                 newHubAmount, newClientAmount, fullSignedChannel);
 
             await _commitmentRepository.CreateCommitment(CommitmentType.Hub, channel.ChannelId, address.MultisigAddress, asset.Id,
@@ -369,7 +369,7 @@ namespace LkeServices.Transactions
             };
         }
 
-        public async Task<OffchainResponse> Finalize(string clientPubKey, string hotWalletPubKey, IAsset asset, string clientRevokePubKey, string signedByClientHubCommitment, Guid transferId)
+        public async Task<OffchainResponse> Finalize(string clientPubKey, string hotWalletAddr, IAsset asset, string clientRevokePubKey, string signedByClientHubCommitment, Guid transferId)
         {
             var address = await _multisigService.GetMultisig(clientPubKey);
 
@@ -408,7 +408,7 @@ namespace LkeServices.Transactions
             await _commitmentRepository.SetFullSignedTransaction(hubCommitment.CommitmentId, address.MultisigAddress, asset.Id, fullSignedCommitment);
 
             var clientCommitmentResult = CreateCommitmentTransaction(address, new PubKey(clientPubKey),
-                new PubKey(hotWalletPubKey), new PubKey(clientRevokePubKey), new PubKey(address.ExchangePubKey), asset,
+                OpenAssetsHelper.GetBitcoinAddressFormBase58Date(hotWalletAddr), new PubKey(clientRevokePubKey), new PubKey(address.ExchangePubKey), asset,
                hubCommitment.ClientAmount, hubCommitment.HubAmount, channel.FullySignedChannel);
 
             var signedByHubCommitment = await _signatureApiProvider.SignTransaction(clientCommitmentResult.Transaction.ToHex(), SigHash.Single | SigHash.AnyoneCanPay);
@@ -439,7 +439,7 @@ namespace LkeServices.Transactions
             };
         }
 
-        public async Task<CashoutOffchainResponse> CreateCashout(string clientPubKey, string cashoutAddr, string hotWalletPubKey, decimal amount, IAsset asset)
+        public async Task<CashoutOffchainResponse> CreateCashout(string clientPubKey, string cashoutAddr, string hotWalletAddr, decimal amount, IAsset asset)
         {
             var address = await _multisigService.GetMultisig(clientPubKey);
 
@@ -448,8 +448,8 @@ namespace LkeServices.Transactions
 
             var multisig = new BitcoinScriptAddress(address.MultisigAddress, _connectionParams.Network);
 
-            var cashoutAddress = new BitcoinScriptAddress(cashoutAddr, _connectionParams.Network);
-            var hotWalletAddress = new PubKey(hotWalletPubKey).GetAddress(_connectionParams.Network);
+            var cashoutAddress = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(cashoutAddr);
+            var hotWalletAddress = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(hotWalletAddr);
 
             await CheckTransferFinalization(address.MultisigAddress, asset.Id, null, false);
 
@@ -747,7 +747,7 @@ namespace LkeServices.Transactions
         }
 
 
-        private CreationCommitmentResult CreateCommitmentTransaction(IWalletAddress wallet, PubKey lockedPubKey, PubKey unlockedPubKey, PubKey revokePubKey, PubKey multisigPairPubKey,
+        private CreationCommitmentResult CreateCommitmentTransaction(IWalletAddress wallet, PubKey lockedPubKey, IDestination unlockedAddress, PubKey revokePubKey, PubKey multisigPairPubKey,
             IAsset asset, decimal lockedAmount, decimal unlockedAmount, string channelTr)
         {
             var multisig = new BitcoinScriptAddress(wallet.MultisigAddress, _connectionParams.Network);
@@ -762,7 +762,6 @@ namespace LkeServices.Transactions
             long additionalBtc = 0;
             var script = OffchainScriptCommitmentTemplate.CreateOffchainScript(multisigPairPubKey, revokePubKey, lockedPubKey, OneDayDelay);
 
-            var unlockedAddress = unlockedPubKey.GetAddress(_connectionParams.Network);
             var lockedAddress = script.GetScriptAddress(_connectionParams.Network);
 
             if (OpenAssetsHelper.IsBitcoin(asset.Id))

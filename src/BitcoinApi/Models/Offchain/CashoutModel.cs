@@ -11,7 +11,7 @@ namespace BitcoinApi.Models.Offchain
 
         public string CashoutAddress { get; set; }
 
-        public string HotWalletPubKey { get; set; }
+        public string HotWalletAddress { get; set; }
 
         public string Asset { get; set; }
 
