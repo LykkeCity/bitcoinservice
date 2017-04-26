@@ -83,14 +83,14 @@ namespace BitcoinApi.Controllers
             return new TransactionHashResponse(await _offchain.BroadcastCommitment(model.ClientPubKey, asset, model.Transaction));
         }
 
-        [HttpPost("closechannel")]
-        [ProducesResponseType(typeof(OffchainApiResponse), 200)]
+        [HttpPost("cashout")]
+        [ProducesResponseType(typeof(CashoutOffchainApiResponse), 200)]
         [ProducesResponseType(typeof(ApiException), 400)]
-        public async Task<OffchainApiResponse> CloseChannel([FromBody]CloseChannelModel model)
+        public async Task<CashoutOffchainApiResponse> CreateCashout([FromBody]CashoutModel model)
         {
             var asset = await GetAsset(model.Asset);
-            return new OffchainApiResponse(await _offchain.CloseChannel(model.ClientPubKey, model.CashoutAddress,
-                model.HotWalletPubKey, asset));
+            return new CashoutOffchainApiResponse(await _offchain.CreateCashout(model.ClientPubKey, model.CashoutAddress,
+                model.HotWalletPubKey, model.Amount, asset));
         }
 
 

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace BitcoinApi.Models.Offchain
 {
-    public class CloseChannelModel
+    public class CashoutModel
     {
         public string ClientPubKey { get; set; }
 
@@ -14,6 +14,8 @@ namespace BitcoinApi.Models.Offchain
         public string HotWalletPubKey { get; set; }
 
         public string Asset { get; set; }
+
+        public decimal Amount { get; set; }
 
     }
 }

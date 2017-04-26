@@ -17,7 +17,15 @@ namespace BitcoinApi.Models.Offchain
             Transaction = response.TransactionHex;
             TransferId = response.TransferId;
         }
+    }
 
+    public class CashoutOffchainApiResponse : OffchainApiResponse
+    {
+        public bool ChannelClosed { get; set; }
 
+        public CashoutOffchainApiResponse(CashoutOffchainResponse response) : base(response)
+        {
+            ChannelClosed = response.ChannelClosed;
+        }
     }
 }
