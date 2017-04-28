@@ -54,7 +54,7 @@ namespace LkeServices.Transactions
     public class OffchainService : IOffchainService
     {
         private const int OneDayDelay = 6 * 24; // 24 hours * 6 blocks in hour
-        private const SigHash CommitmentSignatureType = SigHash.Single | SigHash.AnyoneCanPay;
+        private const SigHash CommitmentSignatureType = SigHash.All | SigHash.AnyoneCanPay;
 
         private readonly ITransactionBuildHelper _transactionBuildHelper;
         private readonly RpcConnectionParams _connectionParams;
