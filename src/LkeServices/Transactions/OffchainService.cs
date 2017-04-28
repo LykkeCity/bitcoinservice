@@ -54,6 +54,7 @@ namespace LkeServices.Transactions
     public class OffchainService : IOffchainService
     {
         private const int OneDayDelay = 6 * 24; // 24 hours * 6 blocks in hour
+        private const SigHash CommitmentSignatureType = SigHash.All | SigHash.AnyoneCanPay;
 
         private readonly ITransactionBuildHelper _transactionBuildHelper;
         private readonly RpcConnectionParams _connectionParams;
@@ -397,10 +398,10 @@ namespace LkeServices.Transactions
             if (!TransactionComparer.CompareTransactions(signedByClientHubCommitment, hubCommitment.InitialTransaction))
                 throw new BackendException("Provided signed transaction is not equal initial transaction", ErrorCode.BadTransaction);
 
-            if (!await _signatureVerifier.Verify(signedByClientHubCommitment, clientPubKey, SigHash.Single | SigHash.AnyoneCanPay))
+            if (!await _signatureVerifier.Verify(signedByClientHubCommitment, clientPubKey, CommitmentSignatureType))
                 throw new BackendException("Provided signed transaction is not signed by client", ErrorCode.BadTransaction);
 
-            var fullSignedCommitment = await _signatureApiProvider.SignTransaction(signedByClientHubCommitment, SigHash.Single | SigHash.AnyoneCanPay);
+            var fullSignedCommitment = await _signatureApiProvider.SignTransaction(signedByClientHubCommitment, CommitmentSignatureType);
 
             if (!_signatureVerifier.VerifyScriptSigs(fullSignedCommitment))
                 throw new BackendException("Transaction is not full signed", ErrorCode.BadFullSignTransaction);
@@ -411,7 +412,7 @@ namespace LkeServices.Transactions
                 OpenAssetsHelper.GetBitcoinAddressFormBase58Date(hotWalletAddr), new PubKey(clientRevokePubKey), new PubKey(address.ExchangePubKey), asset,
                hubCommitment.ClientAmount, hubCommitment.HubAmount, channel.FullySignedChannel);
 
-            var signedByHubCommitment = await _signatureApiProvider.SignTransaction(clientCommitmentResult.Transaction.ToHex(), SigHash.Single | SigHash.AnyoneCanPay);
+            var signedByHubCommitment = await _signatureApiProvider.SignTransaction(clientCommitmentResult.Transaction.ToHex(), CommitmentSignatureType);
 
             await _commitmentRepository.CreateCommitment(CommitmentType.Client, channel.ChannelId, address.MultisigAddress, asset.Id,
                                                             clientRevokePubKey, signedByHubCommitment, hubCommitment.ClientAmount, hubCommitment.HubAmount,
