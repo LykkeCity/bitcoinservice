@@ -1,14 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
-using System.Reflection;
-using System.Threading.Tasks;
 using Autofac;
 using Core.Bitcoin;
 using Core.Providers;
 using Core.QBitNinja;
-using Core.Repositories.TransactionSign;
 using Core.Settings;
 using LkeServices.Bitcoin;
 using LkeServices.Multisig;
@@ -17,7 +12,6 @@ using LkeServices.Providers.Rest;
 using LkeServices.QBitNinja;
 using LkeServices.Signature;
 using LkeServices.Transactions;
-using PhoneNumbers;
 using QBitNinja.Client;
 using RestClient = RestEase.RestClient;
 
@@ -54,7 +48,6 @@ namespace LkeServices
             ioc.RegisterType<SignatureVerifier>().As<ISignatureVerifier>();
             ioc.RegisterType<BitcoinBroadcastService>().As<IBitcoinBroadcastService>();
             ioc.RegisterType<FailedTransactionsManager>().As<IFailedTransactionsManager>();
-
 
             BindApiProviders(ioc);
         }

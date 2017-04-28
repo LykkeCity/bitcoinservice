@@ -69,7 +69,7 @@ namespace LkeServices.Transactions
         private readonly IOffchainTransferRepository _offchainTransferRepository;
         private readonly TransactionBuildContextFactory _transactionBuildContextFactory;
         private readonly IBitcoinBroadcastService _broadcastService;
-        private readonly IAssetRepository _assetRepository;
+        private readonly CachedDataDictionary<string, IAsset> _assetRepository;
         private readonly IClosingChannelRepository _closingChannelRepository;
 
         public OffchainService(
@@ -87,7 +87,7 @@ namespace LkeServices.Transactions
             IOffchainTransferRepository offchainTransferRepository,
             TransactionBuildContextFactory transactionBuildContextFactory,
             IBitcoinBroadcastService broadcastService,
-            IAssetRepository assetRepository,
+            CachedDataDictionary<string, IAsset> assetRepository,
             IClosingChannelRepository closingChannelRepository)
         {
             _transactionBuildHelper = transactionBuildHelper;
@@ -812,8 +812,8 @@ namespace LkeServices.Transactions
         public async Task<OffchainBalance> GetBalances(string multisig)
         {
             var result = new OffchainBalance();
-            var assets = await _assetRepository.GetBitcoinAssets();
-            foreach (var asset in assets)
+            var assets = await _assetRepository.Values();
+            foreach (var asset in assets.Where(x => !x.IsDisabled && string.IsNullOrWhiteSpace(x.PartnerId)))
             {
                 var channel = await _offchainChannelRepository.GetChannel(multisig, asset.Id);
                 if (channel != null)
