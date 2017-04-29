@@ -2,11 +2,13 @@
 using System.Net.Http;
 using Autofac;
 using Core.Bitcoin;
+using Core.Perfomance;
 using Core.Providers;
 using Core.QBitNinja;
 using Core.Settings;
 using LkeServices.Bitcoin;
 using LkeServices.Multisig;
+using LkeServices.Perfomance;
 using LkeServices.Providers;
 using LkeServices.Providers.Rest;
 using LkeServices.QBitNinja;
@@ -48,6 +50,7 @@ namespace LkeServices
             ioc.RegisterType<SignatureVerifier>().As<ISignatureVerifier>();
             ioc.RegisterType<BitcoinBroadcastService>().As<IBitcoinBroadcastService>();
             ioc.RegisterType<FailedTransactionsManager>().As<IFailedTransactionsManager>();
+            ioc.RegisterType<PerfomanceMonitorFactory>().As<IPerfomanceMonitorFactory>();
 
             BindApiProviders(ioc);
         }
