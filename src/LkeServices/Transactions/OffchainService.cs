@@ -459,8 +459,9 @@ namespace LkeServices.Transactions
                 {
                     var channelTr = new Transaction(channel.FullySignedChannel);
 
-                    monitor.Step("Broadcast transaction");
-                    await _broadcastService.BroadcastTransaction(channel.ChannelId, channelTr);
+                    monitor.ChildProcess("Broadcast transaction");
+                    await _broadcastService.BroadcastTransaction(channel.ChannelId, channelTr, monitor);
+                    monitor.CompleteLastProcess();
 
                     monitor.Step("Set channel broadcasted");
                     await _offchainChannelRepository.SetChannelBroadcasted(address.MultisigAddress, asset.Id);
