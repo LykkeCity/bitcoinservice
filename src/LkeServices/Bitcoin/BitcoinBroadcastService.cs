@@ -31,20 +31,20 @@ namespace LkeServices.Bitcoin
             _monitoringWriter = monitoringWriter;
         }
 
-        public async Task BroadcastTransaction(Guid transactionId, Transaction tx, IPerfomanceMonitor monitor)
+        public async Task BroadcastTransaction(Guid transactionId, Transaction tx, IPerfomanceMonitor monitor = null)
         {
             var hash = tx.GetHash().ToString();
 
             if (_settings.UseLykkeApi)
             {
-                monitor.Step("Send prebroadcast notification");
+                monitor?.Step("Send prebroadcast notification");
                 await _apiProvider.SendPreBroadcastNotification(new LykkeTransactionNotification(transactionId, hash));
             }
 
-            monitor.Step("Broadcast transcation");
+            monitor?.Step("Broadcast transcation");
             await _rpcBitcoinClient.BroadcastTransaction(tx, transactionId);
             
-            monitor.Step("Set transaction hash, postbroadcast and add to monitoring");
+            monitor?.Step("Set transaction hash, postbroadcast and add to monitoring");
             await Task.WhenAll(
                 _broadcastedOutputRepository.SetTransactionHash(transactionId, hash),
                 Task.Run(async () =>
