@@ -18,7 +18,7 @@ namespace LkeServices.Perfomance
 
         public IPerfomanceMonitor Create(string topProcess)
         {
-            var monitor =  new PerfomanceMonitor(_logger);
+            var monitor = new PerfomanceMonitor(_logger);
             monitor.Start(topProcess);
             return monitor;
         }

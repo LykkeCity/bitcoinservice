@@ -26,7 +26,7 @@ namespace LkeServices.Perfomance
         public void Dispose()
         {
             _topLevelMeasurer.Stop();
-            _log.WriteInfoAsync("PerfomanceMonitor", "Measure", null, _topLevelMeasurer.ToString());
+            _log.WriteInfoAsync("PerformanceMonitor", "Measure", null, _topLevelMeasurer.ToString());
         }
 
         internal void Start(string process)
@@ -139,7 +139,7 @@ namespace LkeServices.Perfomance
                 }
                 else
                     return _children.Where(o => o.CanHoldChildren).Select(internalMeasurer => internalMeasurer.Stop(process)).FirstOrDefault(stopped => stopped != null);
-            }           
+            }
         }
 
     }
