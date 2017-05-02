@@ -90,7 +90,7 @@ namespace BitcoinApi.Controllers
         {
             var asset = await GetAsset(model.Asset);
             return new CashoutOffchainApiResponse(await _offchain.CreateCashout(model.ClientPubKey, model.CashoutAddress,
-                model.HotWalletAddress, model.Amount, asset));
+                model.HotWalletAddress, model.Amount, asset, model.Destroy));
         }
 
 

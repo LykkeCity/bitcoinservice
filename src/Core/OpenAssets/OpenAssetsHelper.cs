@@ -139,7 +139,7 @@ namespace Core.OpenAssets
             var rand = new Random((int)DateTime.Now.Ticks);
             var zero = target.Sub(target);
             var targetCoin = coins.FirstOrDefault(c => c.Amount.CompareTo(target) == 0);
-            
+
             if (targetCoin != null)
                 return new[] { targetCoin };
 
@@ -201,6 +201,26 @@ namespace Core.OpenAssets
             if (total.CompareTo(target) == -1)
                 return null;
             return result;
+        }
+
+        public static void DestroyColorCoin(Transaction tr, AssetMoney money, BitcoinAddress destination, Network network)
+        {
+            if (money == null || money.Quantity <= 0)
+                return;
+            uint markerPosition;
+            var colorMarker = ColorMarker.Get(tr, out markerPosition);
+
+            for (var i = 0; i < colorMarker.Quantities.Length; i++)
+            {
+                if ((long)colorMarker.Quantities[i] == money.Quantity &&
+                    tr.Outputs[i + 1].ScriptPubKey.GetDestinationAddress(network) == destination)
+                {
+                    colorMarker.Quantities[i] = 0;
+                    break;
+                }
+            }
+
+            tr.Outputs[markerPosition].ScriptPubKey = colorMarker.GetScript();
         }
     }
 }

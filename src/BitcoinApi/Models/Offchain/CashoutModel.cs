@@ -17,5 +17,7 @@ namespace BitcoinApi.Models.Offchain
 
         public decimal Amount { get; set; }
 
+        public bool Destroy { get; set; }
+
     }
 }
