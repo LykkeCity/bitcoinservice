@@ -26,6 +26,11 @@ namespace Core.OpenAssets
             return asset?.Trim()?.ToUpper() == "BTC";
         }
 
+        public static bool IsLkk(string asset)
+        {
+            return asset?.Trim()?.ToUpper() == "LKK";
+        }
+
         /// <summary>
         /// determine asset ids using order-based coloring method
         /// </summary>

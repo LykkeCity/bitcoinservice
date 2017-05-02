@@ -26,9 +26,10 @@ namespace LkeServices.Bitcoin
         {
             await _client.SendRawTransactionAsync(tr);
 
-            await _broadcastedTransactionRepository.InsertTransaction(tr.GetHash().ToString(), transactionId);
-
-            await _broadcastedTransactionRepository.SaveToBlob(transactionId, tr.ToHex());
+            await Task.WhenAll(
+                _broadcastedTransactionRepository.InsertTransaction(tr.GetHash().ToString(), transactionId),
+                _broadcastedTransactionRepository.SaveToBlob(transactionId, tr.ToHex())
+            );
         }
 
         public async Task<string> GetTransactionHex(string trId)

@@ -12,12 +12,12 @@ namespace BitcoinApi.Controllers
     [Route("api/[controller]")]
     public class OffchainController : Controller
     {
-        private readonly IOffchainTransactionBuilderService _offchainTransactionBuilder;
+        private readonly IOffchainService _offchain;
         private readonly IAssetRepository _assetRepository;
 
-        public OffchainController(IOffchainTransactionBuilderService offchainTransactionBuilder, IAssetRepository assetRepository)
+        public OffchainController(IOffchainService offchain, IAssetRepository assetRepository)
         {
-            _offchainTransactionBuilder = offchainTransactionBuilder;
+            _offchain = offchain;
             _assetRepository = assetRepository;
         }
 
@@ -26,11 +26,8 @@ namespace BitcoinApi.Controllers
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<OffchainApiResponse> Transfer([FromBody]TransferModel model)
         {
-            var asset = await _assetRepository.GetAssetById(model.Asset);
-            if (asset == null)
-                throw new BackendException("Provided asset is missing in database", ErrorCode.AssetNotFound);
-
-            var tr = await _offchainTransactionBuilder.CreateTransfer(model.ClientPubKey, model.Amount, asset, model.ClientPrevPrivateKey, model.RequiredOperation, model.TransferId);
+            var asset = await GetAsset(model.Asset);
+            var tr = await _offchain.CreateTransfer(model.ClientPubKey, model.Amount, asset, model.ClientPrevPrivateKey, model.RequiredOperation, model.TransferId);
             return new OffchainApiResponse(tr);
         }
 
@@ -39,11 +36,8 @@ namespace BitcoinApi.Controllers
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<OffchainApiResponse> CreateUnsignedChannel([FromBody]CreateChannelModel model)
         {
-            var asset = await _assetRepository.GetAssetById(model.Asset);
-            if (asset == null)
-                throw new BackendException("Provided asset is missing in database", ErrorCode.AssetNotFound);
-
-            var tr = await _offchainTransactionBuilder.CreateUnsignedChannel(model.ClientPubKey, model.HotWalletPubKey, model.HubAmount, asset
+            var asset = await GetAsset(model.Asset);
+            var tr = await _offchain.CreateUnsignedChannel(model.ClientPubKey, model.HotWalletAddress, model.HubAmount, asset
                 , model.RequiredOperation, model.TransferId);
             return new OffchainApiResponse(tr);
         }
@@ -54,11 +48,8 @@ namespace BitcoinApi.Controllers
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<OffchainApiResponse> CreateCashin([FromBody]CreateCashinModel model)
         {
-            var asset = await _assetRepository.GetAssetById(model.Asset);
-            if (asset == null)
-                throw new BackendException("Provided asset is missing in database", ErrorCode.AssetNotFound);
-
-            var tr = await _offchainTransactionBuilder.CreateCashin(model.ClientPubKey, model.Amount, asset, model.CashinAddress, model.TransferId);
+            var asset = await GetAsset(model.Asset);
+            var tr = await _offchain.CreateCashin(model.ClientPubKey, model.Amount, asset, model.CashinAddress, model.TransferId);
             return new OffchainApiResponse(tr);
         }
 
@@ -68,11 +59,8 @@ namespace BitcoinApi.Controllers
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<OffchainApiResponse> CreateHubCommitment([FromBody] CreateHubCommitmentModel model)
         {
-            var asset = await _assetRepository.GetAssetById(model.Asset);
-            if (asset == null)
-                throw new BackendException("Provided asset is missing in database", ErrorCode.AssetNotFound);
-
-            var tr = await _offchainTransactionBuilder.CreateHubCommitment(model.ClientPubKey, asset, model.Amount, model.SignedByClientChannel);
+            var asset = await GetAsset(model.Asset);
+            var tr = await _offchain.CreateHubCommitment(model.ClientPubKey, asset, model.Amount, model.SignedByClientChannel);
             return new OffchainApiResponse(tr);
         }
 
@@ -81,11 +69,8 @@ namespace BitcoinApi.Controllers
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<OffchainApiResponse> Finalize([FromBody] FinalizeChannelModel model)
         {
-            var asset = await _assetRepository.GetAssetById(model.Asset);
-            if (asset == null)
-                throw new BackendException("Provided asset is missing in database", ErrorCode.AssetNotFound);
-
-            var tr = await _offchainTransactionBuilder.Finalize(model.ClientPubKey, model.HotWalletPubKey, asset, model.ClientRevokePubKey, model.SignedByClientHubCommitment);
+            var asset = await GetAsset(model.Asset);
+            var tr = await _offchain.Finalize(model.ClientPubKey, model.HotWalletAddress, asset, model.ClientRevokePubKey, model.SignedByClientHubCommitment, model.TransferId);
             return new OffchainApiResponse(tr);
         }
 
@@ -94,22 +79,18 @@ namespace BitcoinApi.Controllers
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<TransactionHashResponse> BroadcastCommitment([FromBody]BroadcastCommitmentModel model)
         {
-            var asset = await _assetRepository.GetAssetById(model.Asset);
-            if (asset == null)
-                throw new BackendException("Provided asset is missing in database", ErrorCode.AssetNotFound);
-            return new TransactionHashResponse(await _offchainTransactionBuilder.BroadcastCommitment(model.ClientPubKey, asset, model.Transaction));
+            var asset = await GetAsset(model.Asset);
+            return new TransactionHashResponse(await _offchain.BroadcastCommitment(model.ClientPubKey, asset, model.Transaction));
         }
 
-        [HttpPost("closechannel")]
-        [ProducesResponseType(typeof(OffchainApiResponse), 200)]
+        [HttpPost("cashout")]
+        [ProducesResponseType(typeof(CashoutOffchainApiResponse), 200)]
         [ProducesResponseType(typeof(ApiException), 400)]
-        public async Task<OffchainApiResponse> CloseChannel([FromBody]CloseChannelModel model)
+        public async Task<CashoutOffchainApiResponse> CreateCashout([FromBody]CashoutModel model)
         {
-            var asset = await _assetRepository.GetAssetById(model.Asset);
-            if (asset == null)
-                throw new BackendException("Provided asset is missing in database", ErrorCode.AssetNotFound);
-            return new OffchainApiResponse(await _offchainTransactionBuilder.CloseChannel(model.ClientPubKey, model.CashoutAddress,
-                model.HotWalletPubKey, asset));
+            var asset = await GetAsset(model.Asset);
+            return new CashoutOffchainApiResponse(await _offchain.CreateCashout(model.ClientPubKey, model.CashoutAddress,
+                model.HotWalletAddress, model.Amount, asset));
         }
 
 
@@ -118,12 +99,38 @@ namespace BitcoinApi.Controllers
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<TransactionHashResponse> BroadcastClosing([FromBody]BroadcastClosingChannelModel model)
         {
-            var asset = await _assetRepository.GetAssetById(model.Asset);
-            if (asset == null)
-                throw new BackendException("Provided asset is missing in database", ErrorCode.AssetNotFound);
-            return new TransactionHashResponse(await _offchainTransactionBuilder.BroadcastClosingChannel(model.ClientPubKey, asset, model.SignedByClientTransaction));
+            var asset = await GetAsset(model.Asset);
+            return new TransactionHashResponse(await _offchain.BroadcastClosingChannel(model.ClientPubKey, asset, model.SignedByClientTransaction));
         }
 
+
+        [HttpGet("clientbalance")]
+        [ProducesResponseType(typeof(OffchainClientBalanceResponse), 200)]
+        [ProducesResponseType(typeof(ApiException), 400)]
+        public async Task<OffchainClientBalanceResponse> GetClientBalance([FromQuery] string multisig, [FromQuery] string asset)
+        {
+            var assetObj = await GetAsset(asset);
+            return new OffchainClientBalanceResponse
+            {
+                Amount = await _offchain.GetClientBalance(multisig, assetObj)
+            };
+        }
+
+        [HttpGet("balances")]
+        [ProducesResponseType(typeof(OffchainBalanceResponse), 200)]
+        [ProducesResponseType(typeof(ApiException), 400)]
+        public async Task<OffchainBalanceResponse> GetBalances([FromQuery] string multisig)
+        {
+            return new OffchainBalanceResponse(await _offchain.GetBalances(multisig));
+        }
+
+        private async Task<IAsset> GetAsset(string assetId)
+        {
+            var asset = await _assetRepository.GetAssetById(assetId);
+            if (asset == null)
+                throw new BackendException("Provided asset is missing in database", ErrorCode.AssetNotFound);
+            return asset;
+        }
     }
 
 }

@@ -26,7 +26,7 @@ namespace BackgroundWorker.Functions
         private readonly IQBitNinjaApiCaller _qBitNinjaApiCaller;
         private readonly ILog _logger;
         private readonly ICommitmentRepository _commitmentRepository;        
-        private readonly IOffchainTransactionBuilderService _offchainTransactionBuilderService;
+        private readonly IOffchainService _offchainService;
         private readonly ISlackNotifier _slackNotifier;
         private readonly IAssetRepository _assetRepository;
         private readonly ISettingsRepository _settingsRepository;
@@ -35,7 +35,7 @@ namespace BackgroundWorker.Functions
         private readonly BaseSettings _baseSettings;
 
         public OffchainCommitmentMonitoringFunction(IQBitNinjaApiCaller qBitNinjaApiCaller, ILog logger, ICommitmentRepository commitmentRepository,            
-            IOffchainTransactionBuilderService offchainTransactionBuilderService,
+            IOffchainService offchainService,
             ISlackNotifier slackNotifier,
             IAssetRepository assetRepository,
             ISettingsRepository settingsRepository,
@@ -45,7 +45,7 @@ namespace BackgroundWorker.Functions
             _qBitNinjaApiCaller = qBitNinjaApiCaller;
             _logger = logger;
             _commitmentRepository = commitmentRepository;            
-            _offchainTransactionBuilderService = offchainTransactionBuilderService;
+            _offchainService = offchainService;
             _slackNotifier = slackNotifier;
             _assetRepository = assetRepository;
             _settingsRepository = settingsRepository;
@@ -109,16 +109,16 @@ namespace BackgroundWorker.Functions
                 await _logger.WriteInfoAsync("OffchainCommitmentMonitoringFunction", "ProcessBroadcastedCommitment",
                         $"CommitmentId: {commitment.CommitmentId}", "Last commitment was broadcasted");
 
-                await _offchainTransactionBuilderService.CloseChannel(commitment);
+                await _offchainService.CloseChannel(commitment);
                 return;
             }
             await _logger.WriteWarningAsync("OffchainCommitmentMonitoringFunction", "ProcessBroadcastedCommitment",
                         $"CommitmentId: {commitment.CommitmentId}", "Commitment is not last.");
             if (commitment.Type == CommitmentType.Client)
             {
-                await _offchainTransactionBuilderService.SpendCommitmemtByMultisig(commitment, spendingCoin,
+                await _offchainService.SpendCommitmemtByMultisig(commitment, spendingCoin,
                     _baseSettings.HotWalletForPregeneratedOutputs);
-                await _offchainTransactionBuilderService.CloseChannel(commitment);
+                await _offchainService.CloseChannel(commitment);
             }
             else
             {

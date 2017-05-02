@@ -75,13 +75,13 @@ namespace BackgroundWorker.Functions
         {
             await _logger.WriteInfoAsync("GenerateOutputsFunction", "GenerateFeeOutputs", null, "Start process");
             var queue = _pregeneratedOutputsQueueFactory.CreateFeeQueue();
-
-            var uncoloredOutputs = await _bitcoinOutputsService.GetUncoloredUnspentOutputs(_baseSettings.HotWalletForPregeneratedOutputs);
-
-            var outputs = uncoloredOutputs.ToList();
-
+          
             while (await queue.Count() < _baseSettings.MinPregeneratedOutputsCount)
             {
+                var uncoloredOutputs = await _bitcoinOutputsService.GetUncoloredUnspentOutputs(_baseSettings.HotWalletForPregeneratedOutputs);
+
+                var outputs = uncoloredOutputs.ToList();
+
                 var totalRequiredAmount = Money.FromUnit(_baseSettings.GenerateOutputsBatchSize * _baseSettings.PregeneratedFeeAmount, MoneyUnit.BTC); // Convert to satoshi
 
                 var feeAmount = new Money(_baseSettings.PregeneratedFeeAmount, MoneyUnit.BTC);

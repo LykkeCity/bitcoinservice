@@ -101,8 +101,10 @@ namespace AzureRepositories.Offchain
             var closing = await GetClosingChannel(multisig, asset);
             if (closing?.ClosingChannelId == closingChannelId)
             {
-                await _table.InsertAsync(ClosingChannelEntity.Archived.Create(closing));
-                await _table.DeleteAsync((ClosingChannelEntity)closing);
+                await Task.WhenAll(
+                    _table.InsertAsync(ClosingChannelEntity.Archived.Create(closing)),
+                    _table.DeleteAsync((ClosingChannelEntity)closing)
+                );
             }
         }
     }

@@ -22,6 +22,7 @@ using AzureStorage;
 using AzureStorage.Blob;
 using AzureStorage.Queue;
 using AzureStorage.Tables;
+using Common;
 using Common.Log;
 using Core;
 using Core.Notifiers;
@@ -51,6 +52,12 @@ namespace AzureRepositories
         {
             ioc.BindRepo(settings, log);
             ioc.BindQueue(settings);
+
+            ioc.Register(x =>
+            {
+                var ctx = x.Resolve<IComponentContext>();
+                return new CachedDataDictionary<string, IAsset>(async () => (await ctx.Resolve<IAssetRepository>().GetBitcoinAssets()).ToDictionary(itm => itm.Id));
+            }).SingleInstance();
 
             ioc.RegisterType<EmailNotifier>().As<IEmailNotifier>();
             ioc.RegisterType<SlackNotifier>().As<ISlackNotifier>().As<IPoisionQueueNotifier>();

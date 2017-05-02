@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -13,7 +14,8 @@ namespace BitcoinApi.Middleware
     {
         private readonly List<string> _ignorePathes = new List<string>
         {
-            "swagger"
+            "swagger",
+            "isalive"
         };
 
         private readonly ILog _log;
@@ -27,17 +29,23 @@ namespace BitcoinApi.Middleware
 
         public async Task Invoke(HttpContext context)
         {
-            string request = await ReadRequest(context.Request.Body);
+            var dt = DateTime.UtcNow;
+            var sw = Stopwatch.StartNew();
+
+            var request = await ReadRequest(context.Request.Body);
 
             if (_ignorePathes.Any(o => context.Request.Path.Value.Contains(o)))
             {
                 await _next.Invoke(context);
+                sw.Stop();
                 return;
             }
 
             string response = await ReadResponse(context);
 
-            await _log.WriteInfoAsync("GlobalLogRequestsMiddleware", context.Request.Path, response, request);
+            sw.Stop();
+
+            await _log.WriteInfoAsync("GlobalLogRequestsMiddleware", context.Request.Path, $"{sw.ElapsedMilliseconds}ms {response}", request, dt);
         }
 
         private async Task<string> ReadResponse(HttpContext context)
