@@ -528,7 +528,7 @@ namespace LkeServices.Transactions
             var hotWalletAddress = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(hotWalletAddr);
             var destroyAddress = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(_settings.ChangeAddress);
 
-            await CheckTransferFinalization(address.MultisigAddress, asset.Id, null, false);
+            await CheckTransferFinalization(address.MultisigAddress, asset.Id, null, true);
 
             var channel = await _offchainChannelRepository.GetChannel(address.MultisigAddress, asset.Id);
 
@@ -571,7 +571,7 @@ namespace LkeServices.Transactions
                 }
                 else
                 {
-                    assetMoney = new AssetMoney(new BitcoinAssetId(asset.BlockChainAssetId).AssetId, amount, asset.MultiplierPower);                    
+                    assetMoney = new AssetMoney(new BitcoinAssetId(asset.BlockChainAssetId).AssetId, amount, asset.MultiplierPower);
                     if (amount > 0)
                         builder.SendAsset(destroy ? destroyAddress : cashoutAddress, assetMoney);
 
@@ -692,10 +692,7 @@ namespace LkeServices.Transactions
 
             var channel = await _offchainChannelRepository.GetChannel(address.MultisigAddress, asset.Id);
 
-            if (channel == null)
-                throw new BackendException("Channel is not found", ErrorCode.ShouldOpenNewChannel);
-
-            if (!channel.IsBroadcasted)
+            if (channel != null && !channel.IsBroadcasted)
                 throw new BackendException("There is another pending channel setup", ErrorCode.AnotherChannelSetupExists);
 
             var closing = await _closingChannelRepository.GetClosingChannel(address.MultisigAddress, asset.Id);
@@ -703,7 +700,7 @@ namespace LkeServices.Transactions
             if (closing == null)
                 throw new BackendException("Closing channel is not found", ErrorCode.ClosingChannelNotFound);
 
-            if (closing.ChannelId != channel.ChannelId)
+            if (channel != null && closing.ChannelId != channel.ChannelId)
                 throw new BackendException("Closing channel belong to expired channel", ErrorCode.ClosingChannelExpired);
 
             if (!TransactionComparer.CompareTransactions(closing.InitialTransaction, signedByClientTransaction))
@@ -715,9 +712,11 @@ namespace LkeServices.Transactions
 
             await _broadcastService.BroadcastTransaction(closing.ClosingChannelId, tr);
 
-            await _offchainChannelRepository.CloseChannel(address.MultisigAddress, asset.Id, channel.ChannelId);
-
-            await _commitmentRepository.CloseCommitmentsOfChannel(address.MultisigAddress, asset.Id, channel.ChannelId);
+            if (channel != null)
+            {
+                await _offchainChannelRepository.CloseChannel(address.MultisigAddress, asset.Id, channel.ChannelId);
+                await _commitmentRepository.CloseCommitmentsOfChannel(address.MultisigAddress, asset.Id, channel.ChannelId);
+            }
 
             await _closingChannelRepository.CompleteClosingChannel(address.MultisigAddress, asset.Id, closing.ClosingChannelId);
 
