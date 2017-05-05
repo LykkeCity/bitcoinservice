@@ -63,6 +63,7 @@ namespace Core.Settings
     {
         public string LogsConnString { get; set; }
         public string DataConnString { get; set; }
+        public string MongoDataConnString { get; set; }
         public string DictsConnString { get; set; }
         public string SharedConnString { get; set; }
         public string ClientPersonalInfoConnString { get; set; }

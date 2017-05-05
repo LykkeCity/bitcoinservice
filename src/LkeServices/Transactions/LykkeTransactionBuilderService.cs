@@ -207,7 +207,7 @@ namespace LkeServices.Transactions
 
                     var tx = builder.BuildTransaction(true);
 
-                    OpenAssetsHelper.DestroyColorCoin(tx, assetMoney, changeAddress, _connectionParams.Network);                   
+                    OpenAssetsHelper.DestroyColorCoin(tx, assetMoney, changeAddress, _connectionParams.Network);
 
                     await SaveSpentOutputs(transactionId, tx);
 
@@ -288,10 +288,10 @@ namespace LkeServices.Transactions
         public async Task SaveSpentOutputs(Guid transactionId, Transaction transaction)
         {
             await _spentOutputRepository.InsertSpentOutputs(transactionId, transaction.Inputs.Select(o => new Output(o.PrevOut)));
+            var tasks = new List<Task>();
             foreach (var outPoint in transaction.Inputs.Select(o => o.PrevOut))
-            {
-                await _broadcastedOutputRepository.DeleteOutput(outPoint.Hash.ToString(), (int)outPoint.N);
-            }
+                tasks.Add(_broadcastedOutputRepository.DeleteOutput(outPoint.Hash.ToString(), (int)outPoint.N));
+            await Task.WhenAll(tasks);
         }
 
         public Task RemoveSpenOutputs(Transaction transaction)

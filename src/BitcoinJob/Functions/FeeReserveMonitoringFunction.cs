@@ -20,19 +20,19 @@ namespace BackgroundWorker.Functions
     public class FeeReserveMonitoringFunction
     {
         private readonly BaseSettings _settings;
-        private readonly ILykkeTransactionBuilderService _lykkeTransactionBuilderService;
-        private readonly IBroadcastedTransactionRepository _broadcastedTransactionRepository;
+        private readonly ILykkeTransactionBuilderService _lykkeTransactionBuilderService;        
         private readonly ITransactionSignRequestRepository _transactionSignRequestRepository;
         private readonly IPregeneratedOutputsQueueFactory _pregeneratedOutputsQueueFactory;
         private readonly ITransactionBlobStorage _transactionBlobStorage;
         private readonly ISpentOutputRepository _spentOutputRepository;
         private readonly ILog _logger;
+        private IBroadcastedTransactionBlobStorage _broadcastedTransactionBlob;
 
-        public FeeReserveMonitoringFunction(BaseSettings settings, ILykkeTransactionBuilderService lykkeTransactionBuilderService, IBroadcastedTransactionRepository broadcastedTransactionRepository, ITransactionSignRequestRepository transactionSignRequestRepository, IPregeneratedOutputsQueueFactory pregeneratedOutputsQueueFactory, ITransactionBlobStorage transactionBlobStorage, ISpentOutputRepository spentOutputRepository, ILog logger)
+        public FeeReserveMonitoringFunction(BaseSettings settings, ILykkeTransactionBuilderService lykkeTransactionBuilderService, IBroadcastedTransactionBlobStorage broadcastedTransactionBlob, ITransactionSignRequestRepository transactionSignRequestRepository, IPregeneratedOutputsQueueFactory pregeneratedOutputsQueueFactory, ITransactionBlobStorage transactionBlobStorage, ISpentOutputRepository spentOutputRepository, ILog logger)
         {
             _settings = settings;
             _lykkeTransactionBuilderService = lykkeTransactionBuilderService;
-            _broadcastedTransactionRepository = broadcastedTransactionRepository;
+            _broadcastedTransactionBlob = broadcastedTransactionBlob;
             _transactionSignRequestRepository = transactionSignRequestRepository;
             _pregeneratedOutputsQueueFactory = pregeneratedOutputsQueueFactory;
             _transactionBlobStorage = transactionBlobStorage;
@@ -43,7 +43,7 @@ namespace BackgroundWorker.Functions
         [QueueTrigger(Constants.FeeReserveMonitoringQueue)]
         public async Task Monitor(FeeReserveMonitoringMessage message, QueueTriggeringContext context)
         {
-            if (await _broadcastedTransactionRepository.IsBroadcasted(message.TransactionId))
+            if (await _broadcastedTransactionBlob.IsBroadcasted(message.TransactionId))
                 return;
 
             if (DateTime.UtcNow - message.PutDateTime > TimeSpan.FromSeconds(_settings.FeeReservePeriodSeconds))
@@ -54,7 +54,7 @@ namespace BackgroundWorker.Functions
 
                 await Task.Delay(3000);
 
-                if (await _broadcastedTransactionRepository.IsBroadcasted(message.TransactionId))
+                if (await _broadcastedTransactionBlob.IsBroadcasted(message.TransactionId))
                     return;
 
                 var transaction = await _transactionBlobStorage.GetTransaction(message.TransactionId, TransactionBlobType.Initial);

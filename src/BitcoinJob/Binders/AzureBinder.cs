@@ -22,6 +22,7 @@ using Lykke.JobTriggers.Implementations.QueueReader;
 using Microsoft.Extensions.DependencyInjection;
 using Lykke.JobTriggers.Extenstions;
 using Autofac.Extensions.DependencyInjection;
+using MongoRepositories;
 
 namespace BackgroundWorker.Binders
 {
@@ -57,6 +58,7 @@ namespace BackgroundWorker.Binders
             
             ioc.BindCommonServices();
             ioc.BindAzure(settings, log);
+            ioc.BindMongo(settings);
 
             ioc.AddTriggers(pool =>
             {

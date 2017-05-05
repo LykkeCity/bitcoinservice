@@ -65,37 +65,13 @@ namespace AzureRepositories
 
         private static void BindRepo(this ContainerBuilder ioc, BaseSettings settings, ILog log)
         {
-            ioc.RegisterInstance(new FeeRateRepository(new AzureTableStorage<FeeRateEntity>(settings.Db.DataConnString, "Settings", log)))
-                .As<IFeeRateRepository>();
-
-            ioc.RegisterInstance(new SettingsRepository(new AzureTableStorage<SettingsEntity>(settings.Db.DataConnString, "Settings", log)))
-                .As<ISettingsRepository>();
-
-            ioc.RegisterInstance(new SpentOutputRepository(new AzureTableStorage<OutputEntity>(settings.Db.DataConnString, "SpentOutputs", log)))
-                .As<ISpentOutputRepository>();
-
-            ioc.RegisterInstance(new BroadcastedTransactionRepository(
-                new AzureTableStorage<BroadcastedTransactionEntity>(settings.Db.DataConnString, "BroadcastedTransactions", log),
+         
+            ioc.RegisterInstance(new BroadcastedTransactionBlobStorage(         
                 new AzureBlobStorage(settings.Db.DataConnString)))
-                .As<IBroadcastedTransactionRepository>();
+                .As<IBroadcastedTransactionBlobStorage>();
 
             ioc.RegisterInstance(new AssetRepository(new AzureTableStorage<AssetEntity>(settings.Db.DictsConnString, "Dictionaries", log)))
                 .As<IAssetRepository>();
-
-            ioc.RegisterInstance(new TransactionSignRequestRepository(new AzureTableStorage<TransactionSignRequestEntity>(settings.Db.DataConnString, "SignRequests", log)))
-                .As<ITransactionSignRequestRepository>();
-
-            ioc.RegisterInstance(new WalletAddressRepository(new AzureTableStorage<WalletAddressEntity>(settings.Db.DataConnString, "Wallets", log)))
-                .As<IWalletAddressRepository>();
-
-            ioc.RegisterInstance(new BroadcastedOutputRepository(new AzureTableStorage<BroadcastedOutputEntity>(settings.Db.DataConnString, "BroadcastedOutputs", log)))
-                .As<IBroadcastedOutputRepository>();
-
-            ioc.RegisterInstance(new CommitmentRepository(new AzureTableStorage<CommitmentEntity>(settings.Db.DataConnString, "Commitments", log)))
-                .As<ICommitmentRepository>();
-
-            ioc.RegisterInstance(new OffchainChannelRepository(new AzureTableStorage<OffchainChannelEntity>(settings.Db.DataConnString, "Channels", log)))
-                .As<IOffchainChannelRepository>();
 
             ioc.RegisterInstance(new MonitoringRepository(new AzureTableStorage<MonitoringEntity>(settings.Db.SharedConnString, "Monitoring", log)))
                 .As<IMonitoringRepository>();
@@ -111,19 +87,7 @@ namespace AzureRepositories
 
             ioc.RegisterInstance(new TransactionBlobStorage(new AzureBlobStorage(settings.Db.DataConnString)))
                 .As<ITransactionBlobStorage>();
-
-            ioc.RegisterInstance(new RevokeKeyRepository(new AzureTableStorage<RevokeKeyEntity>(settings.Db.DataConnString, "RevokeKeys", log)))
-                .As<IRevokeKeyRepository>();
-
-            ioc.RegisterInstance(new ExtraAmountRepository(new AzureTableStorage<ExtraAmountEntity>(settings.Db.DataConnString, "ExtraAmounts", log)))
-                .As<IExtraAmountRepository>();
-
-            ioc.RegisterInstance(new OffchainTransferRepository(new AzureTableStorage<OffchainTransferEntity>(settings.Db.DataConnString, "Transfers", log)))
-                .As<IOffchainTransferRepository>();
-
-            ioc.RegisterInstance(new ClosingChannelRepository(new AzureTableStorage<ClosingChannelEntity>(settings.Db.DataConnString, "ClosingChannel", log)))
-                .As<IClosingChannelRepository>();
-
+    
             ioc.RegisterInstance(new NinjaOutputBlobStorage(new AzureBlobStorage(settings.Db.DataConnString)))
                 .As<INinjaOutputBlobStorage>();
         }

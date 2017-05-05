@@ -85,6 +85,11 @@ namespace AzureRepositories.Walelts
         public async Task<IWalletAddress> GetByClientPubKey(string clientPubKey)
         {
             return await _storage.GetDataAsync(WalletAddressEntity.ByClientPubKey.GeneratePartitionKey(), clientPubKey);
-        }       
+        }
+
+        public async Task<IEnumerable<IWalletAddress>> GetAllAddresses()
+        {
+            return await _storage.GetDataAsync(WalletAddressEntity.ByMultisig.GeneratePartitionKey());
+        }
     }
 }
