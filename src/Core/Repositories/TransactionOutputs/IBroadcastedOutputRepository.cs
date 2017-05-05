@@ -25,6 +25,6 @@ namespace Core.Repositories.TransactionOutputs
         Task InsertOutputs(IEnumerable<IBroadcastedOutput> outputs);
         Task<IEnumerable<IBroadcastedOutput>> GetOutputs(string address);
         Task SetTransactionHash(Guid transactionId, string transactionHash);
-        Task DeleteOutput(string transactionHash, int n);
+        Task DeleteOutput(string transactionHash, int n);        
     }
 }

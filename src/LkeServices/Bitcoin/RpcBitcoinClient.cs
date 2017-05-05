@@ -14,11 +14,13 @@ namespace LkeServices.Bitcoin
     public class RpcBitcoinClient : IRpcBitcoinClient
     {
         private readonly IBroadcastedTransactionRepository _broadcastedTransactionRepository;
+        private readonly IBroadcastedTransactionBlobStorage _broadcastedTransactionBlob;
         private readonly RPCClient _client;
 
-        public RpcBitcoinClient(RpcConnectionParams connectionParams, IBroadcastedTransactionRepository broadcastedTransactionRepository)
+        public RpcBitcoinClient(RpcConnectionParams connectionParams, IBroadcastedTransactionRepository broadcastedTransactionRepository, IBroadcastedTransactionBlobStorage broadcastedTransactionBlob)
         {
             _broadcastedTransactionRepository = broadcastedTransactionRepository;
+            _broadcastedTransactionBlob = broadcastedTransactionBlob;
             _client = new RPCClient(new NetworkCredential(connectionParams.UserName, connectionParams.Password), connectionParams.IpAddress, connectionParams.Network);
         }
 
@@ -28,7 +30,7 @@ namespace LkeServices.Bitcoin
 
             await Task.WhenAll(
                 _broadcastedTransactionRepository.InsertTransaction(tr.GetHash().ToString(), transactionId),
-                _broadcastedTransactionRepository.SaveToBlob(transactionId, tr.ToHex())
+                _broadcastedTransactionBlob.SaveToBlob(transactionId, tr.ToHex())
             );
         }
 

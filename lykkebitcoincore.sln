@@ -36,6 +36,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripts", "Scripts", "{C2A5
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "PoisonMessagesReenqueue", "src\PoisonMessagesReenqueue\PoisonMessagesReenqueue.xproj", "{94B4DDF2-FA02-4832-8904-A7D304C9C175}"
 EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "MongoRepositories", "src\MongoRepositories\MongoRepositories.xproj", "{7AADB346-235C-4A4B-8CB0-15EE0A48AF96}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -90,6 +92,10 @@ Global
 		{94B4DDF2-FA02-4832-8904-A7D304C9C175}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{94B4DDF2-FA02-4832-8904-A7D304C9C175}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{94B4DDF2-FA02-4832-8904-A7D304C9C175}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7AADB346-235C-4A4B-8CB0-15EE0A48AF96}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7AADB346-235C-4A4B-8CB0-15EE0A48AF96}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7AADB346-235C-4A4B-8CB0-15EE0A48AF96}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7AADB346-235C-4A4B-8CB0-15EE0A48AF96}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -105,5 +111,6 @@ Global
 		{DB30539F-6E37-44A4-8F72-E43F122508ED} = {C2A5F2F4-8E2A-489A-ACC0-5F2DE12B5E23}
 		{9269F202-14AA-454E-ACBA-BA6A8F5D9446} = {C2A5F2F4-8E2A-489A-ACC0-5F2DE12B5E23}
 		{94B4DDF2-FA02-4832-8904-A7D304C9C175} = {C2A5F2F4-8E2A-489A-ACC0-5F2DE12B5E23}
+		{7AADB346-235C-4A4B-8CB0-15EE0A48AF96} = {4F5EBE08-0B29-4CC0-A11A-0D16BC979C33}
 	EndGlobalSection
 EndGlobal

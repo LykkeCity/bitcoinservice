@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "dependencies": {
+    "Core": "1.0.0",
+    "Lykke.Common": "1.1.37",
+    "MongoDB.Driver": "2.3.0",
+    "MongoDB.Driver.GridFS": "2.3.0",
+    "Newtonsoft.Json": "9.0.1"
+  },
+  "frameworks": {
+    "netcoreapp1.1": {
+      "dependencies": {
+        "Microsoft.NETCore.App": {
+          "type": "platform",
+          "version": "1.1.0"
+        }
+      }
+    }
+  }
+}

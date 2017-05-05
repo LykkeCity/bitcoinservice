@@ -15,7 +15,8 @@
     "AzureRepositories": "1.0.0-*",
     "Microsoft.Extensions.Configuration.FileExtensions": "1.1.0",
     "Microsoft.Extensions.Configuration.Json": "1.1.0",
-    "System.Reflection": "4.3.0"    
+    "System.Reflection": "4.3.0",
+    "MongoRepositories": "1.0.0"    
   },
 
   "tools": {
