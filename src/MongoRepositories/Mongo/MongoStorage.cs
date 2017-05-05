@@ -49,7 +49,7 @@ namespace MongoRepositories.Mongo
                     }
 
                     item.BsonVersion = entity.BsonVersion + 1;
-
+                    item.BsonUpdateDt = DateTime.UtcNow;
                     var output = await _collection.ReplaceOneAsync(x => x.BsonId == item.BsonId && x.BsonVersion == entity.BsonVersion, item);
                     if (output.ModifiedCount > 0)
                         return item;
@@ -86,7 +86,7 @@ namespace MongoRepositories.Mongo
                     var prevVersion = entity.BsonVersion;
                     item = modify(entity);
                     item.BsonVersion = prevVersion + 1;
-
+                    item.BsonUpdateDt = DateTime.UtcNow;
                     var output = await _collection.ReplaceOneAsync(x => x.BsonId == item.BsonId && x.BsonVersion == prevVersion, item);
                     if (output.ModifiedCount > 0)
                         return item;
@@ -135,6 +135,7 @@ namespace MongoRepositories.Mongo
                         var merged = currentDoc.MergeExt(entity.ToBsonDocument());
                         var replace = BsonSerializer.Deserialize<T>(merged);
                         replace.BsonVersion = prevVersion + 1;
+                        replace.BsonUpdateDt = DateTime.UtcNow;
                         var output = await _collection.ReplaceOneAsync(x => x.BsonId == record.BsonId && x.BsonVersion == prevVersion, replace);
                         if (output.ModifiedCount > 0)
                             return;
@@ -268,6 +269,7 @@ namespace MongoRepositories.Mongo
 
                 var item = BsonSerializer.Deserialize<T>(merged);
                 item.BsonVersion = prevVersion + 1;
+                item.BsonUpdateDt = DateTime.UtcNow;
                 var output = await _collection.ReplaceOneAsync(x => x.BsonId == entity.BsonId && x.BsonVersion == prevVersion, item);
                 if (output.ModifiedCount > 0)
                     return item;
@@ -289,6 +291,7 @@ namespace MongoRepositories.Mongo
                     return null;
 
                 result.BsonVersion = prevVersion + 1;
+                result.BsonUpdateDt = DateTime.UtcNow;
                 var output = await _collection.ReplaceOneAsync(x => x.BsonId == key && x.BsonVersion == prevVersion, result);
                 if (output.ModifiedCount > 0)
                     return result;

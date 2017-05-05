@@ -12,6 +12,18 @@ namespace MongoRepositories.Mongo
 		[BsonId]
 		public string BsonId { get; set; }
 
+        [BsonElement("_version")]
 		public int BsonVersion { get; set; }
+
+        [BsonElement("_created")]
+        public DateTime BsonCreateDt { get; set; }
+
+	    [BsonElement("_updated")]
+        public DateTime? BsonUpdateDt { get; set; }
+
+	    protected MongoEntity()
+	    {
+	        BsonCreateDt = DateTime.UtcNow;
+	    }
 	}
 }
