@@ -12,12 +12,10 @@ namespace MongoRepositories.Offchain
 {
     public class CommitmentEntity : MongoEntity, ICommitment
     {
-        public int CommitType { get; set; }
-
         [BsonIgnore]
         public Guid CommitmentId => Guid.Parse(BsonId);
 
-        public CommitmentType Type => (CommitmentType)CommitType;
+        public CommitmentType Type { get; set; }
 
         public Guid ChannelId { get; set; }
 
@@ -53,7 +51,7 @@ namespace MongoRepositories.Offchain
                 ChannelId = channelTransactionId,
                 Multisig = multisig,
                 AssetId = asset,
-                CommitType = (int)type,
+                Type = type,
                 RevokePubKey = revokePubKey,
                 InitialTransaction = initialTr,
                 ClientAmount = clientAmount,
