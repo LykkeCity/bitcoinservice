@@ -165,9 +165,10 @@ namespace MongoRepositories.Mongo
             return query.FirstOrDefaultAsync();
         }
 
-        public Task InsertAsync(IEnumerable<T> documents)
+        public async Task InsertAsync(IEnumerable<T> documents)
         {
-            return _collection.InsertManyAsync(documents);
+            if (documents.Any())
+                await _collection.InsertManyAsync(documents);
         }
 
         public Task ScanDataAsync(Func<IEnumerable<T>, Task> chunk)

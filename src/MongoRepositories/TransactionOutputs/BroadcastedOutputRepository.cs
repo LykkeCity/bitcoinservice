@@ -52,7 +52,7 @@ namespace MongoRepositories.TransactionOutputs
 
         public async Task InsertOutputs(IEnumerable<IBroadcastedOutput> outputs)
         {
-            await _table.InsertAsync(outputs.Select(BroadcastedOutputEntity.Create));
+            await _table.InsertAsync(outputs.Select(BroadcastedOutputEntity.Create).ToList());
         }
 
         public async Task<IEnumerable<IBroadcastedOutput>> GetOutputs(string address)
