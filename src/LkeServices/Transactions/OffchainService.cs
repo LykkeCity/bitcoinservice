@@ -132,9 +132,7 @@ namespace LkeServices.Transactions
             var channel = await _offchainChannelRepository.GetChannel(multisig, assetId);
             if (channel == null)
                 return;
-
-            if (channel.IsBroadcasted && transfer.TransferId == transferId)
-                return;
+          
             monitor?.Step("Close transfer");
             await _offchainTransferRepository.CloseTransfer(multisig, assetId, transfer.TransferId);
 
