@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Core.Exceptions;
 using Core.Repositories.TransactionOutputs;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 using MongoRepositories.Mongo;
 using MongoRepositories.Utils;
@@ -21,6 +23,7 @@ namespace MongoRepositories.TransactionOutputs
         public string TransactionHash { get; set; }
         public int N { get; set; }
 
+        [BsonRepresentation(BsonType.String)]
         public Guid TransactionId { get; set; }
 
         public static OutputEntity Create(Guid transactionId, IOutput output)

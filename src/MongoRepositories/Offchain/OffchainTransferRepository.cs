@@ -2,6 +2,8 @@
 using System.Threading.Tasks;
 using Core.Exceptions;
 using Core.Repositories.Offchain;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 using MongoRepositories.Mongo;
 using MongoRepositories.Utils;
@@ -10,7 +12,7 @@ namespace MongoRepositories.Offchain
 {
     public class OffchainTransferEntity : MongoEntity, IOffchainTransfer
     {
-
+        [BsonRepresentation(BsonType.String)]
         public Guid TransferId { get; set; }
         public string Multisig { get; set; }
         public string AssetId { get; set; }

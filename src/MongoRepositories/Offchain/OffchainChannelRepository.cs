@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Core.Repositories.Offchain;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 using MongoRepositories.Mongo;
 
 namespace MongoRepositories.Offchain
 {
     public class OffchainChannelEntity : MongoEntity, IOffchainChannel
     {
+        [BsonRepresentation(BsonType.String)]
         public Guid ChannelId { get; set; }
         public string Multisig { get; set; }
         public string Asset { get; set; }
@@ -20,6 +23,7 @@ namespace MongoRepositories.Offchain
 
         public bool IsBroadcasted { get; set; }
 
+        [BsonRepresentation(BsonType.String)]
         public Guid? PrevChannelTransactionId { get; set; }
 
         public bool Actual { get; set; }

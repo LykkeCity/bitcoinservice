@@ -2,6 +2,7 @@
 using System.Text;
 using System.Threading.Tasks;
 using Core.Repositories.Transactions;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoRepositories.Mongo;
 
@@ -12,13 +13,14 @@ namespace MongoRepositories.Transactions
         
         [BsonIgnore]
         public string Hash => BsonId;
+
+        [BsonRepresentation(BsonType.String)]
         public Guid TransactionId { get; set; }
 
         public static BroadcastedTransactionEntity Create(string hash, Guid transactionId)
         {
             return new BroadcastedTransactionEntity
-            {
-                
+            {                
                 BsonId = hash,
                 TransactionId = transactionId
             };

@@ -1,16 +1,22 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Core.Repositories.Offchain;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 using MongoRepositories.Mongo;
 
 namespace MongoRepositories.Offchain
 {
     public class ClosingChannelEntity : MongoEntity, IClosingChannel
     {
+        [BsonRepresentation(BsonType.String)]
         public Guid ClosingChannelId { get; set; }
+
         public string Multisig { get; set; }
         public string Asset { get; set; }
         public string InitialTransaction { get; set; }
+
+        [BsonRepresentation(BsonType.String)]
         public Guid ChannelId { get; set; }
 
         public static class Current

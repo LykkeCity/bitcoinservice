@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Core.Repositories.TransactionOutputs;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 using MongoRepositories.Mongo;
 
 namespace MongoRepositories.TransactionOutputs
@@ -11,6 +13,7 @@ namespace MongoRepositories.TransactionOutputs
     {
         public string TransactionHash { get; set; }
         public int N { get; set; }
+        [BsonRepresentation(BsonType.String)]
         public Guid TransactionId { get; set; }
         public string Address { get; set; }
         public string ScriptPubKey { get; set; }

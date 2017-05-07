@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Core.Helpers;
 using Core.Repositories.Offchain;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 using MongoRepositories.Mongo;
@@ -17,6 +18,7 @@ namespace MongoRepositories.Offchain
 
         public CommitmentType Type { get; set; }
 
+        [BsonRepresentation(BsonType.String)]
         public Guid ChannelId { get; set; }
 
         public string InitialTransaction { get; set; }
