@@ -66,13 +66,13 @@ namespace BitcoinApi.Controllers
         }
 
         [HttpPost("finalize")]
-        [ProducesResponseType(typeof(OffchainApiResponse), 200)]
+        [ProducesResponseType(typeof(FinalizeOffchainApiResponse), 200)]
         [ProducesResponseType(typeof(ApiException), 400)]
-        public async Task<OffchainApiResponse> Finalize([FromBody] FinalizeChannelModel model)
+        public async Task<FinalizeOffchainApiResponse> Finalize([FromBody] FinalizeChannelModel model)
         {
             var asset = await GetAsset(model.Asset);
             var tr = await _offchain.Finalize(model.ClientPubKey, model.HotWalletAddress, asset, model.ClientRevokePubKey, model.SignedByClientHubCommitment, model.TransferId);
-            return new OffchainApiResponse(tr);
+            return new FinalizeOffchainApiResponse(tr);
         }
 
         [HttpPost("broadcastcommitment")]

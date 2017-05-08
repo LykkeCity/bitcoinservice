@@ -19,7 +19,7 @@ namespace LkeServices.Transactions
     public interface ITransactionBuildHelper
     {
         Task AddFee(TransactionBuilder builder, TransactionBuildContext context);
-        Task SendWithChange(TransactionBuilder builder, TransactionBuildContext context, List<ICoin> coins, IDestination destination, Money amount, IDestination changeDestination, bool addDust = true);
+        Task<decimal> SendWithChange(TransactionBuilder builder, TransactionBuildContext context, List<ICoin> coins, IDestination destination, Money amount, IDestination changeDestination, bool addDust = true);
         void SendAssetWithChange(TransactionBuilder builder, TransactionBuildContext context, List<ColoredCoin> coins, IDestination destination, AssetMoney amount, IDestination changeDestination);
         void AddFakeInput(TransactionBuilder builder, Money fakeAmount);
         void RemoveFakeInput(Transaction tr);
@@ -83,7 +83,7 @@ namespace LkeServices.Transactions
             builder.Send(BitcoinAddress.Create(_baseSettings.ChangeAddress, _connectionParams.Network), sentAmount - dustAmount - totalFeeSent);
         }
 
-        public async Task SendWithChange(TransactionBuilder builder, TransactionBuildContext context, List<ICoin> coins, IDestination destination, Money amount, IDestination changeDestination, bool addDust = true)
+        public async Task<decimal> SendWithChange(TransactionBuilder builder, TransactionBuildContext context, List<ICoin> coins, IDestination destination, Money amount, IDestination changeDestination, bool addDust = true)
         {
             if (amount.Satoshi <= 0)
                 throw new BackendException("Amount can't be less or equal to zero", ErrorCode.BadInputParameter);
@@ -111,19 +111,21 @@ namespace LkeServices.Transactions
             context.AddCoins(orderedCoins.Take(cnt));
             builder.AddCoins(orderedCoins.Take(cnt));
 
-            await Send(builder, context, destination, amount, addDust);
+            var sent =  await Send(builder, context, destination, amount, addDust);
 
             if (sendAmount - amount > 0)
                 await Send(builder, context, changeDestination, sendAmount - amount, addDust);
+            return sent;
         }
 
-        private async Task Send(TransactionBuilder builder, TransactionBuildContext context, IDestination destination, Money amount, bool addDust)
+        private async Task<decimal> Send(TransactionBuilder builder, TransactionBuildContext context, IDestination destination, Money amount, bool addDust)
         {
             var newAmount = Money.Max(GetDust(destination, addDust), amount);
             builder.Send(destination, newAmount);
             if (newAmount > amount)            
                 context.AddExtraAmount(await _extraAmountRepository.Add(destination.ScriptPubKey.GetDestinationAddress(_connectionParams.Network).ToWif(),
-                            newAmount - amount));            
+                            newAmount - amount));
+            return newAmount.ToDecimal(MoneyUnit.BTC);
         }
 
 
