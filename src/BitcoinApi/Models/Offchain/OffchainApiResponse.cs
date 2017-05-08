@@ -28,4 +28,14 @@ namespace BitcoinApi.Models.Offchain
             ChannelClosed = response.ChannelClosed;
         }
     }
+
+    public class FinalizeOffchainApiResponse : OffchainApiResponse
+    {
+        public string Hash { get; set; }
+
+        public FinalizeOffchainApiResponse(OffchainFinalizeResponse response) : base(response)
+        {
+            Hash = response.Hash;
+        }
+    }
 }

@@ -9,6 +9,7 @@ using Core.Bitcoin;
 using Core.Settings;
 using LkeServices;
 using Microsoft.Extensions.DependencyInjection;
+using MongoRepositories;
 using NUnit.Framework;
 
 // ReSharper disable once CheckNamespace
@@ -32,6 +33,7 @@ namespace Bitcoin.Tests
             builder.RegisterInstance(log).As<ILog>();
             builder.RegisterInstance(new RpcConnectionParams(settings));
             builder.BindAzure(settings, log);
+            builder.BindMongo(settings);
             builder.BindCommonServices();
 
             Services = new AutofacServiceProvider(builder.Build());

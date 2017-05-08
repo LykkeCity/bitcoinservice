@@ -11,6 +11,7 @@ using Core.Bitcoin;
 using Core.Settings;
 using LkeServices;
 using Microsoft.Extensions.Configuration;
+using MongoRepositories;
 
 namespace BitcoinApi.Binders
 {
@@ -43,7 +44,7 @@ namespace BitcoinApi.Binders
 
             ioc.BindCommonServices();
             ioc.BindAzure(settings, log);
-
+            ioc.BindMongo(settings);
             ioc.RegisterType<RetryFailedTransactionService>().As<IRetryFailedTransactionService>();
 
             ioc.RegisterSource(new AnyConcreteTypeNotAlreadyRegisteredSource());

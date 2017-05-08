@@ -32,26 +32,26 @@ namespace LkeServices.Providers.Rest
 
             var reqId = Interlocked.Increment(ref _requestId);
 
-            var requestLog = $"Request reqId={reqId}, Method: {request.Method} {request.RequestUri}, Guid: {requestGuid}";
+            //var requestLog = $"Request reqId={reqId}, Method: {request.Method} {request.RequestUri}, Guid: {requestGuid}";
 
-            var info = new StringBuilder();
-            info.AppendLine(requestLog);
+            //var info = new StringBuilder();
+            //info.AppendLine(requestLog);
                         
-            if (request.Content != null)
-                info.AppendLine("Content=" + await request.Content.ReadAsStringAsync());
+            //if (request.Content != null)
+            //    info.AppendLine("Content=" + await request.Content.ReadAsStringAsync());
 
-            await _apiRequestRepository.LogToBlob(requestGuid, "request", info.ToString());
+            //await _apiRequestRepository.LogToBlob(requestGuid, "request", info.ToString());
 
-            await _logger.WriteInfoAsync("LykkeHttpClientHandler", "SendAsync", "", requestLog);            
+            //await _logger.WriteInfoAsync("LykkeHttpClientHandler", "SendAsync", "", requestLog);            
             var response = await base.SendAsync(request, cancellationToken);
             try
             {
                 response.EnsureSuccessStatusCode();
 
-                var content = await response.Content.ReadAsStringAsync();
-                await _logger.WriteInfoAsync("LykkeHttpClientHandler", "SendAsync", "", $"Response reqId={reqId}, guid: {requestGuid}");
+                //var content = await response.Content.ReadAsStringAsync();
+                //await _logger.WriteInfoAsync("LykkeHttpClientHandler", "SendAsync", "", $"Response reqId={reqId}, guid: {requestGuid}");
 
-                await _apiRequestRepository.LogToBlob(requestGuid, "response", content);                
+                //await _apiRequestRepository.LogToBlob(requestGuid, "response", content);                
                 return response;
             }
             catch (Exception ex)

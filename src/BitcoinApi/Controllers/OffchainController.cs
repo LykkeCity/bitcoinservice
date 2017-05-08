@@ -2,6 +2,7 @@
 using BitcoinApi.Filters;
 using BitcoinApi.Models;
 using BitcoinApi.Models.Offchain;
+using Common;
 using Core.Exceptions;
 using Core.Repositories.Assets;
 using LkeServices.Transactions;
@@ -13,9 +14,9 @@ namespace BitcoinApi.Controllers
     public class OffchainController : Controller
     {
         private readonly IOffchainService _offchain;
-        private readonly IAssetRepository _assetRepository;
+        private readonly CachedDataDictionary<string, IAsset> _assetRepository;
 
-        public OffchainController(IOffchainService offchain, IAssetRepository assetRepository)
+        public OffchainController(IOffchainService offchain, CachedDataDictionary<string, IAsset> assetRepository)
         {
             _offchain = offchain;
             _assetRepository = assetRepository;
@@ -65,13 +66,13 @@ namespace BitcoinApi.Controllers
         }
 
         [HttpPost("finalize")]
-        [ProducesResponseType(typeof(OffchainApiResponse), 200)]
+        [ProducesResponseType(typeof(FinalizeOffchainApiResponse), 200)]
         [ProducesResponseType(typeof(ApiException), 400)]
-        public async Task<OffchainApiResponse> Finalize([FromBody] FinalizeChannelModel model)
+        public async Task<FinalizeOffchainApiResponse> Finalize([FromBody] FinalizeChannelModel model)
         {
             var asset = await GetAsset(model.Asset);
             var tr = await _offchain.Finalize(model.ClientPubKey, model.HotWalletAddress, asset, model.ClientRevokePubKey, model.SignedByClientHubCommitment, model.TransferId);
-            return new OffchainApiResponse(tr);
+            return new FinalizeOffchainApiResponse(tr);
         }
 
         [HttpPost("broadcastcommitment")]
@@ -124,9 +125,19 @@ namespace BitcoinApi.Controllers
             return new OffchainBalanceResponse(await _offchain.GetBalances(multisig));
         }
 
+        [HttpPost("removechannel")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(typeof(ApiException), 400)]
+        public async Task RemoveChannel([FromBody]RemoveChannelModel model)
+        {
+            var asset = await GetAsset(model.Asset);
+            await _offchain.RemoveChannel(model.Multisig, asset);
+        }
+
+
         private async Task<IAsset> GetAsset(string assetId)
         {
-            var asset = await _assetRepository.GetAssetById(assetId);
+            var asset = await _assetRepository.GetItemAsync(assetId);
             if (asset == null)
                 throw new BackendException("Provided asset is missing in database", ErrorCode.AssetNotFound);
             return asset;

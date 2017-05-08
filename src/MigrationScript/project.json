@@ -13,8 +13,7 @@
     "Microsoft.Extensions.Configuration.FileExtensions": "1.1.0",
     "Microsoft.Extensions.Configuration": "1.1.0",
     "Microsoft.Extensions.Options.ConfigurationExtensions": "1.1.0",
-    "Microsoft.EntityFrameworkCore.SqlServer": "1.0.1",
-    "Microsoft.EntityFrameworkCore": "1.0.1",
+    "MongoRepositories": "1.0.0-*",
     "AzureRepositories": "1.0.0-*",
     "LkeServices": "1.0.0"
   },

@@ -207,20 +207,7 @@ namespace LkeServices.Transactions
 
                     var tx = builder.BuildTransaction(true);
 
-                    uint markerPosition;
-                    var colorMarker = ColorMarker.Get(tx, out markerPosition);
-
-                    for (var i = 0; i < colorMarker.Quantities.Length; i++)
-                    {
-                        if ((long)colorMarker.Quantities[i] == assetMoney.Quantity &&
-                            tx.Outputs[i + 1].ScriptPubKey.GetDestinationAddress(_connectionParams.Network) == changeAddress)
-                        {
-                            colorMarker.Quantities[i] = 0;
-                            break;
-                        }
-                    }
-
-                    tx.Outputs[markerPosition].ScriptPubKey = colorMarker.GetScript();
+                    OpenAssetsHelper.DestroyColorCoin(tx, assetMoney, changeAddress, _connectionParams.Network);
 
                     await SaveSpentOutputs(transactionId, tx);
 
@@ -301,10 +288,10 @@ namespace LkeServices.Transactions
         public async Task SaveSpentOutputs(Guid transactionId, Transaction transaction)
         {
             await _spentOutputRepository.InsertSpentOutputs(transactionId, transaction.Inputs.Select(o => new Output(o.PrevOut)));
+            var tasks = new List<Task>();
             foreach (var outPoint in transaction.Inputs.Select(o => o.PrevOut))
-            {
-                await _broadcastedOutputRepository.DeleteOutput(outPoint.Hash.ToString(), (int)outPoint.N);
-            }
+                tasks.Add(_broadcastedOutputRepository.DeleteOutput(outPoint.Hash.ToString(), (int)outPoint.N));
+            await Task.WhenAll(tasks);
         }
 
         public Task RemoveSpenOutputs(Transaction transaction)

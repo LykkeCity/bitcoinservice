@@ -16,8 +16,9 @@ using Core.Settings;
 using LkeServices.QBitNinja;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using MigrationScript.Models;
-using Microsoft.EntityFrameworkCore;
+
+using MongoDB.Driver;
+using MongoRepositories.Mongo;
 using QBitNinja.Client;
 
 namespace MigrationScript
@@ -28,22 +29,24 @@ namespace MigrationScript
         {
             var collection = new ServiceCollection();
 
-            collection.AddDbContext<BitcoinContext>((o) =>
-            {
-                o.UseSqlServer(configuration.GetConnectionString("default"));
-            });
-
             collection.AddTransient<MigrationJob>();
-
-            collection.AddSingleton<IWalletAddressRepository>(
-                new WalletAddressRepository(
-                    new AzureTableStorage<WalletAddressEntity>(configuration.GetConnectionString("job"),
-                        "Wallets", null)));
-
-            collection.AddSingleton<IKeyRepository>(
-                new KeyRepository(
-                    new AzureTableStorage<KeyEntity>(configuration.GetConnectionString("keystorage"),
-                        "SigningSecrets", null)));
+            var mongoClient = new MongoClient(configuration.GetConnectionString("mongo"));
+            collection.AddSingleton<Func<string, IWalletAddressRepository>>(
+                conn =>
+                {
+                    switch (conn)
+                    {
+                        case "azure":
+                            return new WalletAddressRepository(
+                                new AzureTableStorage<WalletAddressEntity>(configuration.GetConnectionString(conn),
+                                    "Wallets", null));
+                        case "mongo":
+                            return new MongoRepositories.Walelts.WalletAddressRepository(new MongoStorage<MongoRepositories.Walelts.WalletAddressEntity>(mongoClient,
+                                "Wallets"));
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+                });
 
             collection.AddSingleton<IConfiguration>(configuration);
 

@@ -166,7 +166,7 @@ namespace AzureRepositories.Offchain
                 });
         }
 
-        public async Task<IOffchainChannel> CloseChannel(string multisig, string asset, Guid channelId)
+        public async Task CloseChannel(string multisig, string asset, Guid channelId)
         {
             var current = (OffchainChannelEntity)await GetChannel(multisig, asset);
 
@@ -174,10 +174,8 @@ namespace AzureRepositories.Offchain
             {
                 var archived = OffchainChannelEntity.Archived.Create(current);
                 await _table.InsertAsync(archived);
-                await _table.DeleteAsync(current);
-                return current;
-            }
-            return await _table.GetDataAsync(OffchainChannelEntity.Archived.GeneratePartitionKey(asset, multisig), channelId.ToString());
+                await _table.DeleteAsync(current);                
+            }            
         }
 
         public async Task RevertChannel(string multisig, string asset, Guid channelId)
@@ -191,6 +189,7 @@ namespace AzureRepositories.Offchain
                 var archived = await _table.GetDataAsync(OffchainChannelEntity.Archived.GeneratePartitionKey(multisig, asset), current.PrevChannelTransactionId.ToString());
                 if (archived != null)
                 {
+                    await _table.DeleteAsync(archived);
                     var entity = OffchainChannelEntity.CurrentChannel.Create(archived);
                     await _table.InsertAsync(entity);
                 }

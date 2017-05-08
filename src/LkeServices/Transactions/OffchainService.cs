@@ -20,6 +20,7 @@ using Core.Repositories.RevokeKeys;
 using Core.Repositories.TransactionOutputs;
 using Core.Repositories.Wallets;
 using Core.ScriptTemplates;
+using Core.Settings;
 using LkeServices.Providers;
 using LkeServices.Signature;
 
@@ -35,7 +36,7 @@ namespace LkeServices.Transactions
 
         Task<OffchainResponse> CreateHubCommitment(string clientPubKey, IAsset asset, decimal amount, string signedByClientChannel);
 
-        Task<OffchainResponse> Finalize(string clientPubKey, string hotWalletAddr, IAsset asset, string clientRevokePubKey, string signedByClientHubCommitment, Guid transferId);
+        Task<OffchainFinalizeResponse> Finalize(string clientPubKey, string hotWalletAddr, IAsset asset, string clientRevokePubKey, string signedByClientHubCommitment, Guid transferId);
 
         Task<CashoutOffchainResponse> CreateCashout(string clientPubKey, string cashoutAddress, string hotWalletAddr, decimal amount, IAsset asset);
 
@@ -51,6 +52,7 @@ namespace LkeServices.Transactions
 
         Task CloseChannel(ICommitment commitment);
 
+        Task RemoveChannel(string multisig, IAsset asset);
     }
 
     public class OffchainService : IOffchainService
@@ -74,6 +76,7 @@ namespace LkeServices.Transactions
         private readonly IBitcoinBroadcastService _broadcastService;
         private readonly CachedDataDictionary<string, IAsset> _assetRepository;
         private readonly IPerfomanceMonitorFactory _perfomanceMonitorFactory;
+        private readonly BaseSettings _settings;
         private readonly IClosingChannelRepository _closingChannelRepository;
 
         public OffchainService(
@@ -93,6 +96,7 @@ namespace LkeServices.Transactions
             IBitcoinBroadcastService broadcastService,
             CachedDataDictionary<string, IAsset> assetRepository,
             IPerfomanceMonitorFactory perfomanceMonitorFactory,
+            BaseSettings settings,
             IClosingChannelRepository closingChannelRepository)
         {
             _transactionBuildHelper = transactionBuildHelper;
@@ -111,6 +115,7 @@ namespace LkeServices.Transactions
             _broadcastService = broadcastService;
             _assetRepository = assetRepository;
             _perfomanceMonitorFactory = perfomanceMonitorFactory;
+            _settings = settings;
             _closingChannelRepository = closingChannelRepository;
         }
 
@@ -129,8 +134,6 @@ namespace LkeServices.Transactions
             if (channel == null)
                 return;
 
-            if (channel.IsBroadcasted && transfer.TransferId == transferId)
-                return;
             monitor?.Step("Close transfer");
             await _offchainTransferRepository.CloseTransfer(multisig, assetId, transfer.TransferId);
 
@@ -229,66 +232,76 @@ namespace LkeServices.Transactions
 
         public async Task<OffchainResponse> CreateUnsignedChannel(string clientPubKey, string hotWalletAddr, decimal hubAmount, IAsset asset, bool requiredTransfer, Guid? transferId)
         {
-            var address = await _multisigService.GetMultisig(clientPubKey);
-
-            if (address == null)
-                throw new BackendException($"Client {clientPubKey} is not registered", ErrorCode.BadInputParameter);
-
-            var multisig = new BitcoinScriptAddress(address.MultisigAddress, _connectionParams.Network);
-
-            var hotWalletAddress = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(hotWalletAddr);
-
-            await CheckTransferFinalization(address.MultisigAddress, asset.Id, transferId, true);
-
-            var currentChannel = await _offchainChannelRepository.GetChannel(address.MultisigAddress, asset.Id);
-
-            if (currentChannel != null && !currentChannel.IsBroadcasted)
-                throw new BackendException("There is another pending channel setup", ErrorCode.AnotherChannelSetupExists);
-
-            var context = _transactionBuildContextFactory.Create(_connectionParams.Network);
-            return await context.Build(async () =>
+            using (var monitor = _perfomanceMonitorFactory.Create("Create channel"))
             {
-                var builder = new TransactionBuilder();
+                monitor.Step("Get multisig");
+                var address = await _multisigService.GetMultisig(clientPubKey);
 
-                var multisigAmount = await SendToMultisig(multisig, multisig, asset, builder, context, -1);
-                decimal clientChannelAmount, hubChannelAmount;
-                if (currentChannel == null)
+                if (address == null)
+                    throw new BackendException($"Client {clientPubKey} is not registered", ErrorCode.BadInputParameter);
+
+                var multisig = new BitcoinScriptAddress(address.MultisigAddress, _connectionParams.Network);
+
+                var hotWalletAddress = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(hotWalletAddr);
+
+                monitor.ChildProcess("Check finalization");
+                await CheckTransferFinalization(address.MultisigAddress, asset.Id, transferId, true, monitor);
+                monitor.CompleteLastProcess();
+
+                monitor.Step("Get channel");
+                var currentChannel = await _offchainChannelRepository.GetChannel(address.MultisigAddress, asset.Id);
+
+                if (currentChannel != null && !currentChannel.IsBroadcasted)
+                    throw new BackendException("There is another pending channel setup", ErrorCode.AnotherChannelSetupExists);
+
+                var context = _transactionBuildContextFactory.Create(_connectionParams.Network);
+                return await context.Build(async () =>
                 {
-                    clientChannelAmount = multisigAmount;
-                    hubChannelAmount = hubAmount;
+                    var builder = new TransactionBuilder();
+                    // ReSharper disable AccessToDisposedClosure
+                    monitor.Step("Send from multisig to multisig");
 
-                    await SendToMultisig(hotWalletAddress, multisig, asset, builder, context, hubAmount);
-                }
-                else
-                {
-                    clientChannelAmount = currentChannel.ClientAmount + Math.Max(0, multisigAmount - currentChannel.ClientAmount - currentChannel.HubAmount);
-                    hubChannelAmount = Math.Max(0, hubAmount - currentChannel.HubAmount);
+                    var multisigAmount = await SendToMultisig(multisig, multisig, asset, builder, context, -1);
+                    decimal clientChannelAmount, hubChannelAmount;
+                    if (currentChannel == null)
+                    {
+                        clientChannelAmount = multisigAmount;
+                        monitor.Step("Send from hotwallet to multisig");
+                        hubChannelAmount = await SendToMultisig(hotWalletAddress, multisig, asset, builder, context, hubAmount);
+                    }
+                    else
+                    {
+                        clientChannelAmount = currentChannel.ClientAmount + Math.Max(0, multisigAmount - currentChannel.ClientAmount - currentChannel.HubAmount);
+                        monitor.Step("Send from hotwallet to multisig");
+                        hubChannelAmount = await SendToMultisig(hotWalletAddress, multisig, asset, builder, context, Math.Max(0, hubAmount - currentChannel.HubAmount));
+                        hubChannelAmount += currentChannel.HubAmount;
+                    }
+                    monitor.Step("Add fee");
+                    await _transactionBuildHelper.AddFee(builder, context);
+                    var tr = builder.BuildTransaction(true);
 
-                    await SendToMultisig(hotWalletAddress, multisig, asset, builder, context, hubChannelAmount);
+                    _transactionBuildHelper.AggregateOutputs(tr);
 
-                    hubChannelAmount += currentChannel.HubAmount;
-                }
+                    var hex = tr.ToHex();
+                    monitor.Step("Create transfer");
+                    var transfer = await _offchainTransferRepository.CreateTransfer(multisig.ToWif(), asset.Id, requiredTransfer);
 
-                await _transactionBuildHelper.AddFee(builder, context);
-                var tr = builder.BuildTransaction(true);
+                    monitor.Step("Create channel");
+                    var channel = await _offchainChannelRepository.CreateChannel(multisig.ToWif(), asset.Id, hex, clientChannelAmount, hubChannelAmount);
 
-                _transactionBuildHelper.AggregateOutputs(tr);
+                    monitor.Step("Save spent outputs");
+                    await _lykkeTransactionBuilderService.SaveSpentOutputs(channel.ChannelId, tr);
+                    monitor.Step("Save new outputs");
+                    await SaveNewOutputs(tr, context, channel.ChannelId);
 
-                var hex = tr.ToHex();
-
-                var transfer = await _offchainTransferRepository.CreateTransfer(multisig.ToWif(), asset.Id, requiredTransfer);
-                var channel = await _offchainChannelRepository.CreateChannel(multisig.ToWif(), asset.Id, hex, clientChannelAmount, hubChannelAmount);
-
-                await _lykkeTransactionBuilderService.SaveSpentOutputs(channel.ChannelId, tr);
-
-                await SaveNewOutputs(tr, context, channel.ChannelId);
-
-                return new OffchainResponse
-                {
-                    TransactionHex = hex,
-                    TransferId = transfer.TransferId
-                };
-            });
+                    return new OffchainResponse
+                    {
+                        TransactionHex = hex,
+                        TransferId = transfer.TransferId
+                    };
+                    // ReSharper restore AccessToDisposedClosure
+                });
+            }
         }
 
         public async Task<OffchainResponse> CreateCashin(string clientPubKey, decimal amount, IAsset asset, string cashinAddr, Guid? transferId)
@@ -416,7 +429,7 @@ namespace LkeServices.Transactions
             }
         }
 
-        public async Task<OffchainResponse> Finalize(string clientPubKey, string hotWalletAddr, IAsset asset, string clientRevokePubKey, string signedByClientHubCommitment, Guid transferId)
+        public async Task<OffchainFinalizeResponse> Finalize(string clientPubKey, string hotWalletAddr, IAsset asset, string clientRevokePubKey, string signedByClientHubCommitment, Guid transferId)
         {
             using (var monitor = _perfomanceMonitorFactory.Create("Finalize"))
             {
@@ -474,11 +487,11 @@ namespace LkeServices.Transactions
                         clientCommitmentResult.LockedAddress, clientCommitmentResult.LockedScript),
                     _revokeKeyRepository.AddRevokeKey(clientRevokePubKey, RevokeKeyType.Client)
                 );
-
+                string hash = null;
                 if (!channel.IsBroadcasted)
                 {
                     var channelTr = new Transaction(channel.FullySignedChannel);
-
+                    hash = channelTr.GetHash().ToString();
                     monitor.ChildProcess("Broadcast transaction");
                     await _broadcastService.BroadcastTransaction(channel.ChannelId, channelTr, monitor);
                     monitor.CompleteLastProcess();
@@ -503,9 +516,10 @@ namespace LkeServices.Transactions
                     _offchainTransferRepository.CompleteTransfer(address.MultisigAddress, asset.Id, transfer.TransferId)
                 );
 
-                return new OffchainResponse
+                return new OffchainFinalizeResponse()
                 {
-                    TransactionHex = signedByHubCommitment
+                    TransactionHex = signedByHubCommitment,
+                    Hash = hash
                 };
             }
         }
@@ -522,7 +536,7 @@ namespace LkeServices.Transactions
             var cashoutAddress = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(cashoutAddr);
             var hotWalletAddress = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(hotWalletAddr);
 
-            await CheckTransferFinalization(address.MultisigAddress, asset.Id, null, false);
+            await CheckTransferFinalization(address.MultisigAddress, asset.Id, null, true);
 
             var channel = await _offchainChannelRepository.GetChannel(address.MultisigAddress, asset.Id);
 
@@ -564,9 +578,9 @@ namespace LkeServices.Transactions
                 }
                 else
                 {
+                    var assetMoney = new AssetMoney(new BitcoinAssetId(asset.BlockChainAssetId).AssetId, amount, asset.MultiplierPower);
                     if (amount > 0)
-                        builder.SendAsset(cashoutAddress,
-                            new AssetMoney(new BitcoinAssetId(asset.BlockChainAssetId).AssetId, amount, asset.MultiplierPower));
+                        builder.SendAsset(cashoutAddress, assetMoney);
 
                     if (channel.HubAmount > 0)
                         builder.SendAsset(btcOrLkk ? hotWalletAddress : multisig,
@@ -598,19 +612,16 @@ namespace LkeServices.Transactions
                         TransferId = transfer.TransferId
                     };
                 }
-                else
+                var closing = await _closingChannelRepository.CreateClosingChannel(address.MultisigAddress, asset.Id, channel.ChannelId, hex);
+
+                await SaveNewOutputs(tr, context, closing.ClosingChannelId);
+
+                return new CashoutOffchainResponse
                 {
-                    var closing = await _closingChannelRepository.CreateClosingChannel(address.MultisigAddress, asset.Id, channel.ChannelId, hex);
-
-                    await SaveNewOutputs(tr, context, closing.ClosingChannelId);
-
-                    return new CashoutOffchainResponse
-                    {
-                        TransactionHex = hex,
-                        TransferId = closing.ClosingChannelId,
-                        ChannelClosed = true
-                    };
-                }
+                    TransactionHex = hex,
+                    TransferId = closing.ClosingChannelId,
+                    ChannelClosed = true
+                };
             });
         }
 
@@ -620,7 +631,7 @@ namespace LkeServices.Transactions
                        .Select(o => new BroadcastedOutput(o, transactionId, _connectionParams.Network)));
         }
 
-        private async Task<CashoutOffchainResponse> CreateCashoutWithoutChannel(BitcoinScriptAddress multisig, IDestination cashoutAddress, decimal amount, IAsset asset)
+        private async Task<CashoutOffchainResponse> CreateCashoutWithoutChannel(BitcoinScriptAddress multisig, BitcoinAddress cashoutAddress, decimal amount, IAsset asset)
         {
             if (amount == 0)
                 throw new BackendException("Amount can't be equals to zero", ErrorCode.BadInputParameter);
@@ -643,14 +654,14 @@ namespace LkeServices.Transactions
                 else
                 {
                     var assetId = new BitcoinAssetId(asset.BlockChainAssetId, _connectionParams.Network).AssetId;
-
                     var unspentOutputs = (await _bitcoinOutputsService.GetColoredUnspentOutputs(multisig.ToWif(), assetId)).ToList();
 
-                    _transactionBuildHelper.SendAssetWithChange(builder, context, unspentOutputs,
-                        cashoutAddress, new AssetMoney(assetId, amount, asset.MultiplierPower), multisig);
+                    var sendAmount = new AssetMoney(assetId, amount, asset.MultiplierPower);
+                    _transactionBuildHelper.SendAssetWithChange(builder, context, unspentOutputs, cashoutAddress, sendAmount, multisig);
                 }
                 await _transactionBuildHelper.AddFee(builder, context);
                 var tr = builder.BuildTransaction(true);
+
                 var hex = tr.ToHex();
 
                 var closing = await _closingChannelRepository.CreateClosingChannel(multisig.ToWif(), asset.Id, Guid.Empty, hex);
@@ -665,6 +676,7 @@ namespace LkeServices.Transactions
             });
         }
 
+
         public async Task<string> BroadcastClosingChannel(string clientPubKey, IAsset asset, string signedByClientTransaction)
         {
             var address = await _multisigService.GetMultisig(clientPubKey);
@@ -676,10 +688,7 @@ namespace LkeServices.Transactions
 
             var channel = await _offchainChannelRepository.GetChannel(address.MultisigAddress, asset.Id);
 
-            if (channel == null)
-                throw new BackendException("Channel is not found", ErrorCode.ShouldOpenNewChannel);
-
-            if (!channel.IsBroadcasted)
+            if (channel != null && !channel.IsBroadcasted)
                 throw new BackendException("There is another pending channel setup", ErrorCode.AnotherChannelSetupExists);
 
             var closing = await _closingChannelRepository.GetClosingChannel(address.MultisigAddress, asset.Id);
@@ -687,7 +696,7 @@ namespace LkeServices.Transactions
             if (closing == null)
                 throw new BackendException("Closing channel is not found", ErrorCode.ClosingChannelNotFound);
 
-            if (closing.ChannelId != channel.ChannelId)
+            if (channel != null && closing.ChannelId != channel.ChannelId)
                 throw new BackendException("Closing channel belong to expired channel", ErrorCode.ClosingChannelExpired);
 
             if (!TransactionComparer.CompareTransactions(closing.InitialTransaction, signedByClientTransaction))
@@ -699,9 +708,11 @@ namespace LkeServices.Transactions
 
             await _broadcastService.BroadcastTransaction(closing.ClosingChannelId, tr);
 
-            await _offchainChannelRepository.CloseChannel(address.MultisigAddress, asset.Id, channel.ChannelId);
-
-            await _commitmentRepository.CloseCommitmentsOfChannel(address.MultisigAddress, asset.Id, channel.ChannelId);
+            if (channel != null)
+            {
+                await _offchainChannelRepository.CloseChannel(address.MultisigAddress, asset.Id, channel.ChannelId);
+                await _commitmentRepository.CloseCommitmentsOfChannel(address.MultisigAddress, asset.Id, channel.ChannelId);
+            }
 
             await _closingChannelRepository.CompleteClosingChannel(address.MultisigAddress, asset.Id, closing.ClosingChannelId);
 
@@ -805,6 +816,19 @@ namespace LkeServices.Transactions
             await _commitmentRepository.CloseCommitmentsOfChannel(commitment.Multisig, commitment.AssetId, commitment.ChannelId);
         }
 
+        public async Task RemoveChannel(string multisig, IAsset asset)
+        {
+            var channel = await _offchainChannelRepository.GetChannel(multisig, asset.Id);
+            if (channel != null)
+            {
+                await _offchainChannelRepository.CloseChannel(multisig, asset.Id, channel.ChannelId);
+                await _commitmentRepository.CloseCommitmentsOfChannel(multisig, asset.Id, channel.ChannelId);
+            }
+            var transfer = await _offchainTransferRepository.GetLastTransfer(multisig, asset.Id);
+            if (transfer != null)
+                await _offchainTransferRepository.CloseTransfer(multisig, asset.Id, transfer.TransferId);
+        }
+
         private async Task<decimal> SendToMultisig(BitcoinAddress @from, BitcoinAddress toMultisig, IAsset assetEntity, TransactionBuilder builder, TransactionBuildContext context, decimal amount)
         {
             if (OpenAssetsHelper.IsBitcoin(assetEntity.Id))
@@ -818,7 +842,7 @@ namespace LkeServices.Transactions
                     sendAmount = Money.FromUnit(amount, MoneyUnit.BTC);
 
                 if (sendAmount > 0)
-                    await _transactionBuildHelper.SendWithChange(builder, context, unspentOutputs, toMultisig, sendAmount, from);
+                    return await _transactionBuildHelper.SendWithChange(builder, context, unspentOutputs, toMultisig, sendAmount, from);
 
                 return sendAmount.ToDecimal(MoneyUnit.BTC);
             }
@@ -963,6 +987,12 @@ namespace LkeServices.Transactions
         public Guid TransferId { get; set; }
 
         public string TransactionHex { get; set; }
+    }
+
+
+    public class OffchainFinalizeResponse : OffchainResponse
+    {
+        public string Hash { get; set; }
     }
 
     public class CashoutOffchainResponse : OffchainResponse

@@ -15,7 +15,6 @@ namespace BitcoinApi.Models.Offchain
 
         public string Asset { get; set; }
 
-        public decimal Amount { get; set; }
-
+        public decimal Amount { get; set; }        
     }
 }
