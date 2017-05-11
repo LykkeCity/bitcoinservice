@@ -9,6 +9,6 @@ namespace Core.Bitcoin
 {
     public interface IBitcoinBroadcastService
     {
-        Task BroadcastTransaction(Guid transactionId, Transaction tx, IPerfomanceMonitor monitor = null);
+        Task BroadcastTransaction(Guid transactionId, Transaction tx, IPerfomanceMonitor monitor = null, bool useHandlers = true);
     }
 }

@@ -27,21 +27,21 @@ namespace BitcoinApi.Controllers
     {
         private readonly ILykkeTransactionBuilderService _builder;
         private readonly IAssetRepository _assetRepository;
-        private readonly ISignatureApiProvider _signatureApiProvider;        
+        private readonly ISignatureApiProvider _signatureApiProvider;
         private readonly ITransactionSignRequestRepository _transactionSignRequestRepository;
         private readonly ITransactionBlobStorage _transactionBlobStorage;
         private readonly IBitcoinBroadcastService _broadcastService;
 
         public TransactionController(ILykkeTransactionBuilderService builder,
             IAssetRepository assetRepository,
-            Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,            
+            Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
             ITransactionSignRequestRepository transactionSignRequestRepository,
             ITransactionBlobStorage transactionBlobStorage,
             IBitcoinBroadcastService broadcastService)
         {
             _builder = builder;
             _assetRepository = assetRepository;
-            _signatureApiProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);            
+            _signatureApiProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
             _transactionSignRequestRepository = transactionSignRequestRepository;
             _transactionBlobStorage = transactionBlobStorage;
             _broadcastService = broadcastService;
@@ -76,7 +76,7 @@ namespace BitcoinApi.Controllers
             var createTransactionResponse = await _builder.GetTransferTransaction(sourceAddress, destAddress, model.Amount, asset, transactionId, true);
 
             await _transactionBlobStorage.AddOrReplaceTransaction(transactionId, TransactionBlobType.Initial, createTransactionResponse.Transaction);
-         
+
             return Ok(new TransactionResponse
             {
                 Transaction = createTransactionResponse.Transaction,
@@ -92,13 +92,13 @@ namespace BitcoinApi.Controllers
         [ProducesResponseType(200)]
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task Broadcast([FromBody] BroadcastTransactionRequest model)
-        {         
+        {
             var signRequest = await _transactionSignRequestRepository.GetSignRequest(model.TransactionId);
 
             if (signRequest == null)
                 throw new BackendException("Transaction is not found", ErrorCode.BadTransaction);
 
-            if(signRequest.Invalidated == true)
+            if (signRequest.Invalidated == true)
                 throw new BackendException("Transaction was invalidated", ErrorCode.BadTransaction);
 
             var initialTransaction = await _transactionBlobStorage.GetTransaction(model.TransactionId, TransactionBlobType.Initial);
@@ -112,7 +112,7 @@ namespace BitcoinApi.Controllers
 
             var fullSigned = new Transaction(fullSignedHex);
 
-            await _broadcastService.BroadcastTransaction(model.TransactionId, fullSigned);            
-        }     
+            await _broadcastService.BroadcastTransaction(model.TransactionId, fullSigned, useHandlers: false);
+        }
     }
 }
