@@ -79,11 +79,21 @@ namespace MongoRepositories.TransactionOutputs
         {
             var enumerable = outputs.ToArray();
             var ids = enumerable.Select(x => OutputEntity.GenerateId(x.TransactionHash, x.N)).ToArray();
-            var dbOutputs = await _storage.GetDataAsync(o => ids.Contains(o.BsonId));
 
-            var setOfSpentRowKeys = new HashSet<string>(dbOutputs.Select(x => x.BsonId));
+            var hs = new HashSet<string>();
 
-            return enumerable.Where(x => !setOfSpentRowKeys.Contains(OutputEntity.GenerateId(x.TransactionHash, x.N)));
+            while (ids.Any())
+            {
+                var part = ids.Take(200).ToArray();
+
+                var dbOutputs = await _storage.GetDataAsync(o => part.Contains(o.BsonId));
+
+                hs.UnionWith(dbOutputs.Select(x => x.BsonId));
+
+                ids = ids.Skip(200).ToArray();
+            }
+
+            return enumerable.Where(x => !hs.Contains(OutputEntity.GenerateId(x.TransactionHash, x.N)));
         }
 
         public async Task RemoveSpentOutputs(IEnumerable<IOutput> outputs)
