@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace MongoRepositories.Mongo
@@ -20,6 +21,10 @@ namespace MongoRepositories.Mongo
 
 	    [BsonElement("_updated")]
         public DateTime? BsonUpdateDt { get; set; }
+
+        [BsonElement("_batchId")]
+        [BsonRepresentation(BsonType.String)]
+        public Guid? BatchId { get; set; }
 
 	    protected MongoEntity()
 	    {

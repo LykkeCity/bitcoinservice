@@ -22,18 +22,23 @@ namespace BitcoinApi.Controllers
     {
         private readonly ILykkeTransactionBuilderService _builder;
         private readonly IAssetRepository _assetRepository;
+        private readonly OffchainService _offchainService;
         private readonly ITransactionQueueWriter _transactionQueueWriter;
         private readonly IRetryFailedTransactionService _retryFailedService;
 
         public EnqueueTransactionController(ILykkeTransactionBuilderService builder,
             IAssetRepository assetRepository,
+            OffchainService offchainService,
             ITransactionQueueWriter transactionQueueWriter, IRetryFailedTransactionService retryFailedService)
         {
             _builder = builder;
             _assetRepository = assetRepository;
+            _offchainService = offchainService;
             _transactionQueueWriter = transactionQueueWriter;
             _retryFailedService = retryFailedService;
         }
+
+
 
         /// <summary>
         /// Add transfer transaction to queue for building
@@ -47,14 +52,9 @@ namespace BitcoinApi.Controllers
             if (model.Amount <= 0)
                 throw new BackendException("Amount can't be less or equal to zero", ErrorCode.BadInputParameter);
 
-            var sourceAddress = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(model.SourceAddress);
-            if (sourceAddress == null)
-                throw new BackendException("Invalid source address provided", ErrorCode.InvalidAddress);
-
-            var destAddress = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(model.DestinationAddress);
-            if (destAddress == null)
-                throw new BackendException("Invalid destination address provided", ErrorCode.InvalidAddress);
-
+            await ValidateAddress(model.SourceAddress);
+            await ValidateAddress(model.DestinationAddress);
+            
             var asset = await _assetRepository.GetAssetById(model.Asset);
             if (asset == null)
                 throw new BackendException("Provided asset is missing in database", ErrorCode.AssetNotFound);
@@ -84,13 +84,9 @@ namespace BitcoinApi.Controllers
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<IActionResult> CreateTransferAll([FromBody]TransferAllRequest model)
         {
-            var sourceAddress = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(model.SourceAddress);
-            if (sourceAddress == null)
-                throw new BackendException("Invalid source address provided", ErrorCode.InvalidAddress);
+            await ValidateAddress(model.SourceAddress);
+            await ValidateAddress(model.DestinationAddress);
 
-            var destAddress = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(model.DestinationAddress);
-            if (destAddress == null)
-                throw new BackendException("Invalid destination address provided", ErrorCode.InvalidAddress);
             var transactionId = await _builder.AddTransactionId(model.TransactionId, $"TransferAll: {model.ToJson()}");
 
             await _transactionQueueWriter.AddCommand(transactionId, TransactionCommandType.TransferAll, new TransferAllCommand
@@ -119,14 +115,8 @@ namespace BitcoinApi.Controllers
             if (model.Amount1 <= 0 || model.Amount2 <= 0)
                 throw new BackendException("Amount can't be less or equal to zero", ErrorCode.BadInputParameter);
 
-
-            var bitcoinAddres1 = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(model.MultisigCustomer1);
-            if (bitcoinAddres1 == null)
-                throw new BackendException("Invalid MultisigCustomer1 provided", ErrorCode.InvalidAddress);
-
-            var bitcoinAddres2 = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(model.MultisigCustomer2);
-            if (bitcoinAddres2 == null)
-                throw new BackendException("Invalid MultisigCustomer2 provided", ErrorCode.InvalidAddress);
+            await ValidateAddress(model.MultisigCustomer1);
+            await ValidateAddress(model.MultisigCustomer2);
 
             var asset1 = await _assetRepository.GetAssetById(model.Asset1);
             if (asset1 == null)
@@ -166,9 +156,7 @@ namespace BitcoinApi.Controllers
             if (model.Amount <= 0)
                 throw new BackendException("Amount can't be less or equal to zero", ErrorCode.BadInputParameter);
 
-            var bitcoinAddres = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(model.Address);
-            if (bitcoinAddres == null)
-                throw new BackendException("Invalid Address provided", ErrorCode.InvalidAddress);
+            await ValidateAddress(model.Address);
 
             var asset = await _assetRepository.GetAssetById(model.Asset);
             if (asset == null)
@@ -201,9 +189,7 @@ namespace BitcoinApi.Controllers
             if (model.Amount <= 0)
                 throw new BackendException("Amount can't be less or equal to zero", ErrorCode.BadInputParameter);
 
-            var bitcoinAddres = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(model.Address);
-            if (bitcoinAddres == null)
-                throw new BackendException("Invalid Address provided", ErrorCode.InvalidAddress);
+            await ValidateAddress(model.Address);
 
             var asset = await _assetRepository.GetAssetById(model.Asset);
             if (asset == null)
@@ -232,6 +218,15 @@ namespace BitcoinApi.Controllers
             await _retryFailedService.RetryTransaction(model.TransactionId);
 
             return Ok();
+        }
+
+        private async Task ValidateAddress(string address)
+        {
+            var bitcoinAddres = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(address);
+            if (bitcoinAddres == null)
+                throw new BackendException($"Invalid Address provided: {address}", ErrorCode.InvalidAddress);
+            if (await _offchainService.HasChannel(address))
+                throw new BackendException("Address was used in offchain", ErrorCode.AddressUsedInOffchain);
         }
     }
 }

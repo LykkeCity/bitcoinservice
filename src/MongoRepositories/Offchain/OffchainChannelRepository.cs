@@ -182,5 +182,10 @@ namespace MongoRepositories.Offchain
                 }
             }
         }
+
+        public Task<bool> HasChannel(string multisig)
+        {
+            return _table.Any(o => o.Multisig == multisig);
+        }
     }
 }

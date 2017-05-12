@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Common.Log;
+using Core.Exceptions;
 using Core.Repositories.Assets;
 using Core.Repositories.TransactionOutputs;
 using Core.Settings;
@@ -47,6 +48,10 @@ namespace BackgroundWorker.Functions
                     await queue.EnqueueOutputs(coin);
                 }
             }
+            catch (BackendException)
+            {
+                //ignore
+            }
             catch (Exception e)
             {
                 await _logger.WriteErrorAsync("PregeneratedOutputsRenewFunction", "RenewFee", "", e);
@@ -71,6 +76,10 @@ namespace BackgroundWorker.Functions
                             return;
                         await queue.EnqueueOutputs(coin);
                     }
+                }
+                catch (BackendException)
+                {
+                    //ignore
                 }
                 catch (Exception e)
                 {

@@ -43,5 +43,6 @@ namespace Core.Repositories.Offchain
 
         Task CloseChannel(string multisig, string asset, Guid channelId);
         Task RevertChannel(string multisig, string asset, Guid channelId);
+        Task<bool> HasChannel(string multisig);
     }
 }

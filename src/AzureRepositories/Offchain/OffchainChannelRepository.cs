@@ -195,5 +195,10 @@ namespace AzureRepositories.Offchain
                 }
             }
         }
+
+        public Task<bool> HasChannel(string multisig)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
