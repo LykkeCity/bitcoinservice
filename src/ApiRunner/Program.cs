@@ -20,9 +20,9 @@ namespace ApiRunner
 
             Console.Clear();
             Console.Title = "Bitcoin self-hosted API - Ver. " + Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion;
-            
+
             var builder = new WebHostBuilder()
-                .UseKestrel()
+                .UseKestrel(o => o.ThreadCount = 4)
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseIISIntegration()
                 .UseStartup<Startup>();
@@ -35,7 +35,7 @@ namespace ApiRunner
 
             var host = builder.Build();
 
-            host.Run();            
+            host.Run();
         }
 
         static void Exit()
@@ -53,7 +53,7 @@ namespace ApiRunner
                 Console.WriteLine("Please, provide generalsettings.json file");
                 return null;
             }
-            
+
             var settings = JsonConvert.DeserializeObject<BaseSettings>(settingsData);
 
             return settings;
