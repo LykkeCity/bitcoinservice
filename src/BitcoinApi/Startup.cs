@@ -87,7 +87,7 @@ namespace BitcoinApi
                 context.Request.EnableRewind();
                 return next(context);
             });
-            app.UseMiddleware<ConnectionClosedMiddleware>();
+            //app.UseMiddleware<ConnectionClosedMiddleware>();
             app.UseMiddleware<GlobalLogRequestsMiddleware>();
             app.UseMiddleware<GlobalErrorHandlerMiddleware>();
             if (env.IsDevelopment())
