@@ -22,7 +22,7 @@ namespace ApiRunner
             Console.Title = "Bitcoin self-hosted API - Ver. " + Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion;
 
             var builder = new WebHostBuilder()
-                .UseKestrel()
+                .UseKestrel(o => o.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(1))
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseIISIntegration()
                 .UseStartup<Startup>();
