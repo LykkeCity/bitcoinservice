@@ -51,7 +51,7 @@ namespace MongoRepositories.TransactionOutputs
 
         public async Task InsertSpentOutputs(Guid transactionId, IEnumerable<IOutput> outputs)
         {
-            Action<MongoWriteException> throwIfBackend = (exception) =>
+            Action<MongoServerException> throwIfBackend = (exception) =>
             {
                 if (exception != null && exception.IsDuplicateError())
                     throw new BackendException("entity already exists", ErrorCode.TransactionConcurrentInputsProblem);
@@ -67,8 +67,8 @@ namespace MongoRepositories.TransactionOutputs
                     forInsert = forInsert.Skip(100).ToList();
                     await _storage.InsertAsync(part);
                 }
-            }
-            catch (MongoWriteException e)
+            }          
+            catch (MongoServerException e)
             {
                 throwIfBackend(e);
                 throw;

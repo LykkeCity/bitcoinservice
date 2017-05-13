@@ -168,7 +168,22 @@ namespace MongoRepositories.Mongo
         public async Task InsertAsync(IEnumerable<T> documents)
         {
             if (documents.Any())
-                await _collection.InsertManyAsync(documents);
+            {
+                var batchId = Guid.NewGuid();
+
+                foreach (var document in documents)                
+                    document.BatchId = batchId;
+
+                try
+                {
+                    await _collection.InsertManyAsync(documents);
+                }
+                catch (Exception)
+                {
+                    await _collection.DeleteManyAsync(o => o.BatchId == batchId);
+                    throw;
+                }
+            }
         }
 
         public Task ScanDataAsync(Func<IEnumerable<T>, Task> chunk)
@@ -341,6 +356,11 @@ namespace MongoRepositories.Mongo
                 skip += limit;
             }
             while (true);
+        }
+
+        public async Task<bool> Any(Expression<Func<T, bool>> filter)
+        {            
+            return (await _collection.FindAsync(filter, new FindOptions<T>() { Limit = 1 })).Any();
         }
 
     }

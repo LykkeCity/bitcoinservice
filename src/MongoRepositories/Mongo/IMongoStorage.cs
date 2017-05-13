@@ -35,7 +35,7 @@ namespace MongoRepositories.Mongo
 
 	    Task<T> FirstOrNullViaScanAsync(Func<IEnumerable<T>, T> dataToSearch);
 
-
 	    Task<T> InsertAndGenerateRowKeyAsTimeAsync(T newEntity, DateTime dt);
+        Task<bool> Any(Expression<Func<T, bool>> filter);
     }
 }

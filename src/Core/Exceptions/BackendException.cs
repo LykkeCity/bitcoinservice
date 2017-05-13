@@ -50,6 +50,7 @@ namespace Core.Exceptions
         ClosingChannelExpired = 30,
         DuplicateRequest = 31,
         TransferNotFound = 32,
-        WrongTransferId = 33
+        WrongTransferId = 33,
+        AddressUsedInOffchain = 34
     }
 }

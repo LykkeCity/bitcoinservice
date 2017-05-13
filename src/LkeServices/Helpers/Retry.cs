@@ -26,5 +26,24 @@ namespace LkeServices.Helpers
                 }
             }
         }
+
+        public static async Task Try(Func<Task> action, Func<Exception, bool> exceptionFilter, int tryCount, ILog logger)
+        {
+            int @try = 0;
+            while (true)
+            {
+                try
+                {
+                    await action();
+                }
+                catch (Exception ex)
+                {
+                    @try++;
+                    if (!exceptionFilter(ex) || @try >= tryCount)
+                        throw;
+                    await logger.WriteErrorAsync("Retry", "Try", null, ex);
+                }
+            }
+        }
     }
 }
