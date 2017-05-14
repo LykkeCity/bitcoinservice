@@ -57,12 +57,9 @@ namespace LkeServices
 
         private static void BindApiProviders(ContainerBuilder ioc)
         {
-            ioc.RegisterType<LykkeHttpClientHandler>();
             ioc.Register(x =>
             {
-                var resolver = x.Resolve<IComponentContext>();
-                var lykkyHttpClientHandler = resolver.Resolve<LykkeHttpClientHandler>();
-                var client = new HttpClient(lykkyHttpClientHandler)
+                var client = new HttpClient
                 {
                     Timeout = TimeSpan.FromMinutes(5),
                     BaseAddress = new Uri("https://bitcoinfees.21.co/api/v1")
@@ -73,41 +70,52 @@ namespace LkeServices
             ioc.Register(x =>
             {
                 var resolver = x.Resolve<IComponentContext>();
-                var lykkyHttpClientHandler = resolver.Resolve<LykkeHttpClientHandler>();
                 var settings = resolver.Resolve<BaseSettings>();
-                var client = new HttpClient(lykkyHttpClientHandler)
+                var client = new HttpClient
                 {
                     BaseAddress = new Uri(settings.LykkeJobsUrl)
                 };
                 return RestClient.For<ILykkeApiProvider>(client);
             }).As<ILykkeApiProvider>().SingleInstance();
 
+            ioc.Register(x =>
+            {
+                var resolver = x.Resolve<IComponentContext>();
+                var settings = resolver.Resolve<BaseSettings>();
+                return new HttpClient { BaseAddress = new Uri(settings.ClientSignatureProviderUrl) };
+            }).Named<HttpClient>("client-signature-http").SingleInstance();
+
+            ioc.Register(x =>
+            {
+                var resolver = x.Resolve<IComponentContext>();
+                var settings = resolver.Resolve<BaseSettings>();
+                return new HttpClient { BaseAddress = new Uri(settings.SignatureProviderUrl) };
+            }).Named<HttpClient>("server-signature-http").SingleInstance();
 
             ioc.Register<Func<SignatureApiProviderType, ISignatureApi>>(x =>
             {
                 var resolver = x.Resolve<IComponentContext>();
-                var settings = resolver.Resolve<BaseSettings>();
 
                 return type =>
                 {
-                    var lykkyHttpClientHandler = resolver.Resolve<LykkeHttpClientHandler>();
-                    var client = new HttpClient(lykkyHttpClientHandler)
+                    switch (type)
                     {
-                        Timeout = TimeSpan.FromMinutes(5),
-                        BaseAddress = new Uri(type == SignatureApiProviderType.Client
-                            ? settings.ClientSignatureProviderUrl
-                            : settings.SignatureProviderUrl)
-                    };
-                    return RestClient.For<ISignatureApi>(client);
+                        case SignatureApiProviderType.Client:
+                            return RestClient.For<ISignatureApi>(resolver.ResolveNamed<HttpClient>("client-signature-http"));
+                        case SignatureApiProviderType.Exchange:
+                            return RestClient.For<ISignatureApi>(resolver.ResolveNamed<HttpClient>("server-signature-http"));
+                        default:
+                            throw new ArgumentException();
+                    }
                 };
-            }).SingleInstance();
+            });
 
             ioc.Register<Func<SignatureApiProviderType, ISignatureApiProvider>>(x =>
             {
                 var resolver = x.Resolve<IComponentContext>();
                 var factory = resolver.Resolve<Func<SignatureApiProviderType, ISignatureApi>>();
                 return type => new SignatureApiProvider(factory(type));
-            }).SingleInstance();
+            });
         }
     }
 }
