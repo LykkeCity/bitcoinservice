@@ -27,7 +27,7 @@ namespace BackgroundWorker.Functions
 
         private HashSet<string> _issuedAllowedAssets = new HashSet<string>(new string[]
         {
-            "LKK","USD", "EUR", "CHF", "GBP", "GPY", "LKK1Y", "QNT"
+            "LKK","USD", "EUR", "CHF", "GBP", "JPY", "LKK1Y", "QNT"
         });
 
         private const int MaxOutputsCountInTransaction = 200;
@@ -208,10 +208,10 @@ namespace BackgroundWorker.Functions
                         if (colored)
                             builder.SendAsset(hotWallet, (AssetMoney)amount);
                         else
-                            builder.Send(hotWallet, amount);
-                    builder.SetChange(hotWallet, colored ? ChangeType.Colored : ChangeType.Uncolored);
+                            builder.Send(hotWallet, amount);                   
 
                     await _transactionBuildHelper.AddFee(builder, context);
+                    builder.SetChange(hotWallet, colored ? ChangeType.Colored : ChangeType.Uncolored);
 
                     var tr = builder.BuildTransaction(true);
 

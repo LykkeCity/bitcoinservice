@@ -22,9 +22,8 @@ namespace ApiRunner
             Console.Title = "Bitcoin self-hosted API - Ver. " + Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion;
 
             var builder = new WebHostBuilder()
-                .UseKestrel(o => o.Limits.KeepAliveTimeout = TimeSpan.FromSeconds(1))
-                .UseContentRoot(Directory.GetCurrentDirectory())
-                .UseIISIntegration()
+                .UseKestrel()
+                .UseContentRoot(Directory.GetCurrentDirectory())                
                 .UseStartup<Startup>();
 
             if (arguments.ContainsKey("port"))
@@ -36,38 +35,6 @@ namespace ApiRunner
             var host = builder.Build();
 
             host.Run();
-        }
-
-        static void Exit()
-        {
-            Console.WriteLine("Press any key to exit...");
-            Console.ReadKey();
-        }
-
-        static BaseSettings GetSettings()
-        {
-            var settingsData = ReadSettingsFile();
-
-            if (string.IsNullOrWhiteSpace(settingsData))
-            {
-                Console.WriteLine("Please, provide generalsettings.json file");
-                return null;
-            }
-
-            var settings = JsonConvert.DeserializeObject<BaseSettings>(settingsData);
-
-            return settings;
-        }
-
-
-        static string ReadSettingsFile()
-        {
-#if DEBUG
-            return File.ReadAllText(@"..\..\settings\settings.json");
-#else
-			return File.ReadAllText("settings.json");
-#endif
-        }
-
+        }        
     }
 }
