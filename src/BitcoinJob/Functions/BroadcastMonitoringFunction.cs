@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.Metadata;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
@@ -15,7 +12,7 @@ using Lykke.JobTriggers.Triggers.Attributes;
 using Lykke.JobTriggers.Triggers.Bindings;
 using QBitNinja.Client.Models;
 
-namespace BackgroundWorker.Functions
+namespace BitcoinJob.Functions
 {
     public class BroadcastMonitoringFunction
     {

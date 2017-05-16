@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using AzureStorage.Queue;
+using Common;
 using Core;
 using Core.Providers;
 using Core.Repositories.Transactions;
@@ -11,9 +10,8 @@ using Core.TransactionQueueWriter;
 using LkeServices.Providers;
 using Lykke.JobTriggers.Triggers.Attributes;
 using Lykke.JobTriggers.Triggers.Bindings;
-using Common;
 
-namespace BackgroundWorker.Functions
+namespace BitcoinJob.Functions
 {
     public class WaitClientSignatureMessage
     {

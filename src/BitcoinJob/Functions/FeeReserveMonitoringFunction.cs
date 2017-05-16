@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Common;
@@ -15,7 +14,7 @@ using Lykke.JobTriggers.Triggers.Attributes;
 using Lykke.JobTriggers.Triggers.Bindings;
 using NBitcoin;
 
-namespace BackgroundWorker.Functions
+namespace BitcoinJob.Functions
 {
     public class FeeReserveMonitoringFunction
     {

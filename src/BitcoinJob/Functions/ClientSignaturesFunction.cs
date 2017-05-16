@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Common;
-using Common.Log;
 using Core;
 using Core.Helpers;
 using Core.Providers;
@@ -12,7 +9,7 @@ using LkeServices.Providers;
 using Lykke.JobTriggers.Triggers.Attributes;
 using Lykke.JobTriggers.Triggers.Bindings;
 
-namespace BackgroundWorker.Functions
+namespace BitcoinJob.Functions
 {
     public class ClientSignedTransactionMessage
     {

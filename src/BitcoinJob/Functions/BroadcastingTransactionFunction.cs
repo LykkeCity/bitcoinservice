@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using AzureStorage.Queue;
 using Common;
 using Common.Log;
 using Core;
@@ -8,7 +7,6 @@ using Core.Bitcoin;
 using Core.Providers;
 using Core.Repositories.Transactions;
 using Core.Settings;
-using Core.TransactionMonitoring;
 using Core.TransactionQueueWriter;
 using LkeServices.Providers;
 using LkeServices.Transactions;
@@ -17,7 +15,7 @@ using Lykke.JobTriggers.Triggers.Bindings;
 using NBitcoin;
 using NBitcoin.RPC;
 
-namespace BackgroundWorker.Functions
+namespace BitcoinJob.Functions
 {
     public class BroadcastingTransactionFunction
     {

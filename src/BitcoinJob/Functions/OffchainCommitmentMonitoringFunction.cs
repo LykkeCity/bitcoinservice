@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using Common.Log;
 using Core;
 using Core.Bitcoin;
 using Core.Helpers;
 using Core.Notifiers;
-using Core.OpenAssets;
 using Core.QBitNinja;
 using Core.Repositories.Assets;
 using Core.Repositories.Offchain;
@@ -17,9 +14,8 @@ using LkeServices.Transactions;
 using Lykke.JobTriggers.Triggers.Attributes;
 using NBitcoin;
 using NBitcoin.OpenAsset;
-using QBitNinja.Client.Models;
 
-namespace BackgroundWorker.Functions
+namespace BitcoinJob.Functions
 {
     public class OffchainCommitmentMonitoringFunction
     {

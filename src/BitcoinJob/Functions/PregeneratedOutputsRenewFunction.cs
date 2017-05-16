@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Common.Log;
@@ -9,7 +8,7 @@ using Core.Repositories.TransactionOutputs;
 using Core.Settings;
 using Lykke.JobTriggers.Triggers.Attributes;
 
-namespace BackgroundWorker.Functions
+namespace BitcoinJob.Functions
 {
     public class PregeneratedOutputsRenewFunction
     {

@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Common;
-using Common.Log;
 using Core.Repositories.Monitoring;
 using Lykke.JobTriggers.Triggers.Attributes;
 
-namespace BackgroundWorker.Functions
+namespace BitcoinJob.Functions
 {
 	public class MonitoringFunction
 	{

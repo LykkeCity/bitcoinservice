@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Common.Log;
@@ -11,7 +10,7 @@ using LkeServices.Transactions;
 using Lykke.JobTriggers.Triggers.Attributes;
 using NBitcoin;
 
-namespace BackgroundWorker.Functions
+namespace BitcoinJob.Functions
 {
     public class SendFromChangeToHotWalletFunction
     {

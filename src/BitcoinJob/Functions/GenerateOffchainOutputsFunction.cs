@@ -18,18 +18,11 @@ using LkeServices.Transactions;
 using Lykke.JobTriggers.Triggers.Attributes;
 using NBitcoin;
 using NBitcoin.OpenAsset;
-using PhoneNumbers;
 
-namespace BackgroundWorker.Functions
+namespace BitcoinJob.Functions
 {
     public class GenerateOffchainOutputsFunction
     {
-
-        private HashSet<string> _issuedAllowedAssets = new HashSet<string>(new string[]
-        {
-            "LKK","USD", "EUR", "CHF", "GBP", "JPY", "LKK1Y", "QNT"
-        });
-
         private const int MaxOutputsCountInTransaction = 200;
 
         private readonly BaseSettings _settings;
@@ -208,7 +201,7 @@ namespace BackgroundWorker.Functions
                         if (colored)
                             builder.SendAsset(hotWallet, (AssetMoney)amount);
                         else
-                            builder.Send(hotWallet, amount);                   
+                            builder.Send(hotWallet, amount);
 
                     await _transactionBuildHelper.AddFee(builder, context);
                     builder.SetChange(hotWallet, colored ? ChangeType.Colored : ChangeType.Uncolored);
@@ -244,7 +237,7 @@ namespace BackgroundWorker.Functions
             foreach (var asset in await _assetRepostory.Values())
             {
                 if (OpenAssetsHelper.IsBitcoin(asset.Id) || OpenAssetsHelper.IsLkk(asset.Id) || !asset.IssueAllowed
-                    || !_issuedAllowedAssets.Contains(asset.Id))
+                    || !string.IsNullOrWhiteSpace(asset.PartnerId))
                     continue;
                 try
                 {
@@ -306,7 +299,7 @@ namespace BackgroundWorker.Functions
                         generated += outputsCount;
                     }
                 }
-                catch (BackendException ex)
+                catch (Exception ex)
                 {
                     await _logger.WriteWarningAsync("GenerateOffchainOutputsFunction", "GenerateIssueAllowedCoins", "AssetId " + asset.Id,
                         ex.Message);

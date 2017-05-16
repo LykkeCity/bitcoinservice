@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AzureRepositories.Notifiers;
 using Common.Log;
 using Core.Bitcoin;
 using Core.Exceptions;
@@ -16,7 +14,7 @@ using LkeServices.Transactions;
 using Lykke.JobTriggers.Triggers.Attributes;
 using NBitcoin;
 
-namespace BackgroundWorker.Functions
+namespace BitcoinJob.Functions
 {
     public class GenerateOutputsFunction
     {
