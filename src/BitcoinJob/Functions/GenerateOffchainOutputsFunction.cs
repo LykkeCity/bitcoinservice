@@ -71,10 +71,11 @@ namespace BitcoinJob.Functions
 
         [TimerTrigger("1:00:00")]
         public async Task Generate()
-        {
-            if (!_settings.Offchain.UseOffchainGeneration)
+        {	       
+			if (!_settings.Offchain.UseOffchainGeneration)
                 return;
-            try
+	        await _logger.WriteInfoAsync("GenerateOffchainOutputsFunction", "Generate", null, "Start process");
+			try
             {
                 await GenerateIssueAllowedCoins();
             }
@@ -84,14 +85,15 @@ namespace BitcoinJob.Functions
             }
             try
             {
-                await GenerateBtcOutputs();
+               await GenerateBtcOutputs();
             }
             catch (Exception ex)
             {
                 await _logger.WriteErrorAsync("GenerateOffchainOutputsFunction", "Generate", "GenerateBtcOutputs", ex);
             }
             await GenerateLkkOutputs();
-        }
+	        await _logger.WriteInfoAsync("GenerateOffchainOutputsFunction", "Generate", null, "End process");
+		}
 
         private Task GenerateLkkOutputs()
         {
@@ -169,7 +171,10 @@ namespace BitcoinJob.Functions
 
         private async Task GenerateOutputs(int generateCnt, IEnumerable<ICoin> coins, BitcoinAddress hotWallet, IMoney amount)
         {
-            bool colored = amount is AssetMoney;
+	        bool colored = amount is AssetMoney;
+	        await _logger.WriteInfoAsync("GenerateOffchainOutputsFunction", "GenerateOutputs", null,
+		        $"Start generate {generateCnt} outputs for {(colored ? "LKK" : "BTC")}");
+            
 
             var generated = 0;
 
@@ -203,7 +208,8 @@ namespace BitcoinJob.Functions
                         else
                             builder.Send(hotWallet, amount);
 
-                    await _transactionBuildHelper.AddFee(builder, context);
+	                builder.SetChange(hotWallet, colored ? ChangeType.Colored : ChangeType.Uncolored);
+					await _transactionBuildHelper.AddFee(builder, context);
                     builder.SetChange(hotWallet, colored ? ChangeType.Colored : ChangeType.Uncolored);
 
                     var tr = builder.BuildTransaction(true);
@@ -219,6 +225,8 @@ namespace BitcoinJob.Functions
 
                 generated += outputsCount;
             }
+	        await _logger.WriteInfoAsync("GenerateOffchainOutputsFunction", "GenerateOutputs", null, "End process");
+
         }
 
         private async Task SendBalanceNotifications(string asset, string hotWallet, decimal minBalance)

@@ -1,5 +1,8 @@
 {
   "profiles": {
-    "Docker": {}
+    "Docker": {},
+    "JobRunner": {
+      "commandName": "Project"
+    }
   }
 }
