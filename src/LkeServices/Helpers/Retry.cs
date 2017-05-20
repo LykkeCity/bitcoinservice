@@ -35,6 +35,7 @@ namespace LkeServices.Helpers
                 try
                 {
                     await action();
+	                return;
                 }
                 catch (Exception ex)
                 {
