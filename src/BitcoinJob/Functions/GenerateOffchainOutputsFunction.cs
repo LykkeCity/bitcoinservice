@@ -71,11 +71,11 @@ namespace BitcoinJob.Functions
 
         [TimerTrigger("1:00:00")]
         public async Task Generate()
-        {	       
-			if (!_settings.Offchain.UseOffchainGeneration)
+        {
+            if (!_settings.Offchain.UseOffchainGeneration)
                 return;
-	        await _logger.WriteInfoAsync("GenerateOffchainOutputsFunction", "Generate", null, "Start process");
-			try
+            await _logger.WriteInfoAsync("GenerateOffchainOutputsFunction", "Generate", null, "Start process");
+            try
             {
                 await GenerateIssueAllowedCoins();
             }
@@ -85,15 +85,17 @@ namespace BitcoinJob.Functions
             }
             try
             {
-               await GenerateBtcOutputs();
+                await GenerateBtcOutputs();
             }
             catch (Exception ex)
             {
                 await _logger.WriteErrorAsync("GenerateOffchainOutputsFunction", "Generate", "GenerateBtcOutputs", ex);
             }
+
             await GenerateLkkOutputs();
-	        await _logger.WriteInfoAsync("GenerateOffchainOutputsFunction", "Generate", null, "End process");
-		}
+
+            await _logger.WriteInfoAsync("GenerateOffchainOutputsFunction", "Generate", null, "End process");
+        }
 
         private Task GenerateLkkOutputs()
         {
@@ -171,11 +173,10 @@ namespace BitcoinJob.Functions
 
         private async Task GenerateOutputs(int generateCnt, IEnumerable<ICoin> coins, BitcoinAddress hotWallet, IMoney amount)
         {
-	        bool colored = amount is AssetMoney;
-	        await _logger.WriteInfoAsync("GenerateOffchainOutputsFunction", "GenerateOutputs", null,
-		        $"Start generate {generateCnt} outputs for {(colored ? "LKK" : "BTC")}");
+            var colored = amount is AssetMoney;
+            await _logger.WriteInfoAsync("GenerateOffchainOutputsFunction", "GenerateOutputs", null,
+                $"Start generate {generateCnt} outputs for {(colored ? "LKK" : "BTC")}");
             
-
             var generated = 0;
 
             while (generated < generateCnt)
@@ -208,8 +209,8 @@ namespace BitcoinJob.Functions
                         else
                             builder.Send(hotWallet, amount);
 
-	                builder.SetChange(hotWallet, colored ? ChangeType.Colored : ChangeType.Uncolored);
-					await _transactionBuildHelper.AddFee(builder, context);
+                    builder.SetChange(hotWallet, colored ? ChangeType.Colored : ChangeType.Uncolored);
+                    await _transactionBuildHelper.AddFee(builder, context);
                     builder.SetChange(hotWallet, colored ? ChangeType.Colored : ChangeType.Uncolored);
 
                     var tr = builder.BuildTransaction(true);
@@ -225,7 +226,7 @@ namespace BitcoinJob.Functions
 
                 generated += outputsCount;
             }
-	        await _logger.WriteInfoAsync("GenerateOffchainOutputsFunction", "GenerateOutputs", null, "End process");
+            await _logger.WriteInfoAsync("GenerateOffchainOutputsFunction", "GenerateOutputs", null, "End process");
 
         }
 
@@ -245,22 +246,27 @@ namespace BitcoinJob.Functions
             foreach (var asset in await _assetRepostory.Values())
             {
                 if (OpenAssetsHelper.IsBitcoin(asset.Id) || OpenAssetsHelper.IsLkk(asset.Id) || !asset.IssueAllowed
-                    || !string.IsNullOrWhiteSpace(asset.PartnerId))
+                    || asset.NotLykkeAsset)
                     continue;
                 try
                 {
+                    await _logger.WriteInfoAsync("GenerateOffchainOutputsFunction", "GenerateIssueAllowedCoins", "AssetId " + asset.Id, "Start process");
+
                     var assetId = new BitcoinAssetId(asset.BlockChainAssetId).AssetId;
                     var coins = outputs.Where(o => o.AssetId == assetId).ToList();
 
-                    var minBalance = new AssetMoney(assetId, _settings.Offchain.MinIssueAllowedCoinBalance, asset.MultiplierPower);
+                    var minBalance = new AssetMoney(assetId, _settings.Offchain.MinIssueAllowedCoinBalance,
+                        asset.MultiplierPower);
 
                     var balance = coins.Aggregate(new AssetMoney(assetId, 0), (accum, coin) => accum + coin.Amount);
 
                     if (balance > minBalance)
                         continue;
 
-                    var maxBalance = new AssetMoney(assetId, _settings.Offchain.MaxIssueAllowedCoinBalance, asset.MultiplierPower);
-                    var cnt = (int)((maxBalance - balance).ToDecimal(asset.MultiplierPower) / _settings.Offchain.IssueAllowedCoinOutputSize) + 1;
+                    var maxBalance = new AssetMoney(assetId, _settings.Offchain.MaxIssueAllowedCoinBalance,
+                        asset.MultiplierPower);
+                    var cnt = (int)((maxBalance - balance).ToDecimal(asset.MultiplierPower) /
+                                     _settings.Offchain.IssueAllowedCoinOutputSize) + 1;
 
                     var generated = 0;
                     while (generated < cnt)
@@ -284,7 +290,8 @@ namespace BitcoinJob.Functions
                                 };
 
                                 builder.AddCoins(issueCoin);
-                                var outputSize = new AssetMoney(assetId, _settings.Offchain.IssueAllowedCoinOutputSize, asset.MultiplierPower);
+                                var outputSize = new AssetMoney(assetId, _settings.Offchain.IssueAllowedCoinOutputSize,
+                                    asset.MultiplierPower);
                                 for (var i = 0; i < outputsCount; i++)
                                     builder.IssueAsset(hotWallet, outputSize);
                                 context.IssueAsset(assetId);
@@ -309,8 +316,11 @@ namespace BitcoinJob.Functions
                 }
                 catch (Exception ex)
                 {
-                    await _logger.WriteWarningAsync("GenerateOffchainOutputsFunction", "GenerateIssueAllowedCoins", "AssetId " + asset.Id,
-                        ex.Message);
+                    await _logger.WriteErrorAsync("GenerateOffchainOutputsFunction", "GenerateIssueAllowedCoins", "AssetId " + asset.Id, ex);
+                }
+                finally
+                {
+                    await _logger.WriteInfoAsync("GenerateOffchainOutputsFunction", "GenerateIssueAllowedCoins", "AssetId " + asset.Id, "End process");
                 }
             }
         }

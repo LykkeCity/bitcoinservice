@@ -13,6 +13,7 @@ namespace Core.Repositories.Assets
         bool IsDisabled { get; }
         string PartnerId { get; }
         bool IssueAllowed { get; }
+        bool NotLykkeAsset { get; }
     }
 
     public interface IAssetRepository

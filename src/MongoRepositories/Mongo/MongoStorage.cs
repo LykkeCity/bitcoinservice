@@ -21,17 +21,17 @@ namespace MongoRepositories.Mongo
 
         public async Task<IEnumerable<T>> GetDataAsync()
         {
-            return await _collection.Find(FilterDefinition<T>.Empty).ToListAsync();
+            return await RetryQuery(async () => await _collection.Find(FilterDefinition<T>.Empty).ToListAsync());
         }
 
         public async Task<T> GetDataAsync(string key)
         {
-            return await _collection.Find(x => x.BsonId == key).FirstOrDefaultAsync();
+            return await RetryQuery(async () => await _collection.Find(x => x.BsonId == key).FirstOrDefaultAsync());
         }
 
         public async Task<IEnumerable<T>> GetDataAsync(Expression<Func<T, bool>> filter)
         {
-            return await _collection.Find(filter).ToListAsync();
+            return await RetryQuery(async () => await _collection.Find(filter).ToListAsync());
         }
 
         public async Task<T> InsertOrReplaceAsync(T item)
@@ -155,14 +155,17 @@ namespace MongoRepositories.Mongo
             }
         }
 
-        public Task<T> GetTopRecordAsync(Expression<Func<T, bool>> filter, Expression<Func<T, object>> sortSelector, SortDirection direction)
+        public async Task<T> GetTopRecordAsync(Expression<Func<T, bool>> filter, Expression<Func<T, object>> sortSelector, SortDirection direction)
         {
-            var query = _collection.Find(filter);
-            if (direction == SortDirection.Ascending)
-                query = query.SortBy(sortSelector);
-            else
-                query = query.SortByDescending(sortSelector);
-            return query.FirstOrDefaultAsync();
+            return await RetryQuery(async () =>
+            {
+                var query = _collection.Find(filter);
+                if (direction == SortDirection.Ascending)
+                    query = query.SortBy(sortSelector);
+                else
+                    query = query.SortByDescending(sortSelector);
+                return await query.FirstOrDefaultAsync();
+            });
         }
 
         public async Task InsertAsync(IEnumerable<T> documents)
@@ -171,7 +174,7 @@ namespace MongoRepositories.Mongo
             {
                 var batchId = Guid.NewGuid();
 
-                foreach (var document in documents)                
+                foreach (var document in documents)
                     document.BatchId = batchId;
 
                 try
@@ -331,7 +334,7 @@ namespace MongoRepositories.Mongo
             int limit = 10;
             do
             {
-                var queryResponse = await _collection.Find(FilterDefinition<T>.Empty).Skip(skip).Limit(limit).ToListAsync();
+                var queryResponse = await RetryQuery(async () => await _collection.Find(FilterDefinition<T>.Empty).Skip(skip).Limit(limit).ToListAsync());
                 var shouldWeContinue = yieldData(filter != null ? queryResponse.Where(filter) : queryResponse);
                 if (!shouldWeContinue)
                     break;
@@ -342,14 +345,13 @@ namespace MongoRepositories.Mongo
             while (true);
         }
 
-
         private async Task ExecuteQueryAsync(Func<T, bool> filter, Func<IEnumerable<T>, Task> yieldData)
         {
             int skip = 0;
             int limit = 10;
             do
             {
-                var queryResponse = await _collection.Find(FilterDefinition<T>.Empty).Skip(skip).Limit(limit).ToListAsync();
+                var queryResponse = await RetryQuery(async () => await _collection.Find(FilterDefinition<T>.Empty).Skip(skip).Limit(limit).ToListAsync());
                 await yieldData(filter != null ? queryResponse.Where(filter) : queryResponse);
                 if (queryResponse.Count == 0)
                     return;
@@ -359,8 +361,27 @@ namespace MongoRepositories.Mongo
         }
 
         public async Task<bool> Any(Expression<Func<T, bool>> filter)
-        {            
-            return (await _collection.FindAsync(filter, new FindOptions<T>() { Limit = 1 })).Any();
+        {
+            return (await RetryQuery(async () => await _collection.FindAsync(filter, new FindOptions<T>() { Limit = 1 }))).Any();
+        }
+
+        public static async Task<TIn> RetryQuery<TIn>(Func<Task<TIn>> action)
+        {
+            const int tryCount = 5;
+            var @try = 0;
+            while (true)
+            {
+                try
+                {
+                    return await action();
+                }
+                catch (Exception ex)
+                {
+                    @try++;
+                    if (!(ex is MongoCommandException) || @try >= tryCount)
+                        throw;
+                }
+            }
         }
 
     }
