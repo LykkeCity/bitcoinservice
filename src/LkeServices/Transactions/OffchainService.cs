@@ -263,6 +263,9 @@ namespace LkeServices.Transactions
                     if (currentChannel != null && !currentChannel.IsBroadcasted)
                         throw new BackendException("There is another pending channel setup", ErrorCode.AnotherChannelSetupExists);
 
+                    if (!OpenAssetsHelper.IsBitcoin(asset.Id) && !OpenAssetsHelper.IsLkk(asset.Id) && asset.IssueAllowed)
+                        hubAmount *= _settings.Offchain.FiatAssetAmountCoef;
+
                     var context = _transactionBuildContextFactory.Create(_connectionParams.Network);
                     return await context.Build(async () =>
                     {
