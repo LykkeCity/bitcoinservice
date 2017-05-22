@@ -245,8 +245,7 @@ namespace BitcoinJob.Functions
             var outputs = await _bitcoinOutputsService.GetColoredUnspentOutputs(_settings.Offchain.HotWallet);
             foreach (var asset in await _assetRepostory.Values())
             {
-                if (OpenAssetsHelper.IsBitcoin(asset.Id) || OpenAssetsHelper.IsLkk(asset.Id) || !asset.IssueAllowed
-                    || asset.NotLykkeAsset)
+                if (OpenAssetsHelper.IsBitcoin(asset.Id) || OpenAssetsHelper.IsLkk(asset.Id) || !asset.IssueAllowed)
                     continue;
                 try
                 {
