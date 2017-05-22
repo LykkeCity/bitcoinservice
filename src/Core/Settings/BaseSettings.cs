@@ -92,5 +92,6 @@ namespace Core.Settings
         public decimal LkkOutputSize { get; set; } = 10000;
         public int MaxCountOfLkkOutputs { get; set; } = 10;
         public int MinCountOfLkkOutputs { get; set; } = 5;
+        public int FiatAssetAmountCoef { get; set; } = 5;
     }
 }
