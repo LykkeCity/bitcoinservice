@@ -263,8 +263,7 @@ namespace LkeServices.Transactions
                     if (currentChannel != null && !currentChannel.IsBroadcasted)
                         throw new BackendException("There is another pending channel setup", ErrorCode.AnotherChannelSetupExists);
 
-                    if (!OpenAssetsHelper.IsBitcoin(asset.Id) && !OpenAssetsHelper.IsLkk(asset.Id) && asset.IssueAllowed)
-                        hubAmount *= _settings.Offchain.FiatAssetAmountCoef;
+                    int fiatCoef = !OpenAssetsHelper.IsBitcoin(asset.Id) && !OpenAssetsHelper.IsLkk(asset.Id) && asset.IssueAllowed ? _settings.Offchain.FiatAssetAmountCoef : 1;
 
                     var context = _transactionBuildContextFactory.Create(_connectionParams.Network);
                     return await context.Build(async () =>
@@ -279,7 +278,7 @@ namespace LkeServices.Transactions
                         {
                             clientChannelAmount = multisigAmount;
                             monitor.Step("Send from hotwallet to multisig");
-                            hubChannelAmount = await SendToMultisig(hotWalletAddress, multisig, asset, builder, context, hubAmount);
+                            hubChannelAmount = await SendToMultisig(hotWalletAddress, multisig, asset, builder, context, hubAmount * fiatCoef);
                         }
                         else
                         {
@@ -287,7 +286,7 @@ namespace LkeServices.Transactions
                                                   Math.Max(0, multisigAmount - currentChannel.ClientAmount - currentChannel.HubAmount);
                             monitor.Step("Send from hotwallet to multisig");
                             hubChannelAmount = await SendToMultisig(hotWalletAddress, multisig, asset, builder, context,
-                                Math.Max(0, hubAmount - currentChannel.HubAmount));
+                                Math.Max(0, hubAmount - currentChannel.HubAmount) * fiatCoef);
                             hubChannelAmount += currentChannel.HubAmount;
                         }
                         monitor.Step("Add fee");
@@ -852,6 +851,8 @@ namespace LkeServices.Transactions
 
         private async Task<decimal> SendToMultisig(BitcoinAddress @from, BitcoinAddress toMultisig, IAsset assetEntity, TransactionBuilder builder, TransactionBuildContext context, decimal amount)
         {
+            if (amount == 0)
+                return 0;
             if (OpenAssetsHelper.IsBitcoin(assetEntity.Id))
             {
                 Money sendAmount;

@@ -378,8 +378,8 @@ namespace MongoRepositories.Mongo
 				}
 				catch (Exception ex)
 				{
-					@try++;
-					if (!(ex is MongoCommandException) || @try >= tryCount)
+					@try++;                    
+					if (!(ex is MongoException) || @try >= tryCount)
 						throw;
 					await Task.Delay(delay);
 					delay *= 3;
