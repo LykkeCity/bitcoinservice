@@ -103,6 +103,19 @@ namespace MongoRepositories.Offchain
             return await _table.GetDataAsync(OffchainTransferEntity.ByRecord.GenerateId(multisig, assetId));
         }
 
+        public async Task RequirеTransfer(string multisig, string asset, Guid transferId)
+        {
+            var entity = await _table.GetDataAsync(OffchainTransferEntity.ByRecord.GenerateId(multisig, asset));
+            if (entity?.TransferId == transferId)
+            {
+                await _table.ReplaceAsync(entity.BsonId, transferEntity =>
+                {
+                    transferEntity.Required = true;
+                    return transferEntity;
+                });
+            }
+        }
+
         public async Task CompleteTransfer(string multisig, string asset, Guid transferId)
         {
             var entity = await _table.GetDataAsync(OffchainTransferEntity.ByRecord.GenerateId(multisig, asset));

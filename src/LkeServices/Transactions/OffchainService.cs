@@ -215,7 +215,7 @@ namespace LkeServices.Transactions
 
                 monitor.Step("Create transfer");
 
-                var transfer = await _offchainTransferRepository.CreateTransfer(address.MultisigAddress, asset.Id, requiredTransfer);
+                var transfer = await _offchainTransferRepository.CreateTransfer(address.MultisigAddress, asset.Id, false);
 
                 monitor.Step("Save hub commitment and hub revoke key");
 
@@ -228,7 +228,11 @@ namespace LkeServices.Transactions
                     _revokeKeyRepository.AddRevokeKey(hubRevokeKey.PubKey.ToHex(), RevokeKeyType.Exchange,
                         hubRevokeKey.ToString(_connectionParams.Network))
                 );
-
+                if (requiredTransfer)
+                {
+                    monitor.Step("Require transfer");
+                    await _offchainTransferRepository.RequirеTransfer(address.MultisigAddress, asset.Id, transfer.TransferId);                
+                }
                 return new OffchainResponse
                 {
                     TransactionHex = commitmentResult.Transaction.ToHex(),
@@ -297,7 +301,7 @@ namespace LkeServices.Transactions
 
                         var hex = tr.ToHex();
                         monitor.Step("Create transfer");
-                        var transfer = await _offchainTransferRepository.CreateTransfer(multisig.ToWif(), asset.Id, requiredTransfer);
+                        var transfer = await _offchainTransferRepository.CreateTransfer(multisig.ToWif(), asset.Id, false);
                         transferId = transfer.TransferId;
                         monitor.Step("Create channel");
                         var channel = await _offchainChannelRepository.CreateChannel(multisig.ToWif(), asset.Id, hex, clientChannelAmount,
@@ -307,6 +311,12 @@ namespace LkeServices.Transactions
                         await _lykkeTransactionBuilderService.SaveSpentOutputs(channel.ChannelId, tr);
                         monitor.Step("Save new outputs");
                         await SaveNewOutputs(tr, context, channel.ChannelId);
+
+                        if (requiredTransfer)
+                        {
+                            monitor.Step("Require transfer");
+                            await _offchainTransferRepository.RequirеTransfer(address.MultisigAddress, asset.Id, transfer.TransferId);
+                        }
 
                         return new OffchainResponse
                         {
