@@ -660,19 +660,26 @@ namespace LkeServices.Transactions
             return await context.Build(async () =>
             {
                 var builder = new TransactionBuilder();
-                if (OpenAssetsHelper.IsBitcoin(asset.Id))
+                try
                 {
-                    var unspentOutputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(multisig.ToWif())).ToList();
-                    await _transactionBuildHelper.SendWithChange(builder, context, unspentOutputs, cashoutAddress, Money.FromUnit(amount, MoneyUnit.BTC),
-                            multisig);
-                }
-                else
-                {
-                    var assetId = new BitcoinAssetId(asset.BlockChainAssetId, _connectionParams.Network).AssetId;
-                    var unspentOutputs = (await _bitcoinOutputsService.GetColoredUnspentOutputs(multisig.ToWif(), assetId)).ToList();
+                    if (OpenAssetsHelper.IsBitcoin(asset.Id))
+                    {
+                        var unspentOutputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(multisig.ToWif())).ToList();
+                        await _transactionBuildHelper.SendWithChange(builder, context, unspentOutputs, cashoutAddress, Money.FromUnit(amount, MoneyUnit.BTC),
+                                multisig);
+                    }
+                    else
+                    {
+                        var assetId = new BitcoinAssetId(asset.BlockChainAssetId, _connectionParams.Network).AssetId;
+                        var unspentOutputs = (await _bitcoinOutputsService.GetColoredUnspentOutputs(multisig.ToWif(), assetId)).ToList();
 
-                    var sendAmount = new AssetMoney(assetId, amount, asset.MultiplierPower);
-                    _transactionBuildHelper.SendAssetWithChange(builder, context, unspentOutputs, cashoutAddress, sendAmount, multisig);
+                        var sendAmount = new AssetMoney(assetId, amount, asset.MultiplierPower);
+                        _transactionBuildHelper.SendAssetWithChange(builder, context, unspentOutputs, cashoutAddress, sendAmount, multisig);
+                    }
+                }
+                catch (BackendException e) when (e.Code == ErrorCode.NotEnoughAssetAvailable || e.Code == ErrorCode.NotEnoughBitcoinAvailable)
+                {
+                    throw new BackendException("Client amount in channel is low than required", ErrorCode.NotEnoughtClientFunds);
                 }
                 await _transactionBuildHelper.AddFee(builder, context);
                 var tr = builder.BuildTransaction(true);
