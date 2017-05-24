@@ -122,6 +122,11 @@ namespace AzureRepositories.Offchain
                     OffchainTransferEntity.ByRecord.GenerateRowKey(multisig));
         }
 
+        public Task RequirеTransfer(string multisig, string asset, Guid transferId)
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task CompleteTransfer(string multisig, string asset, Guid transferId)
         {
             var entity = await _table.GetDataAsync(OffchainTransferEntity.ByRecord.GeneratePartition(asset), OffchainTransferEntity.ByRecord.GenerateRowKey(multisig));

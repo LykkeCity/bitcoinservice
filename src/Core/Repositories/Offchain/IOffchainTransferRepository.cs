@@ -26,6 +26,7 @@ namespace Core.Repositories.Offchain
     {
         Task<IOffchainTransfer> CreateTransfer(string multisig, string asset, bool required);        
         Task<IOffchainTransfer> GetLastTransfer(string multisig, string assetId);
+        Task RequirеTransfer(string multisig, string asset, Guid transferId);
         Task CompleteTransfer(string multisig, string asset, Guid transferId);
         Task CloseTransfer(string multisig, string asset, Guid transferId);
     }
