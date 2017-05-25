@@ -22,9 +22,7 @@ using NBitcoin.OpenAsset;
 namespace BitcoinJob.Functions
 {
     public class GenerateOffchainOutputsFunction
-    {
-        private const int MaxOutputsCountInTransaction = 200;
-
+    {        
         private readonly BaseSettings _settings;
         private readonly CachedDataDictionary<string, IAsset> _assetRepostory;
         private readonly IBitcoinOutputsService _bitcoinOutputsService;
@@ -181,7 +179,7 @@ namespace BitcoinJob.Functions
 
             while (generated < generateCnt)
             {
-                var outputsCount = Math.Min(MaxOutputsCountInTransaction, generateCnt - generated);
+                var outputsCount = Math.Min(_settings.Offchain.MaxSplittedOutputsInTransaction, generateCnt - generated);
 
                 var context = _transactionBuildContextFactory.Create(_connectionParams.Network);
 
@@ -270,7 +268,7 @@ namespace BitcoinJob.Functions
                     var generated = 0;
                     while (generated < cnt)
                     {
-                        var outputsCount = Math.Min(MaxOutputsCountInTransaction, cnt - generated);
+                        var outputsCount = Math.Min(_settings.Offchain.MaxIssuedOutputsInTransaction, cnt - generated);
 
                         var context = _transactionBuildContextFactory.Create(_connectionParams.Network);
 
