@@ -57,6 +57,12 @@ namespace LkeServices.Transactions
         Task RemoveChannel(string multisig, IAsset asset);
 
         Task<bool> HasChannel(string multisig);
+
+        Task<IEnumerable<OffchainChannelInfo>> GetChannelsOfAsset(string multisig, IAsset asset);
+
+        Task<IEnumerable<OffchainCommitmentInfo>> GetCommitmentsOfChannel(Guid channelId);
+
+        Task<string> GetCommitment(Guid commitmentId);
     }
 
     public class OffchainService : IOffchainService
@@ -215,7 +221,7 @@ namespace LkeServices.Transactions
 
                 monitor.Step("Create transfer");
 
-                var transfer = await _offchainTransferRepository.CreateTransfer(address.MultisigAddress, asset.Id, requiredTransfer);
+                var transfer = await _offchainTransferRepository.CreateTransfer(address.MultisigAddress, asset.Id, false);
 
                 monitor.Step("Save hub commitment and hub revoke key");
 
@@ -228,7 +234,11 @@ namespace LkeServices.Transactions
                     _revokeKeyRepository.AddRevokeKey(hubRevokeKey.PubKey.ToHex(), RevokeKeyType.Exchange,
                         hubRevokeKey.ToString(_connectionParams.Network))
                 );
-
+                if (requiredTransfer)
+                {
+                    monitor.Step("Require transfer");
+                    await _offchainTransferRepository.RequirеTransfer(address.MultisigAddress, asset.Id, transfer.TransferId);
+                }
                 return new OffchainResponse
                 {
                     TransactionHex = commitmentResult.Transaction.ToHex(),
@@ -297,7 +307,7 @@ namespace LkeServices.Transactions
 
                         var hex = tr.ToHex();
                         monitor.Step("Create transfer");
-                        var transfer = await _offchainTransferRepository.CreateTransfer(multisig.ToWif(), asset.Id, requiredTransfer);
+                        var transfer = await _offchainTransferRepository.CreateTransfer(multisig.ToWif(), asset.Id, false);
                         transferId = transfer.TransferId;
                         monitor.Step("Create channel");
                         var channel = await _offchainChannelRepository.CreateChannel(multisig.ToWif(), asset.Id, hex, clientChannelAmount,
@@ -307,6 +317,12 @@ namespace LkeServices.Transactions
                         await _lykkeTransactionBuilderService.SaveSpentOutputs(channel.ChannelId, tr);
                         monitor.Step("Save new outputs");
                         await SaveNewOutputs(tr, context, channel.ChannelId);
+
+                        if (requiredTransfer)
+                        {
+                            monitor.Step("Require transfer");
+                            await _offchainTransferRepository.RequirеTransfer(address.MultisigAddress, asset.Id, transfer.TransferId);
+                        }
 
                         return new OffchainResponse
                         {
@@ -856,6 +872,60 @@ namespace LkeServices.Transactions
             return _offchainChannelRepository.HasChannel(multisig);
         }
 
+        public async Task<IEnumerable<OffchainChannelInfo>> GetChannelsOfAsset(string multisig, IAsset asset)
+        {
+            var channels = await _offchainChannelRepository.GetChannels(multisig, asset.Id);
+            return channels.Select(o => new OffchainChannelInfo
+            {
+                ChannelId = o.ChannelId,
+                Date = o.CreateDt,
+                ClientAmount = o.ClientAmount,
+                HubAmount = o.HubAmount,
+                TransactionHash = o.IsBroadcasted ? new Transaction(o.FullySignedChannel).GetHash().ToString() : ""
+            }).ToList();
+        }
+
+        public async Task<IEnumerable<OffchainCommitmentInfo>> GetCommitmentsOfChannel(Guid channelId)
+        {
+            var commitments = (await _commitmentRepository.GetCommitments(channelId)).OrderBy(o => o.CreateDt).ToList();
+            if (!commitments.Any())
+                return new List<OffchainCommitmentInfo>();
+
+            var pairs = new List<ICommitment[]>();
+
+            bool IsFullPair(ICommitment[] c)
+            {
+                if (c[0] == null || c[1] == null) return false;
+                return c[0].ClientAmount == c[1].ClientAmount && c[0].HubAmount == c[1].HubAmount;
+            }
+
+            var pair = new ICommitment[2];
+            foreach (var commitment in commitments)
+            {
+                pair[(int)commitment.Type - 1] = commitment;
+                if (IsFullPair(pair))
+                {
+                    pairs.Add(pair);
+                    pair = new ICommitment[2];
+                }
+            }
+
+            return pairs.Select(o => new OffchainCommitmentInfo
+            {
+                ClientAmount = o[0].ClientAmount,
+                HubAmount = o[0].HubAmount,
+                Date = o[0].CreateDt,
+                ClientCommitment = o[(int)CommitmentType.Client - 1].CommitmentId,
+                HubCommitment = o[(int)CommitmentType.Hub - 1].CommitmentId
+            });
+        }
+
+        public async Task<string> GetCommitment(Guid commitmentId)
+        {
+            var commitment = await _commitmentRepository.GetCommitment(commitmentId);
+            return commitment?.SignedTransaction != null ? commitment.SignedTransaction : commitment?.InitialTransaction;
+        }
+
         private async Task<decimal> SendToMultisig(BitcoinAddress @from, BitcoinAddress toMultisig, IAsset assetEntity, TransactionBuilder builder, TransactionBuildContext context, decimal amount)
         {
             if (amount == 0)
@@ -985,10 +1055,14 @@ namespace LkeServices.Transactions
                 var channel = await _offchainChannelRepository.GetChannel(multisig, asset.Id);
                 if (channel != null)
                 {
-                    result.Channels[asset.Id] = new OffchainBalancePair
+                    string hash = null;
+                    if (channel.IsBroadcasted)
+                        hash = new Transaction(channel.FullySignedChannel).GetHash().ToString();
+                    result.Channels[asset.Id] = new OffchainBalanceInfo
                     {
                         ClientAmount = channel.ClientAmount,
-                        HubAmount = channel.HubAmount
+                        HubAmount = channel.HubAmount,
+                        TransactionHash = hash
                     };
                 }
             }
@@ -1031,13 +1105,35 @@ namespace LkeServices.Transactions
 
     public class OffchainBalance
     {
-        public Dictionary<string, OffchainBalancePair> Channels { get; set; } = new Dictionary<string, OffchainBalancePair>();
+        public Dictionary<string, OffchainBalanceInfo> Channels { get; set; } = new Dictionary<string, OffchainBalanceInfo>();
     }
 
-    public class OffchainBalancePair
+    public class OffchainBalanceInfo
     {
         public decimal ClientAmount { get; set; }
 
         public decimal HubAmount { get; set; }
+
+        public string TransactionHash { get; set; }
+    }
+
+    public class OffchainChannelInfo : OffchainBalanceInfo
+    {
+        public Guid ChannelId { get; set; }
+
+        public DateTime Date { get; set; }
+    }
+
+    public class OffchainCommitmentInfo
+    {
+        public DateTime Date { get; set; }
+
+        public decimal ClientAmount { get; set; }
+
+        public decimal HubAmount { get; set; }
+
+        public Guid ClientCommitment { get; set; }
+
+        public Guid HubCommitment { get; set; }
     }
 }

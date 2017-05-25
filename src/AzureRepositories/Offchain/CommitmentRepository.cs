@@ -206,5 +206,15 @@ namespace AzureRepositories.Offchain
                 await _table.DeleteAsync(partition, commitment.CommitmentId.ToString());
             }
         }
+
+        public Task<IEnumerable<ICommitment>> GetCommitments(Guid channelId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<ICommitment> GetCommitment(Guid commitmentId)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

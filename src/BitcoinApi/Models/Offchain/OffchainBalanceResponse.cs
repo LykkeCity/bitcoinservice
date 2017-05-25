@@ -8,7 +8,7 @@ namespace BitcoinApi.Models.Offchain
 {
     public class OffchainBalanceResponse
     {
-        public Dictionary<string, OffchainBalancePair> Channels { get; set; }
+        public Dictionary<string, OffchainBalanceInfo> Channels { get; set; }
 
         public OffchainBalanceResponse(OffchainBalance balance)
         {

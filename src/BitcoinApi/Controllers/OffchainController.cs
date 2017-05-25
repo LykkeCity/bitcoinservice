@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using BitcoinApi.Filters;
 using BitcoinApi.Models;
 using BitcoinApi.Models.Offchain;
@@ -123,6 +124,37 @@ namespace BitcoinApi.Controllers
         public async Task<OffchainBalanceResponse> GetBalances([FromQuery] string multisig)
         {
             return new OffchainBalanceResponse(await _offchain.GetBalances(multisig));
+        }
+
+        [HttpGet("channels")]
+        [ProducesResponseType(typeof(OffchainChannelsResponse), 200)]
+        [ProducesResponseType(typeof(ApiException), 400)]
+        public async Task<OffchainChannelsResponse> GetChannels([FromQuery] string multisig, [FromQuery] string asset)
+        {
+            var assetObj = await GetAsset(asset);
+            return new OffchainChannelsResponse
+            {
+                Channels = await _offchain.GetChannelsOfAsset(multisig, assetObj)
+            };
+        }
+
+        [HttpGet("channel/commitments")]
+        [ProducesResponseType(typeof(OffchainCommitmentsOfChannelResponse), 200)]
+        [ProducesResponseType(typeof(ApiException), 400)]
+        public async Task<OffchainCommitmentsOfChannelResponse> GetCommitments([FromQuery] Guid channelId)
+        {
+            return new OffchainCommitmentsOfChannelResponse(await _offchain.GetCommitmentsOfChannel(channelId));
+        }
+
+        [HttpGet("commitment")]
+        [ProducesResponseType(typeof(OffchainCommitmentResponse), 200)]
+        [ProducesResponseType(typeof(ApiException), 400)]
+        public async Task<OffchainCommitmentResponse> GetCommitment([FromQuery] Guid commitmentId)
+        {
+            return new OffchainCommitmentResponse
+            {
+                TransactionHex = await _offchain.GetCommitment(commitmentId)
+            };
         }
 
         [HttpPost("removechannel")]
