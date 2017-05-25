@@ -6,25 +6,26 @@ using AzureRepositories;
 using Common;
 using Common.Log;
 using Core.Bitcoin;
+using Core.Enums;
 using Core.Settings;
 using LkeServices;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MongoRepositories;
-using NUnit.Framework;
 
 // ReSharper disable once CheckNamespace
 namespace Bitcoin.Tests
 {
-    [SetUpFixture]
+    [TestClass]
     public class Config
     {
         public static IServiceProvider Services { get; set; }
         public static ILog Logger => Services.GetService<ILog>();
 
-        [OneTimeSetUp]
-        public void Initialize()
+        [AssemblyInitialize]
+        public static void Initialize(TestContext context)
         {
-            var settings = GeneralSettingsReader.ReadGeneralSettingsLocal<BaseSettings>("../settings/bitcoinsettings.json");
+            var settings = GeneralSettingsReader.ReadGeneralSettingsLocal<BaseSettings>("../../../../settings/bitcoinsettings.json");
 
             var log = new LogToConsole();
 
