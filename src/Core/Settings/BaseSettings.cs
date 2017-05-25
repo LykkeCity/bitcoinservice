@@ -79,10 +79,13 @@ namespace Core.Settings
 
         public string HotWallet { get; set; }
 
+        public int MaxIssuedOutputsInTransaction { get; set; } = 5;
+        public int MaxSplittedOutputsInTransaction { get; set; } = 100;
+
         public decimal IssueAllowedCoinOutputSize { get; set; } = 100000;
         public decimal MinIssueAllowedCoinBalance { get; set; } = 1000000;
         public decimal MaxIssueAllowedCoinBalance { get; set; } = 10000000;
-
+       
         public decimal MinBtcBalance { get; set; } = 10;
         public decimal BtcOutpitSize { get; set; } = 0.5M;
         public int MaxCountOfBtcOutputs { get; set; } = 10;
