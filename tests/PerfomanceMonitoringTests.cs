@@ -4,15 +4,15 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Core.Perfomance;
-using NUnit.Framework;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Bitcoin.Tests
 {
-    [TestFixture]
+    [TestClass]
     public class PerfomanceMonitoringTests
     {
-        [Test]
+        [TestMethod]
         public void Test()
         {
             var factory = Config.Services.GetService<IPerfomanceMonitorFactory>();
