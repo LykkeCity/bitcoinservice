@@ -12,19 +12,19 @@ using Core.ScriptTemplates;
 using LkeServices.Providers;
 using LkeServices.Transactions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NBitcoin;
 using NBitcoin.Crypto;
 using NBitcoin.DataEncoders;
 using NBitcoin.OpenAsset;
-using NUnit.Framework;
 using PhoneNumbers;
 
 namespace Bitcoin.Tests
 {
-    [TestFixture]
+    [TestClass]
     public class BitcoinTransactionTests
     {
-        [Test]
+        [TestMethod]
         public void GetInfoTest()
         {
             var address1 = new PubKey("03676601a24b05f5652ef4ce3616f505541d42072b28057007f43e0874bb27e47d").GetAddress(Network.TestNet);
@@ -43,7 +43,7 @@ namespace Bitcoin.Tests
             var marker = tr.GetColoredMarker();
         }
 
-        [Test]
+        [TestMethod]
         public async Task TestBroadcastCommitment()
         {
             var rpcClient = Config.Services.GetService<IRpcBitcoinClient>();
@@ -94,7 +94,7 @@ namespace Bitcoin.Tests
 
         }
 
-        [Test]
+        [TestMethod]
         public async Task TestScript()
         {
             var pk = new BitcoinSecret("93586ks3uwSAgJ6q3He4CkuXeVg1N4syvszP514TitfcA9mXjVo");
@@ -122,7 +122,7 @@ namespace Bitcoin.Tests
             await bitcoinClient.BroadcastTransaction(new Transaction(signed), Guid.NewGuid());
         }
 
-        [Test]
+        [TestMethod]
         public async Task TestSpendScript()
         {
 
