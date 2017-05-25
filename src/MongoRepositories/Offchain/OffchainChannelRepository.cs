@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Reflection;
 using System.Threading.Tasks;
 using Core.Repositories.Offchain;
 using MongoDB.Bson;
@@ -22,6 +24,9 @@ namespace MongoRepositories.Offchain
         public string FullySignedChannel { get; set; }
 
         public bool IsBroadcasted { get; set; }
+
+        [BsonIgnore]
+        public DateTime CreateDt => BsonCreateDt;
 
         [BsonRepresentation(BsonType.String)]
         public Guid? PrevChannelTransactionId { get; set; }
@@ -123,6 +128,11 @@ namespace MongoRepositories.Offchain
         public async Task<IOffchainChannel> GetChannel(string multisig, string asset)
         {
             return await _table.GetDataAsync(OffchainChannelEntity.CurrentChannel.GenerateId(multisig, asset));
+        }
+
+        public async Task<IEnumerable<IOffchainChannel>> GetChannels(string multisig, string asett)
+        {
+            return await _table.GetDataAsync(o => o.Multisig == multisig && o.Asset == asett);
         }
 
         public async Task<IOffchainChannel> SetFullSignedTransaction(string multisig, string asset, string fullSignedTr)

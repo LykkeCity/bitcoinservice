@@ -135,5 +135,15 @@ namespace MongoRepositories.Offchain
         {
             await _table.DeleteAsync(o => o.Multisig == multisig && o.AssetId == asset && o.ChannelId == channelId && o.Actual);
         }
+
+        public async Task<IEnumerable<ICommitment>> GetCommitments(Guid channelId)
+        {
+            return await _table.GetDataAsync(o => o.ChannelId == channelId);
+        }
+
+        public async Task<ICommitment> GetCommitment(Guid commitmentId)
+        {
+            return await _table.GetDataAsync(commitmentId.ToString());
+        }
     }
 }
