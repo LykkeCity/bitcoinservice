@@ -25,6 +25,7 @@ namespace AzureRepositories.Offchain
         public string FullySignedChannel { get; set; }
 
         public bool IsBroadcasted { get; set; }
+        public DateTime CreateDt => Timestamp.DateTime;
 
         public Guid? PrevChannelTransactionId { get; set; }
 
@@ -135,6 +136,11 @@ namespace AzureRepositories.Offchain
                 OffchainChannelEntity.CurrentChannel.GenerateRowKey(multisig));
         }
 
+        public Task<IEnumerable<IOffchainChannel>> GetChannels(string multisig, string asett)
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task<IOffchainChannel> SetFullSignedTransaction(string multisig, string asset, string fullSignedTr)
         {
             return await _table.ReplaceAsync(OffchainChannelEntity.CurrentChannel.GeneratePartitionKey(asset),
@@ -174,8 +180,8 @@ namespace AzureRepositories.Offchain
             {
                 var archived = OffchainChannelEntity.Archived.Create(current);
                 await _table.InsertAsync(archived);
-                await _table.DeleteAsync(current);                
-            }            
+                await _table.DeleteAsync(current);
+            }
         }
 
         public async Task RevertChannel(string multisig, string asset, Guid channelId)

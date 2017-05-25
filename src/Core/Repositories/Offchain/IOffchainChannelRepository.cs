@@ -25,6 +25,8 @@ namespace Core.Repositories.Offchain
 
         bool IsBroadcasted { get; }
 
+        DateTime CreateDt { get; }
+
         Guid? PrevChannelTransactionId { get; set; }        
     }
 
@@ -34,6 +36,8 @@ namespace Core.Repositories.Offchain
         Task<IOffchainChannel> CreateChannel(string multisig, string asset, string initialTr, decimal clientAmount, decimal hubAmount);
 
         Task<IOffchainChannel> GetChannel(string multisig, string asset);
+
+        Task<IEnumerable<Offchain.IOffchainChannel>> GetChannels(string multisig, string asett);
 
         Task<IOffchainChannel> SetFullSignedTransaction(string multisig, string asset, string fullSignedTr);
 
