@@ -83,7 +83,9 @@ namespace MongoRepositories
 
             ioc.RegisterInstance(new ClosingChannelRepository(new MongoStorage<ClosingChannelEntity>(mongoClient, "ClosingChannel")))
                 .As<IClosingChannelRepository>();
-            
+
+            ioc.RegisterInstance(new InternalSpentOutputRepository(new MongoStorage<InternalSpentOutput>(mongoClient, "InternalSpentOutputs")))
+                .As<IInternalSpentOutputRepository>();
         }        
     }
 }
