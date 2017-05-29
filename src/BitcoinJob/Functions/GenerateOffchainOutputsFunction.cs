@@ -122,10 +122,7 @@ namespace BitcoinJob.Functions
                 var outputSize = new AssetMoney(assetIdObj, _settings.Offchain.LkkOutputSize, asset.MultiplierPower);
 
                 if (balance.ToDecimal(asset.MultiplierPower) < _settings.Offchain.MinLkkBalance)
-                {
                     await SendBalanceNotifications(assetId, _settings.Offchain.HotWallet, _settings.Offchain.MinLkkBalance);
-                    return;
-                }
 
                 var existingCoinsCount = outputs.Count(o => o.Amount <= outputSize && o.Amount.Quantity > outputSize.Quantity / 2);
 
@@ -159,10 +156,8 @@ namespace BitcoinJob.Functions
                 var outputSize = new Money(_settings.Offchain.BtcOutpitSize, MoneyUnit.BTC);
 
                 if (balance.ToDecimal(MoneyUnit.BTC) < _settings.Offchain.MinBtcBalance)
-                {
                     await SendBalanceNotifications("BTC", _settings.Offchain.HotWallet, _settings.Offchain.MinBtcBalance);
-                    return;
-                }
+
 
                 var existingCoinsCount = outputs.Count(o => o.Amount <= outputSize && o.Amount > outputSize / 2);
 
