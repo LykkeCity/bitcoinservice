@@ -22,7 +22,7 @@ using NBitcoin.OpenAsset;
 namespace BitcoinJob.Functions
 {
     public class GenerateOffchainOutputsFunction
-    {        
+    { 
         private readonly BaseSettings _settings;
         private readonly CachedDataDictionary<string, IAsset> _assetRepostory;
         private readonly IBitcoinOutputsService _bitcoinOutputsService;
@@ -89,28 +89,41 @@ namespace BitcoinJob.Functions
             {
                 await _logger.WriteErrorAsync("GenerateOffchainOutputsFunction", "Generate", "GenerateBtcOutputs", ex);
             }
-
-            await GenerateLkkOutputs();
-
+            try
+            {
+                await GenerateColorOutputs("LKK");
+            }
+            catch (Exception ex)
+            {
+                await _logger.WriteErrorAsync("GenerateOffchainOutputsFunction", "Generate", "GenerateLKKOutputs", ex);
+            }
+            try
+            {
+                await GenerateColorOutputs("LKK1Y");
+            }
+            catch (Exception ex)
+            {
+                await _logger.WriteErrorAsync("GenerateOffchainOutputsFunction", "Generate", "GenerateLKK1YOutputs", ex);
+            }
             await _logger.WriteInfoAsync("GenerateOffchainOutputsFunction", "Generate", null, "End process");
         }
 
-        private Task GenerateLkkOutputs()
+        private Task GenerateColorOutputs(string assetId)
         {
             return Retry.Try(async () =>
             {
                 var hotWallet = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(_settings.Offchain.HotWallet);
-                var asset = await _assetRepostory.GetItemAsync("LKK");
-                var assetId = new BitcoinAssetId(asset.BlockChainAssetId).AssetId;
+                var asset = await _assetRepostory.GetItemAsync(assetId);
+                var assetIdObj = new BitcoinAssetId(asset.BlockChainAssetId).AssetId;
 
-                var outputs = await _bitcoinOutputsService.GetColoredUnspentOutputs(_settings.Offchain.HotWallet, assetId);
+                var outputs = await _bitcoinOutputsService.GetColoredUnspentOutputs(_settings.Offchain.HotWallet, assetIdObj, 0, false);
 
-                var balance = outputs.Aggregate(new AssetMoney(assetId, 0), (accum, coin) => accum + coin.Amount);
-                var outputSize = new AssetMoney(assetId, _settings.Offchain.LkkOutputSize, asset.MultiplierPower);
+                var balance = outputs.Aggregate(new AssetMoney(assetIdObj, 0), (accum, coin) => accum + coin.Amount);
+                var outputSize = new AssetMoney(assetIdObj, _settings.Offchain.LkkOutputSize, asset.MultiplierPower);
 
                 if (balance.ToDecimal(asset.MultiplierPower) < _settings.Offchain.MinLkkBalance)
                 {
-                    await SendBalanceNotifications("LKK", _settings.Offchain.HotWallet, _settings.Offchain.MinLkkBalance);
+                    await SendBalanceNotifications(assetId, _settings.Offchain.HotWallet, _settings.Offchain.MinLkkBalance);
                     return;
                 }
 
@@ -123,13 +136,13 @@ namespace BitcoinJob.Functions
 
                 var coins = outputs.Where(o => o.Amount > outputSize * 2).ToList();
 
-                balance = coins.Aggregate(new AssetMoney(assetId, 0), (accum, coin) => accum + coin.Amount);
+                balance = coins.Aggregate(new AssetMoney(assetIdObj, 0), (accum, coin) => accum + coin.Amount);
 
                 generateCnt = Math.Min(generateCnt, (int)(balance.Quantity / outputSize.Quantity));
                 if (generateCnt == 0)
                     return;
 
-                await GenerateOutputs(generateCnt, coins, hotWallet, outputSize);
+                await GenerateOutputs(generateCnt, coins, hotWallet, outputSize, asset);
             }, exception => (exception as BackendException)?.Code == ErrorCode.TransactionConcurrentInputsProblem, 3, _logger);
         }
 
@@ -141,7 +154,7 @@ namespace BitcoinJob.Functions
             {
                 var hotWallet = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(_settings.Offchain.HotWallet);
 
-                var outputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(_settings.Offchain.HotWallet)).Cast<Coin>().ToList();
+                var outputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(_settings.Offchain.HotWallet, 0, false)).Cast<Coin>().ToList();
                 var balance = new Money(outputs.DefaultIfEmpty().Sum(o => o?.Amount ?? Money.Zero));
                 var outputSize = new Money(_settings.Offchain.BtcOutpitSize, MoneyUnit.BTC);
 
@@ -165,16 +178,16 @@ namespace BitcoinJob.Functions
                 generateCnt = Math.Min(generateCnt, (int)(balance / outputSize));
                 if (generateCnt == 0)
                     return;
-                await GenerateOutputs(generateCnt, coins, hotWallet, outputSize);
+                await GenerateOutputs(generateCnt, coins, hotWallet, outputSize, await _assetRepostory.GetItemAsync("BTC"));
             }, exception => (exception as BackendException)?.Code == ErrorCode.TransactionConcurrentInputsProblem, 3, _logger);
         }
 
-        private async Task GenerateOutputs(int generateCnt, IEnumerable<ICoin> coins, BitcoinAddress hotWallet, IMoney amount)
+        private async Task GenerateOutputs(int generateCnt, IEnumerable<ICoin> coins, BitcoinAddress hotWallet, IMoney amount, IAsset asset)
         {
             var colored = amount is AssetMoney;
             await _logger.WriteInfoAsync("GenerateOffchainOutputsFunction", "GenerateOutputs", null,
-                $"Start generate {generateCnt} outputs for {(colored ? "LKK" : "BTC")}");
-            
+                $"Start generate {generateCnt} outputs for {asset.Id}");
+
             var generated = 0;
 
             while (generated < generateCnt)

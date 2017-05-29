@@ -20,49 +20,24 @@ namespace LkeServices.Bitcoin
         private readonly IBroadcastedOutputRepository _broadcastedOutputRepository;
         private readonly ISpentOutputRepository _spentOutputRepository;
         private readonly IWalletAddressRepository _walletAddressRepository;
+        private readonly IInternalSpentOutputRepository _internalSpentOutputRepository;
         private readonly RpcConnectionParams _connectionParams;
 
         public BitcoinOutputsService(IQBitNinjaApiCaller qBitNinjaApiCaller,
             IBroadcastedOutputRepository broadcastedOutputRepository,
             ISpentOutputRepository spentOutputRepository, IWalletAddressRepository walletAddressRepository,
+            IInternalSpentOutputRepository internalSpentOutputRepository,
             RpcConnectionParams connectionParams)
         {
             _qBitNinjaApiCaller = qBitNinjaApiCaller;
             _broadcastedOutputRepository = broadcastedOutputRepository;
             _spentOutputRepository = spentOutputRepository;
             _walletAddressRepository = walletAddressRepository;
+            _internalSpentOutputRepository = internalSpentOutputRepository;
             _connectionParams = connectionParams;
-        }
+        }      
 
-
-        ////temp method for workaround ninja bug
-        //private async Task<List<ICoin>> GetNinjaCoins(string walletAddress, int confirmationsCount)
-        //{
-        //    var coinsArray = new IEnumerable<ICoin>[_settings.RepeatNinjaCount];
-        //    var coinsMap = new HashSet<OutPoint>[_settings.RepeatNinjaCount];
-
-        //    for (var i = 0; i < _settings.RepeatNinjaCount; i++)
-        //    {
-        //        var outputResponse = await _qBitNinjaApiCaller.GetAddressBalance(walletAddress);
-        //        var coins = outputResponse.Operations
-        //                                    .Where(x => x.Confirmations >= Math.Max(1, confirmationsCount))
-        //                                    .SelectMany(o => o.ReceivedCoins).ToList();
-        //        coinsArray[i] = coins;
-        //        coinsMap[i] = new HashSet<OutPoint>(coins.Select(o => o.Outpoint));
-        //        await Task.Delay(100);
-        //    }
-
-        //    var intersect = coinsMap[0];
-        //    for (var i = 1; i < _settings.RepeatNinjaCount; i++)
-        //        intersect.IntersectWith(coinsMap[i]);
-
-        //    var result = coinsArray[0].Where(o => intersect.Contains(o.Outpoint)).ToList();
-        //    await _ninjaBlobStorage.Save(walletAddress, result);
-        //    return result;
-        //}
-
-
-        public async Task<IEnumerable<ICoin>> GetUnspentOutputs(string walletAddress, int confirmationsCount = 0)
+        public async Task<IEnumerable<ICoin>> GetUnspentOutputs(string walletAddress, int confirmationsCount = 0, bool useInternalSpentOutputs = true)
         {
             var outputResponse = await _qBitNinjaApiCaller.GetAddressBalance(walletAddress);
             var coins = outputResponse.Operations
@@ -94,6 +69,12 @@ namespace LkeServices.Bitcoin
 
             var unspentSet = new HashSet<OutPoint>(unspentOutputs.Select(x => new OutPoint(uint256.Parse(x.TransactionHash), x.N)));
 
+            if (useInternalSpentOutputs)
+            {
+                var internalSpentOuputs = new HashSet<OutPoint>((await _internalSpentOutputRepository.GetInternalSpentOutputs()).Select(x=> new OutPoint(uint256.Parse(x.TransactionHash), x.N)));               
+                unspentSet.ExceptWith(internalSpentOuputs);
+            }
+
             coins = coins.Where(o => unspentSet.Contains(o.Outpoint)).ToList();
 
             var address = BitcoinAddress.Create(walletAddress);
@@ -113,19 +94,19 @@ namespace LkeServices.Bitcoin
             }
         }
 
-        public async Task<IEnumerable<ICoin>> GetUncoloredUnspentOutputs(string walletAddress, int confirmationsCount = 0)
+        public async Task<IEnumerable<ICoin>> GetUncoloredUnspentOutputs(string walletAddress, int confirmationsCount = 0, bool useInternalSpentOutputs = true)
         {
-            return (await GetUnspentOutputs(walletAddress, confirmationsCount)).OfType<Coin>();
+            return (await GetUnspentOutputs(walletAddress, confirmationsCount, useInternalSpentOutputs)).OfType<Coin>();
         }
 
-        public async Task<IEnumerable<ColoredCoin>> GetColoredUnspentOutputs(string walletAddress, AssetId assetIdObj, int confirmationsCount = 0)
+        public async Task<IEnumerable<ColoredCoin>> GetColoredUnspentOutputs(string walletAddress, AssetId assetIdObj, int confirmationsCount = 0, bool useInternalSpentOutputs = true)
         {
-            return (await GetUnspentOutputs(walletAddress, confirmationsCount)).OfType<ColoredCoin>().Where(o => o.AssetId == assetIdObj);
+            return (await GetUnspentOutputs(walletAddress, confirmationsCount, useInternalSpentOutputs)).OfType<ColoredCoin>().Where(o => o.AssetId == assetIdObj);
         }
 
-        public async Task<IEnumerable<ColoredCoin>> GetColoredUnspentOutputs(string walletAddress, int confirmationsCount = 0)
+        public async Task<IEnumerable<ColoredCoin>> GetColoredUnspentOutputs(string walletAddress, int confirmationsCount = 0, bool useInternalSpentOutputs = true)
         {
-            return (await GetUnspentOutputs(walletAddress, confirmationsCount)).OfType<ColoredCoin>().ToList();
+            return (await GetUnspentOutputs(walletAddress, confirmationsCount, useInternalSpentOutputs)).OfType<ColoredCoin>().ToList();
         }
     }
 }
