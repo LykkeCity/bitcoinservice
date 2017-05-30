@@ -152,11 +152,11 @@ namespace LkeServices.Transactions
 
             if (!channel.IsBroadcasted)
             {
-                monitor?.Step("Rever channel");
+                monitor?.Step("Revert channel");
                 await _offchainChannelRepository.RevertChannel(multisig, assetId, channel.ChannelId);
                 monitor?.Step("Remove commitments of channel");
                 await _commitmentRepository.RemoveCommitmentsOfChannel(multisig, assetId, channel.ChannelId);
-                monitor?.Step("Remove spen outputs");
+                monitor?.Step("Remove spent outputs");
                 await _lykkeTransactionBuilderService.RemoveSpenOutputs(new Transaction(channel.InitialTransaction));
 
                 if (!channelSetup)
