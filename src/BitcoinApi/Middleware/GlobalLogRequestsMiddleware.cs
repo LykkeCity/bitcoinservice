@@ -32,7 +32,8 @@ namespace BitcoinApi.Middleware
             var dt = DateTime.UtcNow;
             var sw = Stopwatch.StartNew();
 
-            var request = await ReadRequest(context.Request.Body);
+            var request = (await ReadRequest(context.Request.Body));
+            request = request?.Substring(0, Math.Min(request.Length, 25000));
 
             if (_ignorePathes.Any(o => context.Request.Path.Value.Contains(o)))
             {
@@ -41,11 +42,19 @@ namespace BitcoinApi.Middleware
                 return;
             }
 
-            string response = await ReadResponse(context);
+            string response = (await ReadResponse(context));
+            response = response?.Substring(0, Math.Min(response.Length, 25000));
 
             sw.Stop();
 
-            await _log.WriteInfoAsync("GlobalLogRequestsMiddleware", context.Request.Path, $"{sw.ElapsedMilliseconds}ms {response}", request, dt);
+            try
+            {
+                await _log.WriteInfoAsync("GlobalLogRequestsMiddleware", context.Request.Path, $"{sw.ElapsedMilliseconds}ms {response}", request, dt);
+            }
+            catch (Exception ex)
+            {
+                await _log.WriteErrorAsync("GlobalLogRequestsMiddleware", context.Request.Path, "Can't write request data", ex);
+            }
         }
 
         private async Task<string> ReadResponse(HttpContext context)
