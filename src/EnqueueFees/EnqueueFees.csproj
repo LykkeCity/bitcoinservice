@@ -16,6 +16,7 @@
     <ProjectReference Include="..\AzureRepositories\AzureRepositories.csproj" />
     <ProjectReference Include="..\Core\Core.csproj" />
     <ProjectReference Include="..\LkeServices\LkeServices.csproj" />
+    <ProjectReference Include="..\MongoRepositories\MongoRepositories.csproj" />
   </ItemGroup>
 
   <ItemGroup>
