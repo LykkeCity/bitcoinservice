@@ -51,6 +51,7 @@ namespace Core.Exceptions
         DuplicateRequest = 31,
         TransferNotFound = 32,
         WrongTransferId = 33,
-        AddressUsedInOffchain = 34
+        AddressUsedInOffchain = 34,
+        ChannelWasBroadcasted = 35
     }
 }

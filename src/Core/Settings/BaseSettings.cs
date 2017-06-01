@@ -79,6 +79,8 @@ namespace Core.Settings
 
         public string HotWallet { get; set; }
 
+        public decimal OffchainDust { get; set; } = 0.00002700M;
+
         public int MaxIssuedOutputsInTransaction { get; set; } = 5;
         public int MaxSplittedOutputsInTransaction { get; set; } = 100;
 

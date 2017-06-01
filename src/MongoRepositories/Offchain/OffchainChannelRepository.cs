@@ -25,8 +25,7 @@ namespace MongoRepositories.Offchain
 
         public bool IsBroadcasted { get; set; }
 
-        [BsonIgnore]
-        public DateTime CreateDt => BsonCreateDt;
+        public DateTime CreateDt { get; set; }
 
         [BsonRepresentation(BsonType.String)]
         public Guid? PrevChannelTransactionId { get; set; }
@@ -54,6 +53,7 @@ namespace MongoRepositories.Offchain
                     ClientAmount = clientAmount,
                     FullySignedChannel = null,
                     PrevChannelTransactionId = prevChannelTransactionId,
+                    CreateDt = DateTime.UtcNow,
                     Actual = true
                 };
             }
@@ -72,7 +72,8 @@ namespace MongoRepositories.Offchain
                     FullySignedChannel = channel.FullySignedChannel,
                     IsBroadcasted = channel.IsBroadcasted,
                     PrevChannelTransactionId = channel.PrevChannelTransactionId,
-                    Actual = true
+                    Actual = true,
+                    CreateDt = channel.CreateDt
                 };
             }
         }
@@ -94,6 +95,7 @@ namespace MongoRepositories.Offchain
                     FullySignedChannel = channel.FullySignedChannel,
                     IsBroadcasted = channel.IsBroadcasted,
                     PrevChannelTransactionId = channel.PrevChannelTransactionId,
+                    CreateDt = channel.CreateDt,
                     Actual = false
                 };
             }

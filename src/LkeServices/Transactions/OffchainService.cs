@@ -409,6 +409,9 @@ namespace LkeServices.Transactions
                 if (channel == null)
                     throw new BackendException("Channel is not found", ErrorCode.ShouldOpenNewChannel);
 
+                if (channel.IsBroadcasted)
+                    throw new BackendException("Channel was broadcasted", ErrorCode.ChannelWasBroadcasted);
+
                 if (amount < 0 && channel.ClientAmount < Math.Abs(amount))
                     throw new BackendException("Client amount in channel is low than required",
                         ErrorCode.NotEnoughtClientFunds);
@@ -579,9 +582,12 @@ namespace LkeServices.Transactions
             if (channel.ClientAmount < amount)
                 throw new BackendException("Client amount in channel is low than required", ErrorCode.NotEnoughtClientFunds);
 
-            var btcOrLkk = OpenAssetsHelper.IsBitcoin(asset.Id) || OpenAssetsHelper.IsLkk(asset.Id);
+            var isLkk = OpenAssetsHelper.IsLkk(asset.Id);
+            var isBtc = OpenAssetsHelper.IsBitcoin(asset.Id);
 
-            var isFullClosing = channel.ClientAmount == amount && (btcOrLkk || channel.HubAmount == 0);
+            var isFullClosing = channel.ClientAmount == amount && (isLkk ||
+                                                                   channel.HubAmount == 0 ||
+                                                                   isBtc && channel.HubAmount > _settings.Offchain.OffchainDust);
 
             var context = _transactionBuildContextFactory.Create(_connectionParams.Network);
 
@@ -597,24 +603,32 @@ namespace LkeServices.Transactions
                     channel.ClientAmount + channel.HubAmount, asset);
 
                 builder.AddCoins(coin);
+                var savedHubAmount = channel.HubAmount;
 
-                if (OpenAssetsHelper.IsBitcoin(asset.Id))
+                if (isBtc)
                 {
                     if (amount > 0)
                         builder.Send(cashoutAddress, Money.FromUnit(amount, MoneyUnit.BTC));
-                    if (channel.HubAmount > 0)
+
+                    if (channel.HubAmount > _settings.Offchain.OffchainDust)
+                    {
                         builder.Send(hotWalletAddress, Money.FromUnit(channel.HubAmount, MoneyUnit.BTC));
-                    if (amount < channel.ClientAmount)
-                        builder.Send(multisig, new Money(channel.ClientAmount - amount, MoneyUnit.BTC));
+                        savedHubAmount = 0;
+                    }
+                    if (amount < channel.ClientAmount || savedHubAmount > 0)
+                        builder.Send(multisig, new Money(channel.ClientAmount - amount + savedHubAmount, MoneyUnit.BTC));
                 }
                 else
                 {
+                    if (isLkk)
+                        savedHubAmount = 0;
+
                     var assetMoney = new AssetMoney(new BitcoinAssetId(asset.BlockChainAssetId).AssetId, amount, asset.MultiplierPower);
                     if (amount > 0)
                         builder.SendAsset(cashoutAddress, assetMoney);
 
                     if (channel.HubAmount > 0)
-                        builder.SendAsset(btcOrLkk ? hotWalletAddress : multisig,
+                        builder.SendAsset(isLkk ? hotWalletAddress : multisig,
                             new AssetMoney(new BitcoinAssetId(asset.BlockChainAssetId).AssetId, channel.HubAmount, asset.MultiplierPower));
 
                     if (amount < channel.ClientAmount)
@@ -632,8 +646,7 @@ namespace LkeServices.Transactions
                 if (!isFullClosing)
                 {
                     var transfer = await _offchainTransferRepository.CreateTransfer(multisig.ToWif(), asset.Id, false);
-                    var newChannel = await _offchainChannelRepository.CreateChannel(multisig.ToWif(), asset.Id, hex, channel.ClientAmount - amount,
-                       btcOrLkk ? 0 : channel.HubAmount);
+                    var newChannel = await _offchainChannelRepository.CreateChannel(multisig.ToWif(), asset.Id, hex, channel.ClientAmount - amount, savedHubAmount);
 
                     await _lykkeTransactionBuilderService.SaveSpentOutputs(newChannel.ChannelId, tr);
                     await SaveNewOutputs(tr, context, newChannel.ChannelId);
