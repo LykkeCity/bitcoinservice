@@ -23,5 +23,7 @@ namespace Core
         public const string TransactionsForClientSignatureQueue = "transaction-out";
 
         public const string ProcessingBlockSetting = "ProcessingBlockSetting";
+
+        public const string DefaultAssetSetting = "Default";
     }
 }

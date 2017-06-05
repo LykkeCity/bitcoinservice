@@ -70,7 +70,12 @@ namespace BitcoinApi
 
                 //Set the comments path for the swagger json and ui.
                 var xmlPath = Path.Combine(basePath, "BitcoinApi.xml");
-                options.IncludeXmlComments(xmlPath);
+                options.IncludeXmlComments(xmlPath);                
+                options.MapType<decimal>(() =>new Schema()
+                {
+                    Type = "number",
+                    Format = "decimal"
+                });
             });
 
             var builder = new AzureBinder().Bind(settings);

@@ -52,6 +52,7 @@ namespace Core.Exceptions
         TransferNotFound = 32,
         WrongTransferId = 33,
         AddressUsedInOffchain = 34,
-        ChannelWasBroadcasted = 35
+        ChannelWasBroadcasted = 35,
+        AssetSettingNotFound = 36
     }
 }

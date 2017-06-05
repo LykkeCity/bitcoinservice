@@ -96,6 +96,16 @@ namespace BitcoinApi.Controllers
         }
 
 
+        [HttpPost("cashouthub")]
+        [ProducesResponseType(typeof(CashoutOffchainApiResponse), 200)]
+        [ProducesResponseType(typeof(ApiException), 400)]
+        public async Task<CashoutOffchainApiResponse> CreateCashoutHub([FromBody]CreateCashoutFromHubModel model)
+        {
+            var asset = await GetAsset(model.Asset);
+            return new CashoutOffchainApiResponse(await _offchain.CreateCashout(model.ClientPubKey, model.HotWalletAddress, asset));
+        }
+
+
         [HttpPost("broadcastclosing")]
         [ProducesResponseType(typeof(TransactionHashResponse), 200)]
         [ProducesResponseType(typeof(ApiException), 400)]

@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AzureRepositories.Assets;
 using Common;
 using Common.Log;
+using Core;
 using Core.Bitcoin;
 using Core.Exceptions;
 using Core.Notifiers;
@@ -25,6 +27,7 @@ namespace BitcoinJob.Functions
     {
         private readonly BaseSettings _settings;
         private readonly CachedDataDictionary<string, IAsset> _assetRepostory;
+        private readonly CachedDataDictionary<string, IAssetSetting> _assetSettingRepository;
         private readonly IBitcoinOutputsService _bitcoinOutputsService;
         private readonly ILog _logger;
         private readonly ITransactionBuildHelper _transactionBuildHelper;
@@ -39,6 +42,7 @@ namespace BitcoinJob.Functions
         private readonly ISignatureApiProvider _signatureApi;
 
         public GenerateOffchainOutputsFunction(BaseSettings settings, CachedDataDictionary<string, IAsset> assetRepostory,
+            CachedDataDictionary<string, IAssetSetting> assetSettingRepository,
             IBitcoinOutputsService bitcoinOutputsService,
             ILog logger,
             ITransactionBuildHelper transactionBuildHelper,
@@ -53,6 +57,7 @@ namespace BitcoinJob.Functions
         {
             _settings = settings;
             _assetRepostory = assetRepostory;
+            _assetSettingRepository = assetSettingRepository;
             _bitcoinOutputsService = bitcoinOutputsService;
             _logger = logger;
             _transactionBuildHelper = transactionBuildHelper;
@@ -112,24 +117,26 @@ namespace BitcoinJob.Functions
         {
             return Retry.Try(async () =>
             {
-                var hotWallet = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(_settings.Offchain.HotWallet);
                 var asset = await _assetRepostory.GetItemAsync(assetId);
+                var setting = await GetAssetSetting(assetId);
+                var hotWallet = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(setting.HotWallet);
+               
                 var assetIdObj = new BitcoinAssetId(asset.BlockChainAssetId).AssetId;
 
-                var outputs = await _bitcoinOutputsService.GetColoredUnspentOutputs(_settings.Offchain.HotWallet, assetIdObj, 0, false);
+                var outputs = await _bitcoinOutputsService.GetColoredUnspentOutputs(setting.HotWallet, assetIdObj, 0, false);
 
                 var balance = outputs.Aggregate(new AssetMoney(assetIdObj, 0), (accum, coin) => accum + coin.Amount);
-                var outputSize = new AssetMoney(assetIdObj, _settings.Offchain.LkkOutputSize, asset.MultiplierPower);
+                var outputSize = new AssetMoney(assetIdObj, setting.OutputSize, asset.MultiplierPower);
 
-                if (balance.ToDecimal(asset.MultiplierPower) < _settings.Offchain.MinLkkBalance)
-                    await SendBalanceNotifications(assetId, _settings.Offchain.HotWallet, _settings.Offchain.MinLkkBalance);
+                if (balance.ToDecimal(asset.MultiplierPower) < setting.MinBalance)
+                    await SendBalanceNotifications(assetId, setting.HotWallet, setting.MinBalance);
 
                 var existingCoinsCount = outputs.Count(o => o.Amount <= outputSize && o.Amount.Quantity > outputSize.Quantity / 2);
 
-                if (existingCoinsCount > _settings.Offchain.MinCountOfLkkOutputs)
+                if (existingCoinsCount > setting.MinOutputsCount)
                     return;
 
-                var generateCnt = _settings.Offchain.MaxCountOfLkkOutputs - existingCoinsCount;
+                var generateCnt = setting.MaxOutputsCount - existingCoinsCount;
 
                 var coins = outputs.Where(o => o.Amount > outputSize * 2).ToList();
 
@@ -139,7 +146,7 @@ namespace BitcoinJob.Functions
                 if (generateCnt == 0)
                     return;
 
-                await GenerateOutputs(generateCnt, coins, hotWallet, outputSize, asset);
+                await GenerateOutputs(generateCnt, coins, hotWallet, outputSize, asset, setting);
             }, exception => (exception as BackendException)?.Code == ErrorCode.TransactionConcurrentInputsProblem, 3, _logger);
         }
 
@@ -149,22 +156,23 @@ namespace BitcoinJob.Functions
         {
             return Retry.Try(async () =>
             {
-                var hotWallet = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(_settings.Offchain.HotWallet);
+                var setting = await GetAssetSetting("BTC");
+                var hotWallet = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(setting.HotWallet);
 
-                var outputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(_settings.Offchain.HotWallet, 0, false)).Cast<Coin>().ToList();
+                var outputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(setting.HotWallet, 0, false)).Cast<Coin>().ToList();
                 var balance = new Money(outputs.DefaultIfEmpty().Sum(o => o?.Amount ?? Money.Zero));
-                var outputSize = new Money(_settings.Offchain.BtcOutpitSize, MoneyUnit.BTC);
+                var outputSize = new Money(setting.OutputSize, MoneyUnit.BTC);
 
-                if (balance.ToDecimal(MoneyUnit.BTC) < _settings.Offchain.MinBtcBalance)
-                    await SendBalanceNotifications("BTC", _settings.Offchain.HotWallet, _settings.Offchain.MinBtcBalance);
+                if (balance.ToDecimal(MoneyUnit.BTC) < setting.MinBalance)
+                    await SendBalanceNotifications("BTC", setting.HotWallet, setting.MinBalance);
 
 
                 var existingCoinsCount = outputs.Count(o => o.Amount <= outputSize && o.Amount > outputSize / 2);
 
-                if (existingCoinsCount > _settings.Offchain.MinCountOfBtcOutputs)
+                if (existingCoinsCount > setting.MinOutputsCount)
                     return;
 
-                var generateCnt = _settings.Offchain.MaxCountOfBtcOutputs - existingCoinsCount;
+                var generateCnt = setting.MaxOutputsCount - existingCoinsCount;
 
                 var coins = outputs.Where(o => o.Amount > outputSize * 2).ToList();
 
@@ -173,11 +181,11 @@ namespace BitcoinJob.Functions
                 generateCnt = Math.Min(generateCnt, (int)(balance / outputSize));
                 if (generateCnt == 0)
                     return;
-                await GenerateOutputs(generateCnt, coins, hotWallet, outputSize, await _assetRepostory.GetItemAsync("BTC"));
+                await GenerateOutputs(generateCnt, coins, hotWallet, outputSize, await _assetRepostory.GetItemAsync("BTC"), setting);
             }, exception => (exception as BackendException)?.Code == ErrorCode.TransactionConcurrentInputsProblem, 3, _logger);
         }
 
-        private async Task GenerateOutputs(int generateCnt, IEnumerable<ICoin> coins, BitcoinAddress hotWallet, IMoney amount, IAsset asset)
+        private async Task GenerateOutputs(int generateCnt, IEnumerable<ICoin> coins, BitcoinAddress hotWallet, IMoney amount, IAsset asset, IAssetSetting setting)
         {
             var colored = amount is AssetMoney;
             await _logger.WriteInfoAsync("GenerateOffchainOutputsFunction", "GenerateOutputs", null,
@@ -187,7 +195,7 @@ namespace BitcoinJob.Functions
 
             while (generated < generateCnt)
             {
-                var outputsCount = Math.Min(_settings.Offchain.MaxSplittedOutputsInTransaction, generateCnt - generated);
+                var outputsCount = Math.Min(setting.MaxOutputsCountInTx, generateCnt - generated);
 
                 var context = _transactionBuildContextFactory.Create(_connectionParams.Network);
 
@@ -247,36 +255,34 @@ namespace BitcoinJob.Functions
 
         private async Task GenerateIssueAllowedCoins()
         {
-            var hotWallet = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(_settings.Offchain.HotWallet);
-            var outputs = await _bitcoinOutputsService.GetColoredUnspentOutputs(_settings.Offchain.HotWallet);
+
             foreach (var asset in await _assetRepostory.Values())
             {
                 if (OpenAssetsHelper.IsBitcoin(asset.Id) || OpenAssetsHelper.IsLkk(asset.Id) || !asset.IssueAllowed)
                     continue;
+               
                 try
                 {
+                    var setting = await GetAssetSetting(asset.Id);
+                    var hotWallet = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(setting.HotWallet);
+                    var assetId = new BitcoinAssetId(asset.BlockChainAssetId).AssetId;
+
+                    var coins = await _bitcoinOutputsService.GetColoredUnspentOutputs(setting.HotWallet, assetId);
+
+                    var outputSize = new AssetMoney(assetId, setting.OutputSize, asset.MultiplierPower);
+
                     await _logger.WriteInfoAsync("GenerateOffchainOutputsFunction", "GenerateIssueAllowedCoins", "AssetId " + asset.Id, "Start process");
 
-                    var assetId = new BitcoinAssetId(asset.BlockChainAssetId).AssetId;
-                    var coins = outputs.Where(o => o.AssetId == assetId).ToList();
+                    var existingCoinsCount = coins.Count(o => o.Amount <= outputSize && o.Amount * 2 > outputSize);
 
-                    var minBalance = new AssetMoney(assetId, _settings.Offchain.MinIssueAllowedCoinBalance,
-                        asset.MultiplierPower);
-
-                    var balance = coins.Aggregate(new AssetMoney(assetId, 0), (accum, coin) => accum + coin.Amount);
-
-                    if (balance > minBalance)
+                    if (existingCoinsCount > setting.MinOutputsCount)
                         continue;
 
-                    var maxBalance = new AssetMoney(assetId, _settings.Offchain.MaxIssueAllowedCoinBalance,
-                        asset.MultiplierPower);
-                    var cnt = (int)((maxBalance - balance).ToDecimal(asset.MultiplierPower) /
-                                     _settings.Offchain.IssueAllowedCoinOutputSize) + 1;
-
+                    var generateCnt = setting.MaxOutputsCount - existingCoinsCount;
                     var generated = 0;
-                    while (generated < cnt)
+                    while (generated < generateCnt)
                     {
-                        var outputsCount = Math.Min(_settings.Offchain.MaxIssuedOutputsInTransaction, cnt - generated);
+                        var outputsCount = Math.Min(setting.MaxOutputsCountInTx, generateCnt - generated);
 
                         var context = _transactionBuildContextFactory.Create(_connectionParams.Network);
 
@@ -295,8 +301,7 @@ namespace BitcoinJob.Functions
                                 };
 
                                 builder.AddCoins(issueCoin);
-                                var outputSize = new AssetMoney(assetId, _settings.Offchain.IssueAllowedCoinOutputSize,
-                                    asset.MultiplierPower);
+
                                 for (var i = 0; i < outputsCount; i++)
                                     builder.IssueAsset(hotWallet, outputSize);
                                 context.IssueAsset(assetId);
@@ -328,6 +333,15 @@ namespace BitcoinJob.Functions
                     await _logger.WriteInfoAsync("GenerateOffchainOutputsFunction", "GenerateIssueAllowedCoins", "AssetId " + asset.Id, "End process");
                 }
             }
+        }
+
+        private async Task<IAssetSetting> GetAssetSetting(string asset)
+        {
+            var setting = await _assetSettingRepository.GetItemAsync(asset) ??
+                          await _assetSettingRepository.GetItemAsync(Constants.DefaultAssetSetting);
+            if (setting == null)
+                throw new Exception($"Setting is not found for {asset}");
+            return setting;
         }
 
         private async Task SignAndBroadcastTransaction(Transaction buildedTransaction, TransactionBuildContext context)

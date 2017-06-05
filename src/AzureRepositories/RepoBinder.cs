@@ -59,6 +59,13 @@ namespace AzureRepositories
                 return new CachedDataDictionary<string, IAsset>(async () => (await ctx.Resolve<IAssetRepository>().GetBitcoinAssets()).ToDictionary(itm => itm.Id));
             }).SingleInstance();
 
+            ioc.Register(x =>
+            {
+                var ctx = x.Resolve<IComponentContext>();
+                return new CachedDataDictionary<string, IAssetSetting>(
+                    async () => (await ctx.Resolve<IAssetSettingRepository>().GetAssetSettings()).ToDictionary(itm => itm.Asset));
+            });
+
             ioc.RegisterType<EmailNotifier>().As<IEmailNotifier>();
             ioc.RegisterType<SlackNotifier>().As<ISlackNotifier>().As<IPoisionQueueNotifier>();
         }
@@ -72,6 +79,9 @@ namespace AzureRepositories
 
             ioc.RegisterInstance(new AssetRepository(new AzureTableStorage<AssetEntity>(settings.Db.DictsConnString, "Dictionaries", log)))
                 .As<IAssetRepository>();
+
+            ioc.RegisterInstance(new AssetSettingRepository(new AzureTableStorage<AssetSettingEntity>(settings.Db.DictsConnString, "AssetSettings", log)))
+                .As<IAssetSettingRepository>();
 
             ioc.RegisterInstance(new MonitoringRepository(new AzureTableStorage<MonitoringEntity>(settings.Db.SharedConnString, "Monitoring", log)))
                 .As<IMonitoringRepository>();
@@ -90,6 +100,7 @@ namespace AzureRepositories
     
             ioc.RegisterInstance(new NinjaOutputBlobStorage(new AzureBlobStorage(settings.Db.DataConnString)))
                 .As<INinjaOutputBlobStorage>();
+
         }
 
         private static void BindQueue(this ContainerBuilder ioc, BaseSettings settings)

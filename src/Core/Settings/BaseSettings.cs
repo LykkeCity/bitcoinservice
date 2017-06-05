@@ -76,27 +76,5 @@ namespace Core.Settings
     public class Offchain
     {
         public bool UseOffchainGeneration { get; set; } = false;
-
-        public string HotWallet { get; set; }
-
-        public decimal OffchainDust { get; set; } = 0.00002700M;
-
-        public int MaxIssuedOutputsInTransaction { get; set; } = 5;
-        public int MaxSplittedOutputsInTransaction { get; set; } = 100;
-
-        public decimal IssueAllowedCoinOutputSize { get; set; } = 100000;
-        public decimal MinIssueAllowedCoinBalance { get; set; } = 1000000;
-        public decimal MaxIssueAllowedCoinBalance { get; set; } = 10000000;
-       
-        public decimal MinBtcBalance { get; set; } = 10;
-        public decimal BtcOutpitSize { get; set; } = 0.5M;
-        public int MaxCountOfBtcOutputs { get; set; } = 10;
-        public int MinCountOfBtcOutputs { get; set; } = 5;
-
-        public decimal MinLkkBalance { get; set; } = 50000;
-        public decimal LkkOutputSize { get; set; } = 10000;
-        public int MaxCountOfLkkOutputs { get; set; } = 10;
-        public int MinCountOfLkkOutputs { get; set; } = 5;
-        public int FiatAssetAmountCoef { get; set; } = 5;
     }
 }
