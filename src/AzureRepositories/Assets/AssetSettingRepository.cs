@@ -8,9 +8,14 @@ using Microsoft.WindowsAzure.Storage.Table;
 
 namespace AzureRepositories.Assets
 {
-    public class AssetSettingEntity : TableEntity, IAssetSetting
+    public class AssetSettingEntity : BaseEntity, IAssetSetting
     {
-        public string Asset { get; set; }
+        public static string GeneratePartitionKey()
+        {
+            return "BitcoinAsset";
+        }
+
+        public string Asset => RowKey;
         public string HotWallet { get; set; }
         public decimal CashinCoef { get; set; }
         public decimal Dust { get; set; }
@@ -25,8 +30,6 @@ namespace AzureRepositories.Assets
 
     public class AssetSettingRepository : IAssetSettingRepository
     {
-        public const string DefaultSettingKey = "Default";
-
         private readonly INoSQLTableStorage<AssetSettingEntity> _table;
 
         public AssetSettingRepository(INoSQLTableStorage<AssetSettingEntity> table)
@@ -36,7 +39,7 @@ namespace AzureRepositories.Assets
 
         public async Task<IEnumerable<IAssetSetting>> GetAssetSettings()
         {
-            return await _table.GetDataAsync();
+            return await _table.GetDataAsync(AssetSettingEntity.GeneratePartitionKey());
         }
     }
 }

@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 namespace Core.Repositories.Assets
 {
     public interface IAssetSetting
-    {        
-        string Asset { get; set; }
+    {
+        string Asset { get; }
         string HotWallet { get; set; }
         decimal CashinCoef { get; set; }
         decimal Dust { get; set; }
