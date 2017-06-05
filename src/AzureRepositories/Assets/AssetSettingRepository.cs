@@ -12,7 +12,7 @@ namespace AzureRepositories.Assets
     {
         public static string GeneratePartitionKey()
         {
-            return "BitcoinAsset";
+            return "Asset";
         }
 
         public string Asset => RowKey;
