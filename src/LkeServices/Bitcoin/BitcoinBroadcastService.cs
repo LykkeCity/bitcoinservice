@@ -31,14 +31,14 @@ namespace LkeServices.Bitcoin
             _monitoringWriter = monitoringWriter;
         }
 
-        public async Task BroadcastTransaction(Guid transactionId, Transaction tx, IPerfomanceMonitor monitor = null, bool useHandlers = true)
+        public async Task BroadcastTransaction(Guid transactionId, Transaction tx, IPerfomanceMonitor monitor = null, bool useHandlers = true, Guid? notifyTxId = null)
         {
             var hash = tx.GetHash().ToString();
 
             if (_settings.UseLykkeApi && useHandlers)
             {
                 monitor?.Step("Send prebroadcast notification");
-                await _apiProvider.SendPreBroadcastNotification(new LykkeTransactionNotification(transactionId, hash));
+                await _apiProvider.SendPreBroadcastNotification(new LykkeTransactionNotification(notifyTxId ?? transactionId, hash));
             }
 
             monitor?.Step("Broadcast transcation");
@@ -51,7 +51,7 @@ namespace LkeServices.Bitcoin
                     {
                         if (_settings.UseLykkeApi && useHandlers)
                         {
-                            await _apiProvider.SendPostBroadcastNotification(new LykkeTransactionNotification(transactionId, hash));
+                            await _apiProvider.SendPostBroadcastNotification(new LykkeTransactionNotification(notifyTxId ?? transactionId, hash));
                         }
                     }
                 ),

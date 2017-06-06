@@ -39,7 +39,7 @@ namespace LkeServices.Transactions
 
         Task<OffchainResponse> CreateHubCommitment(string clientPubKey, IAsset asset, decimal amount, string signedByClientChannel);
 
-        Task<OffchainFinalizeResponse> Finalize(string clientPubKey, string hotWalletAddr, IAsset asset, string clientRevokePubKey, string signedByClientHubCommitment, Guid transferId);
+        Task<OffchainFinalizeResponse> Finalize(string clientPubKey, string hotWalletAddr, IAsset asset, string clientRevokePubKey, string signedByClientHubCommitment, Guid transferId, Guid? notifyTxId = null);
 
         Task<CashoutOffchainResponse> CreateCashout(string clientPubKey, string cashoutAddress, string hotWalletAddr, decimal amount, IAsset asset);
 
@@ -49,7 +49,7 @@ namespace LkeServices.Transactions
 
         Task<OffchainBalance> GetBalances(string multisig);
 
-        Task<string> BroadcastClosingChannel(string clientPubKey, IAsset asset, string signedByClientTransaction);
+        Task<string> BroadcastClosingChannel(string clientPubKey, IAsset asset, string signedByClientTransaction, Guid? notifyTxId = null);
 
         Task SpendCommitmemtByMultisig(ICommitment commitment, ICoin spendingCoin, string destination);
 
@@ -471,7 +471,7 @@ namespace LkeServices.Transactions
             }
         }
 
-        public async Task<OffchainFinalizeResponse> Finalize(string clientPubKey, string hotWalletAddr, IAsset asset, string clientRevokePubKey, string signedByClientHubCommitment, Guid transferId)
+        public async Task<OffchainFinalizeResponse> Finalize(string clientPubKey, string hotWalletAddr, IAsset asset, string clientRevokePubKey, string signedByClientHubCommitment, Guid transferId, Guid? notifyTxId = null)
         {
             using (var monitor = _perfomanceMonitorFactory.Create("Finalize"))
             {
@@ -535,7 +535,7 @@ namespace LkeServices.Transactions
                     var channelTr = new Transaction(channel.FullySignedChannel);
                     hash = channelTr.GetHash().ToString();
                     monitor.ChildProcess("Broadcast transaction");
-                    await _broadcastService.BroadcastTransaction(channel.ChannelId, channelTr, monitor);
+                    await _broadcastService.BroadcastTransaction(channel.ChannelId, channelTr, monitor, notifyTxId: notifyTxId);
                     monitor.CompleteLastProcess();
 
                     monitor.Step("Set channel broadcasted and close prev commitments");
@@ -828,7 +828,7 @@ namespace LkeServices.Transactions
         }
 
 
-        public async Task<string> BroadcastClosingChannel(string clientPubKey, IAsset asset, string signedByClientTransaction)
+        public async Task<string> BroadcastClosingChannel(string clientPubKey, IAsset asset, string signedByClientTransaction, Guid? notifyTxId = null)
         {
             var address = await _multisigService.GetMultisig(clientPubKey);
 
@@ -857,7 +857,7 @@ namespace LkeServices.Transactions
 
             var tr = new Transaction(fullSigned);
 
-            await _broadcastService.BroadcastTransaction(closing.ClosingChannelId, tr);
+            await _broadcastService.BroadcastTransaction(closing.ClosingChannelId, tr, notifyTxId: notifyTxId);
 
             if (channel != null)
             {

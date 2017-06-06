@@ -72,7 +72,8 @@ namespace BitcoinApi.Controllers
         public async Task<FinalizeOffchainApiResponse> Finalize([FromBody] FinalizeChannelModel model)
         {
             var asset = await GetAsset(model.Asset);
-            var tr = await _offchain.Finalize(model.ClientPubKey, model.HotWalletAddress, asset, model.ClientRevokePubKey, model.SignedByClientHubCommitment, model.TransferId);
+            var tr = await _offchain.Finalize(model.ClientPubKey, model.HotWalletAddress, asset, model.ClientRevokePubKey, model.SignedByClientHubCommitment, model.TransferId,
+                model.NotifyTxId);
             return new FinalizeOffchainApiResponse(tr);
         }
 
@@ -112,7 +113,7 @@ namespace BitcoinApi.Controllers
         public async Task<TransactionHashResponse> BroadcastClosing([FromBody]BroadcastClosingChannelModel model)
         {
             var asset = await GetAsset(model.Asset);
-            return new TransactionHashResponse(await _offchain.BroadcastClosingChannel(model.ClientPubKey, asset, model.SignedByClientTransaction));
+            return new TransactionHashResponse(await _offchain.BroadcastClosingChannel(model.ClientPubKey, asset, model.SignedByClientTransaction, model.NotifyTxId));
         }
 
 

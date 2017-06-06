@@ -18,5 +18,7 @@ namespace BitcoinApi.Models.Offchain
         public string SignedByClientHubCommitment { get; set; }
 
         public Guid TransferId { get; set; }
+
+        public Guid? NotifyTxId { get; set; }
     }
 }
