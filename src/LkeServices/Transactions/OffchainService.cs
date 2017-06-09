@@ -719,7 +719,7 @@ namespace LkeServices.Transactions
 
                 builder.AddCoins(coin);
 
-                bool isBtc = OpenAssetsHelper.IsLkk(asset.Id);
+                bool isBtc = OpenAssetsHelper.IsBitcoin(asset.Id);
                 if (isBtc)
                 {
                     builder.Send(hotWalletAddress, Money.FromUnit(channel.HubAmount, MoneyUnit.BTC));
