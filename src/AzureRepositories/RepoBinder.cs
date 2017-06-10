@@ -64,7 +64,7 @@ namespace AzureRepositories
                 var ctx = x.Resolve<IComponentContext>();
                 return new CachedDataDictionary<string, IAssetSetting>(
                     async () => (await ctx.Resolve<IAssetSettingRepository>().GetAssetSettings()).ToDictionary(itm => itm.Asset));
-            });
+            }).SingleInstance();
 
             ioc.RegisterType<EmailNotifier>().As<IEmailNotifier>();
             ioc.RegisterType<SlackNotifier>().As<ISlackNotifier>().As<IPoisionQueueNotifier>();
