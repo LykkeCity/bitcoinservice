@@ -36,8 +36,8 @@ namespace EnqueueFees
             if (type == "asset" && assetId == "all")
             {
                 var assets = (await _assetRepository.GetBitcoinAssets()).Where(o => !string.IsNullOrEmpty(o.AssetAddress) &&
-                                                                               !o.IsDisabled &&
-                                                                               string.IsNullOrWhiteSpace(o.PartnerId)).ToList();
+                                                                                    !o.IsDisabled &&
+                                                                                    string.IsNullOrWhiteSpace(o.PartnerId)).ToList();
                 foreach (var asset in assets)
                 {
                     await RefreshOutputs(type, asset.Id);
@@ -66,25 +66,58 @@ namespace EnqueueFees
                 Console.WriteLine("BlockchainAssetId : " + asset.BlockChainAssetId);
             }
 
-            Console.WriteLine("Start remove outputs from queue");
-            int i = 0;
-            while (true)
+            var count = await queue.Count();
+
+            Console.WriteLine($"Start collect {count} outputs from queue");
+
+            var set = new HashSet<OutPoint>();
+
+            while (count-- > 0)
+            {
+                Coin coin = null;
                 try
                 {
-                    await queue.DequeueCoin();
-                    i++;
+                    coin = await queue.DequeueCoin();
+
+                    set.Add(coin.Outpoint);
                 }
-                catch (BackendException)
+                finally
                 {
-                    break;
+                    await queue.EnqueueOutputs(coin);
                 }
-            Console.WriteLine($"Removed {i} coins from queue");
+            }
+
+            Console.WriteLine($"Coins collected");
+
             var coins = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(address)).OfType<Coin>().ToArray();
 
             Console.WriteLine($"Received {coins.Length} outputs from qbitninja");
-            Console.WriteLine("Start add coins to queue");
+
+            coins = coins.Where(x => !set.Contains(x.Outpoint)).ToArray();
+
+            Console.WriteLine($"Got {coins.Length} missing outputs");
 
             await queue.EnqueueOutputs(coins);
+
+            //Console.WriteLine("Start remove outputs from queue");
+            //int i = 0;
+            //while (true)
+            //    try
+            //    {
+            //        await queue.DequeueCoin();
+            //        i++;
+            //    }
+            //    catch (BackendException)
+            //    {
+            //        break;
+            //    }
+            //Console.WriteLine($"Removed {i} coins from queue");
+            //var coins = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(address)).OfType<Coin>().ToArray();
+
+            //Console.WriteLine($"Received {coins.Length} outputs from qbitninja");
+            //Console.WriteLine("Start add coins to queue");
+
+            //await queue.EnqueueOutputs(coins);
 
             Console.WriteLine("All coins successfuly added to queue");
             Console.WriteLine(Environment.NewLine);
