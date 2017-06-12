@@ -206,5 +206,10 @@ namespace AzureRepositories.Offchain
         {
             throw new NotImplementedException();
         }
+
+        public Task<IEnumerable<IOffchainChannel>> GetChannels(string asset)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

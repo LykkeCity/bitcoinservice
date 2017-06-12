@@ -66,6 +66,8 @@ namespace LkeServices.Transactions
         Task<IEnumerable<OffchainCommitmentInfo>> GetCommitmentsOfChannel(Guid channelId);
 
         Task<string> GetCommitment(Guid commitmentId);
+
+        Task<AssetBalanceInfo> GetAssetBalanceInfo(IAsset asset);
     }
 
     public class OffchainService : IOffchainService
@@ -1043,6 +1045,21 @@ namespace LkeServices.Transactions
             return commitment?.SignedTransaction != null ? commitment.SignedTransaction : commitment?.InitialTransaction;
         }
 
+        public async Task<AssetBalanceInfo> GetAssetBalanceInfo(IAsset asset)
+        {
+            var channels = await _offchainChannelRepository.GetChannels(asset.Id);
+
+            return new AssetBalanceInfo
+            {
+                Balances = channels.Select(o => new MultisigBalanceInfo
+                {
+                    Multisig = o.Multisig,
+                    HubAmount = o.HubAmount,
+                    ClientAmount = o.ClientAmount
+                }).ToList()
+            };
+        }
+
         private async Task<decimal> SendToMultisig(BitcoinAddress @from, BitcoinAddress toMultisig, IAsset assetEntity, TransactionBuilder builder, TransactionBuildContext context, decimal amount, IPerfomanceMonitor monitor)
         {
             if (amount == 0)
@@ -1095,7 +1112,7 @@ namespace LkeServices.Transactions
                 var money = new Money(amount, MoneyUnit.BTC);
                 return tr.Outputs.AsCoins().FirstOrDefault(o => o.Amount == money &&
                         o.ScriptPubKey.GetDestinationAddress(_connectionParams.Network).ToWif() == multisig)
-                        .ToScriptCoin(new Script(walletRedeemScript));
+                        ?.ToScriptCoin(new Script(walletRedeemScript));
             }
             var assetMoney = new AssetMoney(new BitcoinAssetId(asset.BlockChainAssetId), amount, asset.MultiplierPower);
             uint markerPosition;
@@ -1267,5 +1284,19 @@ namespace LkeServices.Transactions
         public Guid ClientCommitment { get; set; }
 
         public Guid HubCommitment { get; set; }
+    }
+
+    public class MultisigBalanceInfo
+    {
+        public string Multisig { get; set; }
+
+        public decimal ClientAmount { get; set; }
+
+        public decimal HubAmount { get; set; }
+    }
+
+    public class AssetBalanceInfo
+    {
+        public List<MultisigBalanceInfo> Balances { get; set; }
     }
 }

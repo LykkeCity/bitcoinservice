@@ -178,6 +178,16 @@ namespace BitcoinApi.Controllers
         }
 
 
+        [HttpGet("asset/balances")]
+        [ProducesResponseType(typeof(AssetBalanceInfoResponse), 200)]
+        [ProducesResponseType(typeof(ApiException), 400)]
+        public async Task<AssetBalanceInfoResponse> GetAssetBalances([FromQuery] string asset)
+        {
+            var assetObj = await GetAsset(asset);
+            return new AssetBalanceInfoResponse(await _offchain.GetAssetBalanceInfo(assetObj));
+        }
+
+
         private async Task<IAsset> GetAsset(string assetId)
         {
             var asset = await _assetRepository.GetItemAsync(assetId);

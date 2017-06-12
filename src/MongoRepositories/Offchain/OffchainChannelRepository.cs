@@ -199,5 +199,10 @@ namespace MongoRepositories.Offchain
         {
             return _table.Any(o => o.Multisig == multisig);
         }
+
+        public async Task<IEnumerable<IOffchainChannel>> GetChannels(string asset)
+        {
+            return await _table.GetDataAsync(o => o.Asset == asset && o.Actual);
+        }
     }
 }
