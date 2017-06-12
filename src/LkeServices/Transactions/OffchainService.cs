@@ -1192,7 +1192,7 @@ namespace LkeServices.Transactions
             var assets = await _assetRepository.Values();
             foreach (var asset in assets.Where(x => !x.IsDisabled && string.IsNullOrWhiteSpace(x.PartnerId)))
             {
-                var channel = await _offchainChannelRepository.GetChannel(multisig, asset.Id);
+                var channel = await _offchainChannelRepository.GetLastChannel(multisig, asset.Id);
                 if (channel != null)
                 {
                     string hash = null;
@@ -1202,7 +1202,8 @@ namespace LkeServices.Transactions
                     {
                         ClientAmount = channel.ClientAmount,
                         HubAmount = channel.HubAmount,
-                        TransactionHash = hash
+                        TransactionHash = hash,
+                        Actual = channel.Actual
                     };
                 }
             }
@@ -1264,6 +1265,7 @@ namespace LkeServices.Transactions
         public decimal HubAmount { get; set; }
 
         public string TransactionHash { get; set; }
+        public bool Actual { get; set; }
     }
 
     public class OffchainChannelInfo : OffchainBalanceInfo

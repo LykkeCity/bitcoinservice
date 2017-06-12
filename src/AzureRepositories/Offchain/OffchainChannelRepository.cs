@@ -28,6 +28,7 @@ namespace AzureRepositories.Offchain
         public DateTime CreateDt => Timestamp.DateTime;
 
         public Guid? PrevChannelTransactionId { get; set; }
+        public bool Actual { get; set; }
 
         public class CurrentChannel
         {
@@ -134,6 +135,11 @@ namespace AzureRepositories.Offchain
         {
             return await _table.GetDataAsync(OffchainChannelEntity.CurrentChannel.GeneratePartitionKey(asset),
                 OffchainChannelEntity.CurrentChannel.GenerateRowKey(multisig));
+        }
+
+        public Task<IOffchainChannel> GetLastChannel(string multisig, string asset)
+        {
+            throw new NotImplementedException();
         }
 
         public Task<IEnumerable<IOffchainChannel>> GetChannels(string multisig, string asett)

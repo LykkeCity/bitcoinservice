@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Core.Repositories.Offchain;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Driver;
 using MongoRepositories.Mongo;
 
 namespace MongoRepositories.Offchain
@@ -130,6 +131,11 @@ namespace MongoRepositories.Offchain
         public async Task<IOffchainChannel> GetChannel(string multisig, string asset)
         {
             return await _table.GetDataAsync(OffchainChannelEntity.CurrentChannel.GenerateId(multisig, asset));
+        }
+
+        public async Task<IOffchainChannel> GetLastChannel(string multisig, string asset)
+        {
+            return await _table.GetTopRecordAsync(o => o.Multisig == multisig && o.Asset == asset, o => o.CreateDt, SortDirection.Descending);
         }
 
         public async Task<IEnumerable<IOffchainChannel>> GetChannels(string multisig, string asett)
