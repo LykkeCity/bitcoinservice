@@ -157,18 +157,20 @@ namespace MongoRepositories.Mongo
 
 		public async Task<T> GetTopRecordAsync(Expression<Func<T, bool>> filter, Expression<Func<T, object>> sortSelector, SortDirection direction)
 		{
-			return await RetryQuery(async () =>
-			{
-				var query = _collection.Find(filter);
-				if (direction == SortDirection.Ascending)
-					query = query.SortBy(sortSelector);
-				else
-					query = query.SortByDescending(sortSelector);
-				return await query.FirstOrDefaultAsync();
-			});
+		    return (await GetTopRecordsAsync(filter, sortSelector, direction, 1)).FirstOrDefault();
 		}
 
-		public async Task InsertAsync(IEnumerable<T> documents)
+	    public async Task<IEnumerable<T>> GetTopRecordsAsync(Expression<Func<T, bool>> filter, Expression<Func<T, object>> sortSelector, SortDirection direction, int limit)
+	    {
+	        return await RetryQuery(async () =>
+	        {
+	            var query = _collection.Find(filter);
+	            query = direction == SortDirection.Ascending ? query.SortBy(sortSelector) : query.SortByDescending(sortSelector);
+	            return await query.Limit(limit).ToListAsync();
+	        });
+        }
+
+	    public async Task InsertAsync(IEnumerable<T> documents)
 		{
 			if (documents.Any())
 			{

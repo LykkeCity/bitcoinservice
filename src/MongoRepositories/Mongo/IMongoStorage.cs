@@ -24,10 +24,10 @@ namespace MongoRepositories.Mongo
 		Task DeleteAsync(T record);
 	    Task InsertOrMergeAsync(T entity);
 
-	    Task<T> GetTopRecordAsync(Expression<Func<T, bool>> filter, Expression<Func<T, object>> sortSelector,
-		    SortDirection direction);
+	    Task<T> GetTopRecordAsync(Expression<Func<T, bool>> filter, Expression<Func<T, object>> sortSelector, SortDirection direction);
+        Task<IEnumerable<T>> GetTopRecordsAsync(Expression<Func<T, bool>> filter, Expression<Func<T, object>> sortSelector, SortDirection direction, int limit);
 
-	    Task InsertAsync(IEnumerable<T> documents);
+        Task InsertAsync(IEnumerable<T> documents);
 	    Task ScanDataAsync(Func<IEnumerable<T>, Task> chunk);
         Task ScanDataAsync(Func<T, bool> filter, Func<IEnumerable<T>, Task> chunk);
         Task InsertOrReplaceBatchAsync(T[] entities);

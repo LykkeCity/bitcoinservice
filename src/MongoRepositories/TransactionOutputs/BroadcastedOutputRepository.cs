@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Core.Repositories.TransactionOutputs;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Driver;
 using MongoRepositories.Mongo;
 
 namespace MongoRepositories.TransactionOutputs
@@ -64,8 +65,8 @@ namespace MongoRepositories.TransactionOutputs
         }
 
         public async Task SetTransactionHash(Guid transactionId, string transactionHash)
-        {            
-            var records = await _table.GetDataAsync(o=>o.TransactionId == transactionId);
+        {
+            var records = await _table.GetDataAsync(o => o.TransactionId == transactionId);
 
             var tasks = new List<Task>();
             foreach (var rec in records)
@@ -74,14 +75,25 @@ namespace MongoRepositories.TransactionOutputs
                 {
                     entity.TransactionHash = transactionHash;
                     return entity;
-                }));         
+                }));
             }
             await Task.WhenAll(tasks);
         }
 
         public async Task DeleteOutput(string transactionHash, int n)
         {
-            await _table.DeleteAsync(o=>o.TransactionHash == transactionHash && o.N == n);           
-        }       
+            await _table.DeleteAsync(o => o.TransactionHash == transactionHash && o.N == n);
+        }
+
+        public async Task<IEnumerable<IBroadcastedOutput>> GetOldOutputs(DateTime bound, int limit)
+        {
+            return await _table.GetTopRecordsAsync(o => o.BsonCreateDt < bound, o => o.BsonCreateDt, SortDirection.Ascending, limit);
+        }
+
+        public Task DeleteBroadcastedOutputs(IEnumerable<IBroadcastedOutput> outputs)
+        {
+            var ids = outputs.Select(o => BroadcastedOutputEntity.GenerateId(o.TransactionId, o.N));
+            return _table.DeleteAsync(o => ids.Contains(o.BsonId));
+        }
     }
 }

@@ -58,6 +58,8 @@ namespace Core.Settings
 
         public int RepeatNinjaCount { get; set; } = 3;
 
+        public int BroadcastedOutputsExpirationDays { get; set; } = 7;
+
         public Offchain Offchain { get; set; } = new Offchain();
     }
 

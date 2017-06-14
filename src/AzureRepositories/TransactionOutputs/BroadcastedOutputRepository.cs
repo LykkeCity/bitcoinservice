@@ -154,5 +154,15 @@ namespace AzureRepositories.TransactionOutputs
                 await _table.DeleteAsync(BroadcastedOutputEntity.ByAddress.GeneratePartition(output.Address), BroadcastedOutputEntity.ByAddress.GenerateRowKey(output.TransactionId, output.N));
             }
         }
+
+        public Task<IEnumerable<IBroadcastedOutput>> GetOldOutputs(DateTime bound, int limit)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task DeleteBroadcastedOutputs(IEnumerable<IBroadcastedOutput> outputs)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

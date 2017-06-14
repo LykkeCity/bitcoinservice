@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -15,7 +16,7 @@ namespace AzureRepositories
             base.ReadEntity(properties, operationContext);
 
             foreach (var p in GetType().GetProperties().Where(x => x.PropertyType == typeof(decimal) && properties.ContainsKey(x.Name)))
-                p.SetValue(this, Convert.ToDecimal(properties[p.Name].StringValue));
+                p.SetValue(this, Convert.ToDecimal(properties[p.Name].StringValue, CultureInfo.InvariantCulture));
         }
 
         public override IDictionary<string, EntityProperty> WriteEntity(OperationContext operationContext)
