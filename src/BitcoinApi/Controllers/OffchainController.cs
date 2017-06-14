@@ -39,7 +39,7 @@ namespace BitcoinApi.Controllers
         public async Task<OffchainApiResponse> CreateUnsignedChannel([FromBody]CreateChannelModel model)
         {
             var asset = await GetAsset(model.Asset);
-            var tr = await _offchain.CreateUnsignedChannel(model.ClientPubKey, model.HotWalletAddress, model.HubAmount, asset
+            var tr = await _offchain.CreateUnsignedChannel(model.ClientPubKey, model.HubAmount, asset
                 , model.RequiredOperation, model.TransferId);
             return new OffchainApiResponse(tr);
         }
@@ -72,7 +72,7 @@ namespace BitcoinApi.Controllers
         public async Task<FinalizeOffchainApiResponse> Finalize([FromBody] FinalizeChannelModel model)
         {
             var asset = await GetAsset(model.Asset);
-            var tr = await _offchain.Finalize(model.ClientPubKey, model.HotWalletAddress, asset, model.ClientRevokePubKey, model.SignedByClientHubCommitment, model.TransferId,
+            var tr = await _offchain.Finalize(model.ClientPubKey, asset, model.ClientRevokePubKey, model.SignedByClientHubCommitment, model.TransferId,
                 model.NotifyTxId);
             return new FinalizeOffchainApiResponse(tr);
         }
@@ -92,8 +92,7 @@ namespace BitcoinApi.Controllers
         public async Task<CashoutOffchainApiResponse> CreateCashout([FromBody]CashoutModel model)
         {
             var asset = await GetAsset(model.Asset);
-            return new CashoutOffchainApiResponse(await _offchain.CreateCashout(model.ClientPubKey, model.CashoutAddress,
-                model.HotWalletAddress, model.Amount, asset));
+            return new CashoutOffchainApiResponse(await _offchain.CreateCashout(model.ClientPubKey, model.CashoutAddress, model.Amount, asset));
         }
 
 
@@ -103,7 +102,7 @@ namespace BitcoinApi.Controllers
         public async Task<CashoutOffchainApiResponse> CreateCashoutHub([FromBody]CreateCashoutFromHubModel model)
         {
             var asset = await GetAsset(model.Asset);
-            return new CashoutOffchainApiResponse(await _offchain.CreateCashout(model.ClientPubKey, model.HotWalletAddress, asset));
+            return new CashoutOffchainApiResponse(await _offchain.CreateCashout(model.ClientPubKey, asset));
         }
 
 

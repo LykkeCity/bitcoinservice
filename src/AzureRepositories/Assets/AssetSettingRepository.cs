@@ -24,6 +24,7 @@ namespace AzureRepositories.Assets
         public decimal OutputSize { get; set; }
         public int MinOutputsCount { get; set; }
         public int MaxOutputsCount { get; set; }
+        public string ChangeWallet { get; set; }
     }
 
 

@@ -16,6 +16,7 @@ namespace Core.Repositories.Assets
         decimal OutputSize { get; set; }
         int MinOutputsCount { get; set; }
         int MaxOutputsCount { get; set; }
+        string ChangeWallet { get; set; }
     }
 
     public interface IAssetSettingRepository
