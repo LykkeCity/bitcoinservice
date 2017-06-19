@@ -10,6 +10,7 @@ using Core.Bitcoin;
 using Core.Exceptions;
 using Core.Notifiers;
 using Core.OpenAssets;
+using Core.Outputs;
 using Core.Providers;
 using Core.Repositories.Assets;
 using Core.Repositories.TransactionOutputs;
@@ -37,7 +38,7 @@ namespace BitcoinJob.Functions
         private readonly IBroadcastedOutputRepository _broadcastedOutputRepository;
         private readonly IEmailNotifier _emailNotifier;
         private readonly ISlackNotifier _slackNotifier;
-        private readonly ILykkeTransactionBuilderService _lykkeTransactionBuilderService;
+        private readonly ISpentOutputService _spentOutputService;
         private readonly IPregeneratedOutputsQueueFactory _pregeneratedOutputsQueueFactory;
         private readonly ISignatureApiProvider _signatureApi;
 
@@ -52,7 +53,7 @@ namespace BitcoinJob.Functions
             IBroadcastedOutputRepository broadcastedOutputRepository,
             Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
             IEmailNotifier emailNotifier, ISlackNotifier slackNotifier,
-            ILykkeTransactionBuilderService lykkeTransactionBuilderService,
+            ISpentOutputService spentOutputService,
             IPregeneratedOutputsQueueFactory pregeneratedOutputsQueueFactory)
         {
             _settings = settings;
@@ -67,7 +68,7 @@ namespace BitcoinJob.Functions
             _broadcastedOutputRepository = broadcastedOutputRepository;
             _emailNotifier = emailNotifier;
             _slackNotifier = slackNotifier;
-            _lykkeTransactionBuilderService = lykkeTransactionBuilderService;
+            _spentOutputService = spentOutputService;            
             _pregeneratedOutputsQueueFactory = pregeneratedOutputsQueueFactory;
             _signatureApi = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
         }
@@ -353,14 +354,14 @@ namespace BitcoinJob.Functions
                 var signed = await _signatureApi.SignTransaction(buildedTransaction.ToHex());
 
                 var tr = new Transaction(signed);
-                await _lykkeTransactionBuilderService.SaveSpentOutputs(id, tr);
+                await _spentOutputService.SaveSpentOutputs(id, tr);
                 await SaveNewOutputs(id, buildedTransaction, context);
 
                 await _bitcoinBroadcastService.BroadcastTransaction(id, tr);
             }
             catch (Exception)
             {
-                await _lykkeTransactionBuilderService.RemoveSpenOutputs(buildedTransaction);
+                await _spentOutputService.RemoveSpenOutputs(buildedTransaction);
                 throw;
             }
         }

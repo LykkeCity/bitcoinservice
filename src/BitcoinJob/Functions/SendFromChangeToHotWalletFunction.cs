@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Common.Log;
 using Core.Bitcoin;
+using Core.Outputs;
 using Core.Providers;
 using Core.Settings;
 using LkeServices.Providers;
@@ -20,6 +21,7 @@ namespace BitcoinJob.Functions
         private readonly IBitcoinOutputsService _bitcoinOutputsService;
         private readonly IFeeProvider _feeProvider;
         private readonly IBitcoinBroadcastService _bitcoinBroadcastService;
+        private readonly ISpentOutputService _spentOutputService;
         private readonly ILykkeTransactionBuilderService _lykkeTransactionBuilderService;
         private readonly ISignatureApiProvider _signatureApiProvider;
         private readonly ILog _log;
@@ -29,14 +31,14 @@ namespace BitcoinJob.Functions
             IFeeProvider feeProvider,
             IBitcoinBroadcastService bitcoinBroadcastService,
             Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
-            ILykkeTransactionBuilderService lykkeTransactionBuilderService,
+            ISpentOutputService spentOutputService,
             ILog log,
             BaseSettings baseSettings)
         {
             _bitcoinOutputsService = bitcoinOutputsService;
             _feeProvider = feeProvider;
             _bitcoinBroadcastService = bitcoinBroadcastService;
-            _lykkeTransactionBuilderService = lykkeTransactionBuilderService;
+            _spentOutputService = spentOutputService;            
             _signatureApiProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
             _log = log;
             _baseSettings = baseSettings;
@@ -76,7 +78,7 @@ namespace BitcoinJob.Functions
 
                 var transactionId = Guid.NewGuid();
                 await _bitcoinBroadcastService.BroadcastTransaction(transactionId, signedTr);
-                await _lykkeTransactionBuilderService.SaveSpentOutputs(transactionId, signedTr);
+                await _spentOutputService.SaveSpentOutputs(transactionId, signedTr);
 
                 coins = coins.Skip(_baseSettings.NumberOfChangeInputsForTransaction).ToList();
             }

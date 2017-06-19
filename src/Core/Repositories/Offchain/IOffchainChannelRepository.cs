@@ -52,5 +52,6 @@ namespace Core.Repositories.Offchain
         Task RevertChannel(string multisig, string asset, Guid channelId);
         Task<bool> HasChannel(string multisig);
         Task<IEnumerable<IOffchainChannel>> GetChannels(string asset);
+        Task<IEnumerable<IOffchainChannel>> GetChannelsOfMultisig(string multisig);
     }
 }

@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Common;
 using Common.Log;
 using Core.Bitcoin;
 using Core.Exceptions;
 using Core.OpenAssets;
+using Core.Outputs;
 using Core.Providers;
 using Core.Repositories.Assets;
 using Core.Repositories.TransactionOutputs;
@@ -30,11 +32,9 @@ namespace LkeServices.Transactions
 
         Task<CreateTransactionResponse> GetDestroyTransaction(BitcoinAddress bitcoinAddres, decimal modelAmount, IAsset asset, Guid transactionId);
 
-        Task<CreateTransactionResponse> GetTransferAllTransaction(BitcoinAddress from, BitcoinAddress to, Guid transactionId);
+        Task<CreateTransactionResponse> GetTransferAllTransaction(BitcoinAddress from, BitcoinAddress to, Guid transactionId);        
 
-        Task SaveSpentOutputs(Guid transactionId, Transaction transaction);
-
-        Task RemoveSpenOutputs(Transaction transaction);
+       
 
         Task<Guid> AddTransactionId(Guid? transactionId, string rawRequest);
     }
@@ -44,12 +44,14 @@ namespace LkeServices.Transactions
         private readonly ITransactionBuildHelper _transactionBuildHelper;
         private readonly IBitcoinOutputsService _bitcoinOutputsService;
         private readonly ITransactionSignRequestRepository _signRequestRepository;
-        private readonly IBroadcastedOutputRepository _broadcastedOutputRepository;
-        private readonly ISpentOutputRepository _spentOutputRepository;
+        private readonly IBroadcastedOutputRepository _broadcastedOutputRepository;        
         private readonly IPregeneratedOutputsQueueFactory _pregeneratedOutputsQueueFactory;
         private readonly ILog _log;
         private readonly IFeeReserveMonitoringWriter _feeReserveMonitoringWriter;
+        private readonly ISpentOutputService _spentOutputService;
+        private readonly IOffchainService _offchainService;
         private readonly TransactionBuildContextFactory _transactionBuildContextFactory;
+        private readonly CachedDataDictionary<string, IAsset> _assetRepository;
 
         private readonly RpcConnectionParams _connectionParams;
         private readonly BaseSettings _baseSettings;
@@ -58,23 +60,27 @@ namespace LkeServices.Transactions
             ITransactionBuildHelper transactionBuildHelper,
             IBitcoinOutputsService bitcoinOutputsService,
             ITransactionSignRequestRepository signRequestRepository,
-            IBroadcastedOutputRepository broadcastedOutputRepository,
-            ISpentOutputRepository spentOutputRepository,
+            IBroadcastedOutputRepository broadcastedOutputRepository,            
             IPregeneratedOutputsQueueFactory pregeneratedOutputsQueueFactory,
             ILog log,
             IFeeReserveMonitoringWriter feeReserveMonitoringWriter,
+            ISpentOutputService spentOutputService,
+            IOffchainService offchainService,
             TransactionBuildContextFactory transactionBuildContextFactory,
+            CachedDataDictionary<string, IAsset> assetRepository,
             RpcConnectionParams connectionParams, BaseSettings baseSettings)
         {
             _transactionBuildHelper = transactionBuildHelper;
             _bitcoinOutputsService = bitcoinOutputsService;
             _signRequestRepository = signRequestRepository;
-            _broadcastedOutputRepository = broadcastedOutputRepository;
-            _spentOutputRepository = spentOutputRepository;
+            _broadcastedOutputRepository = broadcastedOutputRepository;            
             _pregeneratedOutputsQueueFactory = pregeneratedOutputsQueueFactory;
             _log = log;
             _feeReserveMonitoringWriter = feeReserveMonitoringWriter;
+            _spentOutputService = spentOutputService;
+            _offchainService = offchainService;
             _transactionBuildContextFactory = transactionBuildContextFactory;
+            _assetRepository = assetRepository;
 
             _connectionParams = connectionParams;
             _baseSettings = baseSettings;
@@ -97,7 +103,7 @@ namespace LkeServices.Transactions
 
                     var buildedTransaction = builder.BuildTransaction(true);
 
-                    await SaveSpentOutputs(transactionId, buildedTransaction);
+                    await _spentOutputService.SaveSpentOutputs(transactionId, buildedTransaction);
 
                     await SaveNewOutputs(transactionId, buildedTransaction, context);
 
@@ -126,7 +132,7 @@ namespace LkeServices.Transactions
 
                     var buildedTransaction = builder.BuildTransaction(true);
 
-                    await SaveSpentOutputs(transactionId, buildedTransaction);
+                    await _spentOutputService.SaveSpentOutputs(transactionId, buildedTransaction);
 
                     await SaveNewOutputs(transactionId, buildedTransaction, context);
 
@@ -165,7 +171,7 @@ namespace LkeServices.Transactions
 
                         var buildedTransaction = builder.BuildTransaction(true);
 
-                        await SaveSpentOutputs(transactionId, buildedTransaction);
+                        await _spentOutputService.SaveSpentOutputs(transactionId, buildedTransaction);
 
                         await SaveNewOutputs(transactionId, buildedTransaction, context);
 
@@ -209,7 +215,7 @@ namespace LkeServices.Transactions
 
                     OpenAssetsHelper.DestroyColorCoin(tx, assetMoney, changeAddress, _connectionParams.Network);
 
-                    await SaveSpentOutputs(transactionId, tx);
+                    await _spentOutputService.SaveSpentOutputs(transactionId, tx);
 
                     await SaveNewOutputs(transactionId, tx, context);
 
@@ -224,6 +230,10 @@ namespace LkeServices.Transactions
             {
                 var context = _transactionBuildContextFactory.Create(_connectionParams.Network);
 
+                var channels = await _offchainService.GetCurrentChannels(from.ToString());
+
+                var assets = await _assetRepository.Values();
+
                 return await context.Build(async () =>
                 {
                     var builder = new TransactionBuilder();
@@ -233,23 +243,63 @@ namespace LkeServices.Transactions
                     if (uncoloredCoins.Count == 0 && coloredCoins.Count == 0)
                         throw new BackendException("Address has no unspent outputs", ErrorCode.NoCoinsFound);
 
+                    async Task<IDestination> GetChangeWallet(string asset)
+                    {
+                        var assetSetting = await _offchainService.GetAssetSetting(asset);
+                        return OpenAssetsHelper.GetBitcoinAddressFormBase58Date(!string.IsNullOrEmpty(assetSetting.ChangeWallet) ? assetSetting.ChangeWallet 
+                            : assetSetting.HotWallet);
+                    };
+
                     if (uncoloredCoins.Count > 0)
-                        await _transactionBuildHelper.SendWithChange(builder, context, uncoloredCoins, to, uncoloredCoins.Sum(o => o.TxOut.Value), from);
+                    {
+                        var hubAmount = Money.Zero;
+                        IDestination hubAmountAddress = null;
+                        var channel = channels.FirstOrDefault(o => o.Asset == "BTC");
+                        if (channel != null)
+                        {
+                            hubAmount = Money.FromUnit(channel.HubAmount, MoneyUnit.BTC);
+                            hubAmountAddress = await GetChangeWallet("BTC");
+                        }
+
+                        builder.AddCoins(uncoloredCoins);
+                        context.AddCoins(uncoloredCoins);
+                        builder.Send(to, uncoloredCoins.Sum(o => o.TxOut.Value) - hubAmount);
+                        if (hubAmount > 0)
+                            builder.Send(hubAmountAddress, hubAmount);
+                    }
                     foreach (var assetGroup in coloredCoins.GroupBy(o => o.AssetId))
                     {
+                        var asset = assets.First(o => o.BlockChainAssetId == assetGroup.Key.GetWif(_connectionParams.Network).ToWif());
+
+                        var channel = channels.FirstOrDefault(o => o.Asset == asset.Id);
+
                         var sum = new AssetMoney(assetGroup.Key);
                         foreach (var coloredCoin in assetGroup)
                             sum += coloredCoin.Amount;
 
-                        _transactionBuildHelper.SendAssetWithChange(builder, context, assetGroup.ToList(), to, sum, from);
+                        var hubAmount = new AssetMoney(assetGroup.Key);
+                        IDestination hubAmountAddress = null;
+                        if (channel != null)
+                        {
+                            hubAmount = new AssetMoney(assetGroup.Key, channel.HubAmount, asset.MultiplierPower);
+                            hubAmountAddress = await GetChangeWallet(asset.Id);
+                        }
+                        builder.AddCoins(assetGroup.ToList());
+                        context.AddCoins(assetGroup.ToList());
+                        builder.SendAsset(to, sum - hubAmount);
+                        if (hubAmount.Quantity > 0)
+                            builder.SendAsset(hubAmountAddress, hubAmount);
                     }
                     await _transactionBuildHelper.AddFee(builder, context);
 
                     var buildedTransaction = builder.BuildTransaction(true);
 
-                    await SaveSpentOutputs(transactionId, buildedTransaction);
+                    await _spentOutputService.SaveSpentOutputs(transactionId, buildedTransaction);
 
                     await SaveNewOutputs(transactionId, buildedTransaction, context);
+
+                    foreach (var offchainChannel in channels)
+                        await _offchainService.CloseChannel(offchainChannel);
 
                     return new CreateTransactionResponse(buildedTransaction.ToHex(), transactionId);
                 });
@@ -284,20 +334,8 @@ namespace LkeServices.Transactions
             await _broadcastedOutputRepository.InsertOutputs(
                     coloredOutputs.Select(o => new BroadcastedOutput(o, transactionId, _connectionParams.Network)).ToList());
         }
-
-        public async Task SaveSpentOutputs(Guid transactionId, Transaction transaction)
-        {
-            await _spentOutputRepository.InsertSpentOutputs(transactionId, transaction.Inputs.Select(o => new Output(o.PrevOut)));
-            var tasks = new List<Task>();
-            foreach (var outPoint in transaction.Inputs.Select(o => o.PrevOut))
-                tasks.Add(_broadcastedOutputRepository.DeleteOutput(outPoint.Hash.ToString(), (int)outPoint.N));
-            await Task.WhenAll(tasks);
-        }
-
-        public Task RemoveSpenOutputs(Transaction transaction)
-        {
-            return _spentOutputRepository.RemoveSpentOutputs(transaction.Inputs.Select(o => new Output(o.PrevOut)));
-        }
+       
+       
 
         public async Task<Guid> AddTransactionId(Guid? transactionId, string rawRequest)
         {

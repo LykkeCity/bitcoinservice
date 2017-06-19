@@ -84,8 +84,8 @@ namespace BitcoinApi.Controllers
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<IActionResult> CreateTransferAll([FromBody]TransferAllRequest model)
         {
-            await ValidateAddress(model.SourceAddress);
-            await ValidateAddress(model.DestinationAddress);
+            await ValidateAddress(model.SourceAddress, false);
+            await ValidateAddress(model.DestinationAddress, false);
 
             var transactionId = await _builder.AddTransactionId(model.TransactionId, $"TransferAll: {model.ToJson()}");
 
@@ -220,12 +220,12 @@ namespace BitcoinApi.Controllers
             return Ok();
         }
 
-        private async Task ValidateAddress(string address)
+        private async Task ValidateAddress(string address, bool checkOffchain = true)
         {
             var bitcoinAddres = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(address);
             if (bitcoinAddres == null)
                 throw new BackendException($"Invalid Address provided: {address}", ErrorCode.InvalidAddress);
-            if (await _offchainService.HasChannel(address))
+            if (checkOffchain && await _offchainService.HasChannel(address))
                 throw new BackendException("Address was used in offchain", ErrorCode.AddressUsedInOffchain);
         }
     }

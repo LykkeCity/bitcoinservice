@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Common;
 using Common.Log;
 using Core;
+using Core.Outputs;
 using Core.Repositories.TransactionOutputs;
 using Core.Repositories.Transactions;
 using Core.Repositories.TransactionSign;
@@ -19,23 +20,21 @@ namespace BitcoinJob.Functions
     public class FeeReserveMonitoringFunction
     {
         private readonly BaseSettings _settings;
-        private readonly ILykkeTransactionBuilderService _lykkeTransactionBuilderService;        
+        private readonly ISpentOutputService _spentOutputService;
         private readonly ITransactionSignRequestRepository _transactionSignRequestRepository;
         private readonly IPregeneratedOutputsQueueFactory _pregeneratedOutputsQueueFactory;
-        private readonly ITransactionBlobStorage _transactionBlobStorage;
-        private readonly ISpentOutputRepository _spentOutputRepository;
+        private readonly ITransactionBlobStorage _transactionBlobStorage;        
         private readonly ILog _logger;
         private IBroadcastedTransactionBlobStorage _broadcastedTransactionBlob;
 
-        public FeeReserveMonitoringFunction(BaseSettings settings, ILykkeTransactionBuilderService lykkeTransactionBuilderService, IBroadcastedTransactionBlobStorage broadcastedTransactionBlob, ITransactionSignRequestRepository transactionSignRequestRepository, IPregeneratedOutputsQueueFactory pregeneratedOutputsQueueFactory, ITransactionBlobStorage transactionBlobStorage, ISpentOutputRepository spentOutputRepository, ILog logger)
+        public FeeReserveMonitoringFunction(BaseSettings settings, ISpentOutputService spentOutputService, IBroadcastedTransactionBlobStorage broadcastedTransactionBlob, ITransactionSignRequestRepository transactionSignRequestRepository, IPregeneratedOutputsQueueFactory pregeneratedOutputsQueueFactory, ITransactionBlobStorage transactionBlobStorage, ISpentOutputRepository spentOutputRepository, ILog logger)
         {
             _settings = settings;
-            _lykkeTransactionBuilderService = lykkeTransactionBuilderService;
+            _spentOutputService = spentOutputService;
             _broadcastedTransactionBlob = broadcastedTransactionBlob;
             _transactionSignRequestRepository = transactionSignRequestRepository;
             _pregeneratedOutputsQueueFactory = pregeneratedOutputsQueueFactory;
-            _transactionBlobStorage = transactionBlobStorage;
-            _spentOutputRepository = spentOutputRepository;
+            _transactionBlobStorage = transactionBlobStorage;          
             _logger = logger;
         }
 
@@ -60,7 +59,7 @@ namespace BitcoinJob.Functions
 
                 var tr = new Transaction(transaction);
 
-                await _lykkeTransactionBuilderService.RemoveSpenOutputs(tr);                
+                await _spentOutputService.RemoveSpenOutputs(tr);                
 
                 var queue = _pregeneratedOutputsQueueFactory.CreateFeeQueue();
 

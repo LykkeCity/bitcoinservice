@@ -15,6 +15,7 @@ using NBitcoin.OpenAsset;
 using Common;
 using Common.Log;
 using Core;
+using Core.Outputs;
 using Core.Perfomance;
 using Core.Providers;
 using Core.Repositories.Offchain;
@@ -57,6 +58,8 @@ namespace LkeServices.Transactions
 
         Task CloseChannel(ICommitment commitment);
 
+        Task CloseChannel(IOffchainChannel channel);
+
         Task RemoveChannel(string multisig, IAsset asset);
 
         Task<bool> HasChannel(string multisig);
@@ -68,6 +71,10 @@ namespace LkeServices.Transactions
         Task<string> GetCommitment(Guid commitmentId);
 
         Task<AssetBalanceInfo> GetAssetBalanceInfo(IAsset asset);
+
+        Task<IAssetSetting> GetAssetSetting(string asset);
+
+        Task<IEnumerable<IOffchainChannel>> GetCurrentChannels(string multisig);
     }
 
     public class OffchainService : IOffchainService
@@ -84,13 +91,13 @@ namespace LkeServices.Transactions
         private readonly ISignatureApiProvider _signatureApiProvider;
         private readonly ICommitmentRepository _commitmentRepository;
         private readonly IBroadcastedOutputRepository _broadcastedOutputRepository;
-        private readonly IRevokeKeyRepository _revokeKeyRepository;
-        private readonly ILykkeTransactionBuilderService _lykkeTransactionBuilderService;
+        private readonly IRevokeKeyRepository _revokeKeyRepository;        
         private readonly IOffchainTransferRepository _offchainTransferRepository;
         private readonly TransactionBuildContextFactory _transactionBuildContextFactory;
         private readonly IBitcoinBroadcastService _broadcastService;
         private readonly CachedDataDictionary<string, IAsset> _assetRepository;
         private readonly CachedDataDictionary<string, IAssetSetting> _assetSettingRepository;
+        private readonly ISpentOutputService _spentOutputService;
         private readonly IPerfomanceMonitorFactory _perfomanceMonitorFactory;
         private readonly BaseSettings _settings;
         private readonly ILog _logger;
@@ -106,13 +113,13 @@ namespace LkeServices.Transactions
             Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
             ICommitmentRepository commitmentRepository,
             IBroadcastedOutputRepository broadcastedOutputRepository,
-            IRevokeKeyRepository revokeKeyRepository,
-            ILykkeTransactionBuilderService lykkeTransactionBuilderService,
+            IRevokeKeyRepository revokeKeyRepository,            
             IOffchainTransferRepository offchainTransferRepository,
             TransactionBuildContextFactory transactionBuildContextFactory,
             IBitcoinBroadcastService broadcastService,
             CachedDataDictionary<string, IAsset> assetRepository,
             CachedDataDictionary<string, IAssetSetting> assetSettingRepository,
+            ISpentOutputService spentOutputService,
             IPerfomanceMonitorFactory perfomanceMonitorFactory,
             BaseSettings settings,
             ILog logger,
@@ -127,13 +134,13 @@ namespace LkeServices.Transactions
             _signatureApiProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
             _commitmentRepository = commitmentRepository;
             _broadcastedOutputRepository = broadcastedOutputRepository;
-            _revokeKeyRepository = revokeKeyRepository;
-            _lykkeTransactionBuilderService = lykkeTransactionBuilderService;
+            _revokeKeyRepository = revokeKeyRepository;            
             _offchainTransferRepository = offchainTransferRepository;
             _transactionBuildContextFactory = transactionBuildContextFactory;
             _broadcastService = broadcastService;
             _assetRepository = assetRepository;
             _assetSettingRepository = assetSettingRepository;
+            _spentOutputService = spentOutputService;
             _perfomanceMonitorFactory = perfomanceMonitorFactory;
             _settings = settings;
             _logger = logger;
@@ -165,7 +172,7 @@ namespace LkeServices.Transactions
                 monitor?.Step("Remove commitments of channel");
                 await _commitmentRepository.RemoveCommitmentsOfChannel(multisig, assetId, channel.ChannelId);
                 monitor?.Step("Remove spent outputs");
-                await _lykkeTransactionBuilderService.RemoveSpenOutputs(new Transaction(channel.InitialTransaction));
+                await _spentOutputService.RemoveSpenOutputs(new Transaction(channel.InitialTransaction));
 
                 if (!channelSetup)
                     throw new BackendException("Should open new channel", ErrorCode.ShouldOpenNewChannel);
@@ -328,7 +335,7 @@ namespace LkeServices.Transactions
                             hubChannelAmount);
 
                         monitor.Step("Save spent outputs");
-                        await _lykkeTransactionBuilderService.SaveSpentOutputs(channel.ChannelId, tr);
+                        await _spentOutputService.SaveSpentOutputs(channel.ChannelId, tr);
                         monitor.Step("Save new outputs");
                         await SaveNewOutputs(tr, context, channel.ChannelId);
 
@@ -399,7 +406,7 @@ namespace LkeServices.Transactions
                     var channel = await _offchainChannelRepository.CreateChannel(multisig.ToWif(), asset.Id, hex, clientChannelAmount,
                         hubChannelAmount);
 
-                    await _lykkeTransactionBuilderService.SaveSpentOutputs(channel.ChannelId, tr);
+                    await _spentOutputService.SaveSpentOutputs(channel.ChannelId, tr);
 
                     await SaveNewOutputs(tr, context, channel.ChannelId);
 
@@ -675,7 +682,7 @@ namespace LkeServices.Transactions
                     var transfer = await _offchainTransferRepository.CreateTransfer(multisig.ToWif(), asset.Id, false);
                     var newChannel = await _offchainChannelRepository.CreateChannel(multisig.ToWif(), asset.Id, hex, channel.ClientAmount - amount, savedHubAmount);
 
-                    await _lykkeTransactionBuilderService.SaveSpentOutputs(newChannel.ChannelId, tr);
+                    await _spentOutputService.SaveSpentOutputs(newChannel.ChannelId, tr);
                     await SaveNewOutputs(tr, context, newChannel.ChannelId);
                     return new CashoutOffchainResponse
                     {
@@ -770,7 +777,7 @@ namespace LkeServices.Transactions
                     var transfer = await _offchainTransferRepository.CreateTransfer(multisig.ToWif(), asset.Id, false);
                     var newChannel = await _offchainChannelRepository.CreateChannel(multisig.ToWif(), asset.Id, hex, channel.ClientAmount, 0);
 
-                    await _lykkeTransactionBuilderService.SaveSpentOutputs(newChannel.ChannelId, tr);
+                    await _spentOutputService.SaveSpentOutputs(newChannel.ChannelId, tr);
                     await SaveNewOutputs(tr, context, newChannel.ChannelId);
                     return new CashoutOffchainResponse
                     {
@@ -889,7 +896,7 @@ namespace LkeServices.Transactions
 
             await _closingChannelRepository.CompleteClosingChannel(address.MultisigAddress, asset.Id, closing.ClosingChannelId);
 
-            await _lykkeTransactionBuilderService.SaveSpentOutputs(closing.ClosingChannelId, tr);
+            await _spentOutputService.SaveSpentOutputs(closing.ClosingChannelId, tr);
 
             return tr.GetHash().ToString();
         }
@@ -934,7 +941,7 @@ namespace LkeServices.Transactions
                     var id = Guid.NewGuid();
                     await _broadcastService.BroadcastTransaction(id, signedTr);
 
-                    await _lykkeTransactionBuilderService.SaveSpentOutputs(id, signedTr);
+                    await _spentOutputService.SaveSpentOutputs(id, signedTr);
 
                     return Task.CompletedTask;
                 });
@@ -984,19 +991,24 @@ namespace LkeServices.Transactions
 
         public async Task CloseChannel(ICommitment commitment)
         {
-            await _lykkeTransactionBuilderService.SaveSpentOutputs(commitment.CommitmentId, new Transaction(commitment.InitialTransaction));
+            await _spentOutputService.SaveSpentOutputs(commitment.CommitmentId, new Transaction(commitment.InitialTransaction));
             await _offchainChannelRepository.CloseChannel(commitment.Multisig, commitment.AssetId, commitment.ChannelId);
             await _commitmentRepository.CloseCommitmentsOfChannel(commitment.Multisig, commitment.AssetId, commitment.ChannelId);
+        }
+
+        public async Task CloseChannel(IOffchainChannel channel)
+        {
+            if (channel != null)
+            {
+                await _offchainChannelRepository.CloseChannel(channel.Multisig, channel.Asset, channel.ChannelId);
+                await _commitmentRepository.CloseCommitmentsOfChannel(channel.Multisig, channel.Asset, channel.ChannelId);
+            }
         }
 
         public async Task RemoveChannel(string multisig, IAsset asset)
         {
             var channel = await _offchainChannelRepository.GetChannel(multisig, asset.Id);
-            if (channel != null)
-            {
-                await _offchainChannelRepository.CloseChannel(multisig, asset.Id, channel.ChannelId);
-                await _commitmentRepository.CloseCommitmentsOfChannel(multisig, asset.Id, channel.ChannelId);
-            }
+            await CloseChannel(channel);
             var transfer = await _offchainTransferRepository.GetLastTransfer(multisig, asset.Id);
             if (transfer != null)
                 await _offchainTransferRepository.CloseTransfer(multisig, asset.Id, transfer.TransferId);
@@ -1226,13 +1238,18 @@ namespace LkeServices.Transactions
             return result;
         }
 
-        private async Task<IAssetSetting> GetAssetSetting(string asset)
+        public async Task<IAssetSetting> GetAssetSetting(string asset)
         {
             var setting = await _assetSettingRepository.GetItemAsync(asset) ??
                           await _assetSettingRepository.GetItemAsync(Constants.DefaultAssetSetting);
             if (setting == null)
                 throw new BackendException($"Asset setting is not found for {asset}", ErrorCode.AssetSettingNotFound);
             return setting;
+        }
+
+        public async Task<IEnumerable<IOffchainChannel>> GetCurrentChannels(string multisig)
+        {
+            return await _offchainChannelRepository.GetChannelsOfMultisig(multisig);
         }
 
 

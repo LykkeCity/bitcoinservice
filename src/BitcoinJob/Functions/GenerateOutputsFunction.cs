@@ -5,6 +5,7 @@ using Common.Log;
 using Core.Bitcoin;
 using Core.Exceptions;
 using Core.Notifiers;
+using Core.Outputs;
 using Core.Providers;
 using Core.Repositories.Assets;
 using Core.Repositories.TransactionOutputs;
@@ -29,6 +30,7 @@ namespace BitcoinJob.Functions
         private readonly ISignatureApiProvider _signatureApiProvider;
         private readonly IRpcBitcoinClient _bitcoinClient;
         private readonly IBroadcastedOutputRepository _broadcastedOutputRepository;
+        private readonly ISpentOutputService _spentOutputService;
         private readonly ILykkeTransactionBuilderService _lykkeTransactionBuilderService;
         private readonly ILog _logger;
         private readonly BaseSettings _baseSettings;
@@ -42,7 +44,7 @@ namespace BitcoinJob.Functions
             IFeeProvider feeProvider,
             IRpcBitcoinClient bitcoinClient,
             IBroadcastedOutputRepository broadcastedOutputRepository,
-            ILykkeTransactionBuilderService lykkeTransactionBuilderService,
+            ISpentOutputService spentOutputService,
             BaseSettings baseSettings, RpcConnectionParams connectionParams, ILog logger, IEmailNotifier emailNotifier, ISlackNotifier slackNotifier, Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory)
         {
             _assetRepository = assetRepository;
@@ -51,7 +53,7 @@ namespace BitcoinJob.Functions
             _feeProvider = feeProvider;
             _bitcoinClient = bitcoinClient;
             _broadcastedOutputRepository = broadcastedOutputRepository;
-            _lykkeTransactionBuilderService = lykkeTransactionBuilderService;
+            _spentOutputService = spentOutputService;            
             _baseSettings = baseSettings;
             _connectionParams = connectionParams;
             _logger = logger;
@@ -171,7 +173,7 @@ namespace BitcoinJob.Functions
                 .Select(o => new BroadcastedOutput(o, transactionId, _connectionParams.Network)));
             await _broadcastedOutputRepository.SetTransactionHash(transactionId, tr.GetHash().ToString());
 
-            await _lykkeTransactionBuilderService.SaveSpentOutputs(transactionId, tr);
+            await _spentOutputService.SaveSpentOutputs(transactionId, tr);
         }
 
         private async Task InternalBalanceCheck()

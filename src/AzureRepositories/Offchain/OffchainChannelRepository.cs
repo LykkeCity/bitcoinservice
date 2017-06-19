@@ -217,5 +217,10 @@ namespace AzureRepositories.Offchain
         {
             throw new NotImplementedException();
         }
+
+        public Task<IEnumerable<IOffchainChannel>> GetChannelsOfMultisig(string multisig)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
