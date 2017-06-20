@@ -27,6 +27,7 @@ using Core.Settings;
 using LkeServices.Helpers;
 using LkeServices.Providers;
 using LkeServices.Signature;
+using NBitcoin.Policy;
 
 namespace LkeServices.Transactions
 {
@@ -91,7 +92,7 @@ namespace LkeServices.Transactions
         private readonly ISignatureApiProvider _signatureApiProvider;
         private readonly ICommitmentRepository _commitmentRepository;
         private readonly IBroadcastedOutputRepository _broadcastedOutputRepository;
-        private readonly IRevokeKeyRepository _revokeKeyRepository;        
+        private readonly IRevokeKeyRepository _revokeKeyRepository;
         private readonly IOffchainTransferRepository _offchainTransferRepository;
         private readonly TransactionBuildContextFactory _transactionBuildContextFactory;
         private readonly IBitcoinBroadcastService _broadcastService;
@@ -113,7 +114,7 @@ namespace LkeServices.Transactions
             Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
             ICommitmentRepository commitmentRepository,
             IBroadcastedOutputRepository broadcastedOutputRepository,
-            IRevokeKeyRepository revokeKeyRepository,            
+            IRevokeKeyRepository revokeKeyRepository,
             IOffchainTransferRepository offchainTransferRepository,
             TransactionBuildContextFactory transactionBuildContextFactory,
             IBitcoinBroadcastService broadcastService,
@@ -134,7 +135,7 @@ namespace LkeServices.Transactions
             _signatureApiProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
             _commitmentRepository = commitmentRepository;
             _broadcastedOutputRepository = broadcastedOutputRepository;
-            _revokeKeyRepository = revokeKeyRepository;            
+            _revokeKeyRepository = revokeKeyRepository;
             _offchainTransferRepository = offchainTransferRepository;
             _transactionBuildContextFactory = transactionBuildContextFactory;
             _broadcastService = broadcastService;
@@ -621,7 +622,10 @@ namespace LkeServices.Transactions
             var isBtc = OpenAssetsHelper.IsBitcoin(asset.Id);
             var cashoutFromHub = !asset.IssueAllowed && channel.HubAmount > assetSetting.Dust;
 
-            var isFullClosing = channel.ClientAmount == amount && (channel.HubAmount == 0 || cashoutFromHub);
+            var btcDust = new TxOut(Money.Zero, multisig.ScriptPubKey).GetDustThreshold(new StandardTransactionPolicy().MinRelayTxFee).ToDecimal(MoneyUnit.BTC);
+
+            var isFullClosing = channel.ClientAmount == amount && (channel.HubAmount == 0 || cashoutFromHub) ||
+                                channel.ClientAmount - amount + channel.HubAmount < btcDust && isBtc;
 
             var context = _transactionBuildContextFactory.Create(_connectionParams.Network);
 
