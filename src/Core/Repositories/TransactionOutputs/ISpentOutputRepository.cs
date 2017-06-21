@@ -19,5 +19,8 @@ namespace Core.Repositories.TransactionOutputs
         Task<IEnumerable<IOutput>> GetUnspentOutputs(IEnumerable<IOutput> outputs);
 
         Task RemoveSpentOutputs(IEnumerable<IOutput> outputs);
+
+        Task<IEnumerable<IOutput>> GetOldSpentOutputs(DateTime bound, int limit);
+
     }
 }

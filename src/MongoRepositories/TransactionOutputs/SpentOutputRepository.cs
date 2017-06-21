@@ -67,7 +67,7 @@ namespace MongoRepositories.TransactionOutputs
                     forInsert = forInsert.Skip(100).ToList();
                     await _storage.InsertAsync(part);
                 }
-            }          
+            }
             catch (MongoServerException e)
             {
                 throwIfBackend(e);
@@ -100,6 +100,11 @@ namespace MongoRepositories.TransactionOutputs
         {
             var ids = outputs.Select(x => OutputEntity.GenerateId(x.TransactionHash, x.N)).ToArray();
             await _storage.DeleteAsync(o => ids.Contains(o.BsonId));
+        }
+
+        public async Task<IEnumerable<IOutput>> GetOldSpentOutputs(DateTime bound, int limit)
+        {
+            return await _storage.GetTopRecordsAsync(o => o.BsonCreateDt < bound, o => o.BsonCreateDt, SortDirection.Ascending, limit);
         }
     }
 }

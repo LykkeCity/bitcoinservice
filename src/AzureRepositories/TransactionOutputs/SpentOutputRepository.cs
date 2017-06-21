@@ -100,5 +100,10 @@ namespace AzureRepositories.TransactionOutputs
             foreach (var item in outputEntities)
                 await _storage.DeleteAsync(item.PartitionKey, item.RowKey);
         }
+
+        public Task<IEnumerable<IOutput>> GetOldSpentOutputs(DateTime bound, int limit)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

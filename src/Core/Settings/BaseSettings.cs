@@ -60,6 +60,8 @@ namespace Core.Settings
 
         public int BroadcastedOutputsExpirationDays { get; set; } = 7;
 
+        public int SpentOutputsExpirationDays { get; set; } = 7;
+
         public Offchain Offchain { get; set; } = new Offchain();
     }
 
