@@ -31,8 +31,7 @@ namespace BitcoinJob.Functions
         private readonly ISignatureApiProvider _signatureApiProvider;
         private readonly IRpcBitcoinClient _bitcoinClient;
         private readonly IBroadcastedOutputRepository _broadcastedOutputRepository;
-        private readonly ISpentOutputService _spentOutputService;
-        private readonly ILykkeTransactionBuilderService _lykkeTransactionBuilderService;
+        private readonly ISpentOutputService _spentOutputService;        
         private readonly ILog _logger;
         private readonly BaseSettings _baseSettings;
         private readonly RpcConnectionParams _connectionParams;
@@ -194,6 +193,7 @@ namespace BitcoinJob.Functions
 
         private async Task InternalBalanceCheck()
         {
+            var queue = _pregeneratedOutputsQueueFactory.CreateFeeQueue();
             await _logger.WriteInfoAsync("GenerateOutputsFunction", "InternalBalanceCheck", null, "Start process");
             try
             {
@@ -204,7 +204,7 @@ namespace BitcoinJob.Functions
                 {
                     if ((DateTime.UtcNow - _lastWarningSentTime).TotalHours > 1)
                     {
-                        string message = $"Fees hot wallet {_baseSettings.HotWalletForPregeneratedOutputs} balance is less than {_baseSettings.MinHotWalletBalance} BTC !";
+                        string message = $"Fees hot wallet {_baseSettings.HotWalletForPregeneratedOutputs} balance is less than {_baseSettings.MinHotWalletBalance} BTC! Pregenerated pool has {await queue.Count()} outputs.";
                         await _logger.WriteWarningAsync("GenerateOutputsFunction", "InternalBalanceCheck", "", message);
 
                         await _slackNotifier.FinanceWarningAsync(message);

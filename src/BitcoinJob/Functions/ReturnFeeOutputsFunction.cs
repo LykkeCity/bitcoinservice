@@ -33,7 +33,8 @@ namespace BitcoinJob.Functions
             var address = _settings.FeeAddress;
 
             var set = new HashSet<OutPoint>();
-            var count = await queue.Count();
+            int prevCount;
+            var count = prevCount = await queue.Count();
             while (count-- > 0)
             {
                 Coin coin = null;
@@ -58,6 +59,10 @@ namespace BitcoinJob.Functions
             var coins = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(address)).OfType<Coin>().ToArray();
 
             coins = coins.Where(x => !set.Contains(x.Outpoint)).ToArray();
+
+            var newCount = await queue.Count();
+            if (newCount > prevCount)
+                throw new Exception("Queue length is greater than initial length");
 
             await queue.EnqueueOutputs(coins);
         }
