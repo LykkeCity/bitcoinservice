@@ -16,7 +16,7 @@ using Common;
 using Common.Log;
 using Core;
 using Core.Outputs;
-using Core.Perfomance;
+using Core.Performance;
 using Core.Providers;
 using Core.Repositories.Offchain;
 using Core.Repositories.RevokeKeys;
@@ -99,9 +99,10 @@ namespace LkeServices.Transactions
         private readonly CachedDataDictionary<string, IAsset> _assetRepository;
         private readonly CachedDataDictionary<string, IAssetSetting> _assetSettingRepository;
         private readonly ISpentOutputService _spentOutputService;
-        private readonly IPerfomanceMonitorFactory _perfomanceMonitorFactory;
+        private readonly IPerformanceMonitorFactory _perfomanceMonitorFactory;
         private readonly BaseSettings _settings;
         private readonly ILog _logger;
+        private readonly IReturnBroadcastedOutputsMessageWriter _returnBroadcastedOutputsMessageWriter;
         private readonly IClosingChannelRepository _closingChannelRepository;
 
         public OffchainService(
@@ -121,9 +122,10 @@ namespace LkeServices.Transactions
             CachedDataDictionary<string, IAsset> assetRepository,
             CachedDataDictionary<string, IAssetSetting> assetSettingRepository,
             ISpentOutputService spentOutputService,
-            IPerfomanceMonitorFactory perfomanceMonitorFactory,
+            IPerformanceMonitorFactory perfomanceMonitorFactory,
             BaseSettings settings,
             ILog logger,
+            IReturnBroadcastedOutputsMessageWriter returnBroadcastedOutputsMessageWriter,
             IClosingChannelRepository closingChannelRepository)
         {
             _transactionBuildHelper = transactionBuildHelper;
@@ -145,10 +147,11 @@ namespace LkeServices.Transactions
             _perfomanceMonitorFactory = perfomanceMonitorFactory;
             _settings = settings;
             _logger = logger;
+            _returnBroadcastedOutputsMessageWriter = returnBroadcastedOutputsMessageWriter;
             _closingChannelRepository = closingChannelRepository;
         }
 
-        private async Task CheckTransferFinalization(string multisig, string assetId, Guid? transferId, bool channelSetup, IPerfomanceMonitor monitor = null)
+        private async Task CheckTransferFinalization(string multisig, string assetId, Guid? transferId, bool channelSetup, IPerformanceMonitor monitor = null)
         {
             monitor?.Step("Get last transfer");
             var transfer = await _offchainTransferRepository.GetLastTransfer(multisig, assetId);
@@ -174,6 +177,8 @@ namespace LkeServices.Transactions
                 await _commitmentRepository.RemoveCommitmentsOfChannel(multisig, assetId, channel.ChannelId);
                 monitor?.Step("Remove spent outputs");
                 await _spentOutputService.RemoveSpenOutputs(new Transaction(channel.InitialTransaction));
+                monitor?.Step("Return broadcasted outputs");
+                await _returnBroadcastedOutputsMessageWriter.AddToReturn(channel.InitialTransaction, multisig);
 
                 if (!channelSetup)
                     throw new BackendException("Should open new channel", ErrorCode.ShouldOpenNewChannel);
@@ -1092,7 +1097,7 @@ namespace LkeServices.Transactions
             };
         }
 
-        private async Task<decimal> SendToMultisig(BitcoinAddress @from, BitcoinAddress toMultisig, IAsset assetEntity, TransactionBuilder builder, TransactionBuildContext context, decimal amount, IDestination changeDestination, IPerfomanceMonitor monitor)
+        private async Task<decimal> SendToMultisig(BitcoinAddress @from, BitcoinAddress toMultisig, IAsset assetEntity, TransactionBuilder builder, TransactionBuildContext context, decimal amount, IDestination changeDestination, IPerformanceMonitor monitor)
         {
             if (amount == 0)
                 return 0;

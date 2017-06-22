@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Core.Perfomance;
+using Core.Performance;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -15,9 +15,9 @@ namespace Bitcoin.Tests
         [TestMethod]
         public void Test()
         {
-            var factory = Config.Services.GetService<IPerfomanceMonitorFactory>();
+            var factory = Config.Services.GetService<IPerformanceMonitorFactory>();
 
-            IPerfomanceMonitor monitoring;
+            IPerformanceMonitor monitoring;
             using (monitoring = factory.Create("Test")) 
             {
                 Thread.Sleep(200);

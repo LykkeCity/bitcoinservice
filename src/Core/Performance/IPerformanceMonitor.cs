@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Core.Perfomance
+namespace Core.Performance
 {
-    public interface IPerfomanceMonitor : IDisposable
+    public interface IPerformanceMonitor : IDisposable
     {       
         void Step(string nextStep);
         void ChildProcess(string childProcess);

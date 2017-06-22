@@ -39,7 +39,8 @@ namespace MongoRepositories.TransactionOutputs
                 Amount = output.Amount,
                 Quantity = output.Quantity,
                 AssetId = output.AssetId,
-                ScriptPubKey = output.ScriptPubKey
+                ScriptPubKey = output.ScriptPubKey,
+                TransactionHash = output.TransactionHash
             };
         }
     }
@@ -83,6 +84,11 @@ namespace MongoRepositories.TransactionOutputs
         public async Task DeleteOutput(string transactionHash, int n)
         {
             await _table.DeleteAsync(o => o.TransactionHash == transactionHash && o.N == n);
+        }
+
+        public Task<bool> OutputExists(string transactionHash, int n)
+        {
+            return _table.Any(o => o.TransactionHash == transactionHash && o.N == n);
         }
 
         public async Task<IEnumerable<IBroadcastedOutput>> GetOldOutputs(DateTime bound, int limit)

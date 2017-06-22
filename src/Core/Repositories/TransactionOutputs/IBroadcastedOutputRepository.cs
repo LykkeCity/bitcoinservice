@@ -26,7 +26,7 @@ namespace Core.Repositories.TransactionOutputs
         Task<IEnumerable<IBroadcastedOutput>> GetOutputs(string address);
         Task SetTransactionHash(Guid transactionId, string transactionHash);
         Task DeleteOutput(string transactionHash, int n);
-
+        Task<bool> OutputExists(string transactionHash, int n);
         Task<IEnumerable<IBroadcastedOutput>> GetOldOutputs(DateTime bound, int limit);
         Task DeleteBroadcastedOutputs(IEnumerable<IBroadcastedOutput> outputs);
     }

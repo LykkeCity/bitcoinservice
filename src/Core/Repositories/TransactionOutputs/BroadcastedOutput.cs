@@ -47,7 +47,11 @@ namespace Core.Repositories.TransactionOutputs
         {
             TransactionId = transactionId;
         }
-       
 
+        public BroadcastedOutput(ICoin coin, string transactionHash, Network net) : this(coin, net)
+        {
+            TransactionId = Guid.NewGuid();
+            TransactionHash = transactionHash;
+        }
     }
 }

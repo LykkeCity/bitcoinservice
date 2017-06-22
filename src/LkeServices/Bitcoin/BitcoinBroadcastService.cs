@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Core.Bitcoin;
-using Core.Perfomance;
+using Core.Performance;
 using Core.Providers;
 using Core.Repositories.TransactionOutputs;
 using Core.Settings;
@@ -31,7 +31,7 @@ namespace LkeServices.Bitcoin
             _monitoringWriter = monitoringWriter;
         }
 
-        public async Task BroadcastTransaction(Guid transactionId, Transaction tx, IPerfomanceMonitor monitor = null, bool useHandlers = true, Guid? notifyTxId = null)
+        public async Task BroadcastTransaction(Guid transactionId, Transaction tx, IPerformanceMonitor monitor = null, bool useHandlers = true, Guid? notifyTxId = null)
         {
             var hash = tx.GetHash().ToString();
 

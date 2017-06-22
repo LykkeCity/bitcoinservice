@@ -22,6 +22,8 @@ namespace Core
         public const string ClientSignMonitoringQueue = "client-sign-monitoring";
         public const string TransactionsForClientSignatureQueue = "transaction-out";
 
+        public const string ReturnBroadcatedOutputsQueue = "return-broadcasted-outputs";
+
         public const string ProcessingBlockSetting = "ProcessingBlockSetting";
 
         public const string DefaultAssetSetting = "Default";

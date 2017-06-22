@@ -5,11 +5,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Common.Log;
-using Core.Perfomance;
+using Core.Performance;
 
-namespace LkeServices.Perfomance
+namespace LkeServices.Performance
 {
-    public class PerfomanceMonitor : IPerfomanceMonitor
+    public class PerformanceMonitor : IPerformanceMonitor
     {
         private readonly ILog _log;
 
@@ -17,7 +17,7 @@ namespace LkeServices.Perfomance
 
         private InternalMeasurer _currentMeasurer;
 
-        public PerfomanceMonitor(ILog log)
+        public PerformanceMonitor(ILog log)
         {
             _log = log;
         }

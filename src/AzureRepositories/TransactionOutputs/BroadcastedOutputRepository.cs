@@ -155,6 +155,11 @@ namespace AzureRepositories.TransactionOutputs
             }
         }
 
+        public Task<bool> OutputExists(string transactionHash, int n)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<IEnumerable<IBroadcastedOutput>> GetOldOutputs(DateTime bound, int limit)
         {
             throw new NotImplementedException();

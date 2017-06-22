@@ -26,6 +26,7 @@ using Common;
 using Common.Log;
 using Core;
 using Core.Notifiers;
+using Core.Outputs;
 using Core.Repositories;
 using Core.Repositories.ApiRequests;
 using Core.Repositories.Assets;
@@ -125,6 +126,7 @@ namespace AzureRepositories
             ioc.RegisterType<TransactionQueueWriter>().As<ITransactionQueueWriter>().SingleInstance();
             ioc.RegisterType<TransactionMonitoringWriter>().As<ITransactionMonitoringWriter>().SingleInstance();
             ioc.RegisterType<FeeReserveMonitoringWriter>().As<IFeeReserveMonitoringWriter>().SingleInstance();
+            ioc.RegisterType<ReturnBroadcastedOutputsMessageWriter>().As<IReturnBroadcastedOutputsMessageWriter>().SingleInstance();
         }
     }
 }
