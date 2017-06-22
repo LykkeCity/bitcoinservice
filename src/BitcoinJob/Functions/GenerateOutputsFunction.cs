@@ -22,6 +22,7 @@ namespace BitcoinJob.Functions
         private readonly Money _dustSize = new Money(2730);
 
         private static DateTime _lastWarningSentTime = DateTime.MinValue;
+        private static DateTime _lastWarningFeeSentTime = DateTime.MinValue;
 
         private readonly IAssetRepository _assetRepository;
         private readonly IPregeneratedOutputsQueueFactory _pregeneratedOutputsQueueFactory;
@@ -53,7 +54,7 @@ namespace BitcoinJob.Functions
             _feeProvider = feeProvider;
             _bitcoinClient = bitcoinClient;
             _broadcastedOutputRepository = broadcastedOutputRepository;
-            _spentOutputService = spentOutputService;            
+            _spentOutputService = spentOutputService;
             _baseSettings = baseSettings;
             _connectionParams = connectionParams;
             _logger = logger;
@@ -65,7 +66,7 @@ namespace BitcoinJob.Functions
 
         [TimerTrigger("00:30:00")]
         public async Task GenerateOutputs()
-        {            
+        {
             await InternalBalanceCheck();
             await GenerateFeeOutputs();
             await GenerateAssetOutputs();
@@ -75,44 +76,59 @@ namespace BitcoinJob.Functions
         {
             await _logger.WriteInfoAsync("GenerateOutputsFunction", "GenerateFeeOutputs", null, "Start process");
             var queue = _pregeneratedOutputsQueueFactory.CreateFeeQueue();
-          
-            while (await queue.Count() < _baseSettings.MinPregeneratedOutputsCount)
+
+            try
             {
-                var uncoloredOutputs = await _bitcoinOutputsService.GetUncoloredUnspentOutputs(_baseSettings.HotWalletForPregeneratedOutputs);
+                while (await queue.Count() < _baseSettings.MinPregeneratedOutputsCount)
+                {
+                    var uncoloredOutputs = await _bitcoinOutputsService.GetUncoloredUnspentOutputs(_baseSettings.HotWalletForPregeneratedOutputs);
 
-                var outputs = uncoloredOutputs.ToList();
+                    var outputs = uncoloredOutputs.ToList();
 
-                var totalRequiredAmount = Money.FromUnit(_baseSettings.GenerateOutputsBatchSize * _baseSettings.PregeneratedFeeAmount, MoneyUnit.BTC); // Convert to satoshi
+                    var totalRequiredAmount = Money.FromUnit(_baseSettings.GenerateOutputsBatchSize * _baseSettings.PregeneratedFeeAmount,
+                        MoneyUnit.BTC); // Convert to satoshi
 
-                var feeAmount = new Money(_baseSettings.PregeneratedFeeAmount, MoneyUnit.BTC);
+                    var feeAmount = new Money(_baseSettings.PregeneratedFeeAmount, MoneyUnit.BTC);
 
-                if (outputs.Sum(o => o.TxOut.Value) < totalRequiredAmount)
-                    throw new BackendException($"The sum of total applicable outputs is less than the required: {totalRequiredAmount} satoshis.", ErrorCode.NotEnoughBitcoinAvailable);
+                    if (outputs.Sum(o => o.TxOut.Value) < totalRequiredAmount)
+                        throw new BackendException($"The sum of total applicable outputs is less than the required: {totalRequiredAmount} satoshis.",
+                            ErrorCode.NotEnoughBitcoinAvailable);
 
-                var hotWallet = new BitcoinPubKeyAddress(_baseSettings.HotWalletForPregeneratedOutputs, _connectionParams.Network);
-                var builder = new TransactionBuilder();
+                    var hotWallet = new BitcoinPubKeyAddress(_baseSettings.HotWalletForPregeneratedOutputs, _connectionParams.Network);
+                    var builder = new TransactionBuilder();
 
-                builder.AddCoins(outputs);
-                builder.SetChange(hotWallet);
+                    builder.AddCoins(outputs);
+                    builder.SetChange(hotWallet);
 
-                for (var i = 0; i < _baseSettings.GenerateOutputsBatchSize; i++)
-                    builder.Send(new BitcoinPubKeyAddress(_baseSettings.FeeAddress, _connectionParams.Network), feeAmount);
+                    for (var i = 0; i < _baseSettings.GenerateOutputsBatchSize; i++)
+                        builder.Send(new BitcoinPubKeyAddress(_baseSettings.FeeAddress, _connectionParams.Network), feeAmount);
 
-                builder.SendFees(await _feeProvider.CalcFeeForTransaction(builder));
+                    builder.SendFees(await _feeProvider.CalcFeeForTransaction(builder));
 
-                var signedHex = await _signatureApiProvider.SignTransaction(builder.BuildTransaction(false).ToHex());
+                    var signedHex = await _signatureApiProvider.SignTransaction(builder.BuildTransaction(false).ToHex());
 
-                var signedTr = new Transaction(signedHex);
+                    var signedTr = new Transaction(signedHex);
 
-                var transactionId = Guid.NewGuid();
+                    var transactionId = Guid.NewGuid();
 
-                await _bitcoinClient.BroadcastTransaction(signedTr, transactionId);
+                    await _bitcoinClient.BroadcastTransaction(signedTr, transactionId);
 
-                await queue.EnqueueOutputs(signedTr.Outputs.AsCoins().Where(o => o.TxOut.Value == feeAmount).ToArray());
+                    await queue.EnqueueOutputs(signedTr.Outputs.AsCoins().Where(o => o.TxOut.Value == feeAmount).ToArray());
 
-                await FinishOutputs(transactionId, signedTr, hotWallet);
+                    await FinishOutputs(transactionId, signedTr, hotWallet);
+                }
             }
-            await _logger.WriteInfoAsync("GenerateOutputsFunction", "GenerateFeeOutputs", null, "End process");
+            finally
+            {
+                if (await queue.Count() < _baseSettings.MinPregeneratedOutputsCount && (DateTime.UtcNow - _lastWarningFeeSentTime).TotalHours > 1)
+                {
+                    var message = $"Count of fee outputs is less than {_baseSettings.MinPregeneratedOutputsCount}";
+                    await _slackNotifier.FinanceWarningAsync(message);
+                    await _emailNotifier.WarningAsync("Bitcoin job", message);
+                    _lastWarningFeeSentTime = DateTime.UtcNow;
+                }
+                await _logger.WriteInfoAsync("GenerateOutputsFunction", "GenerateFeeOutputs", null, "End process");
+            }
         }
 
         private async Task GenerateAssetOutputs()
