@@ -15,17 +15,15 @@ namespace BitcoinJob.Functions
 {
     public class ReturnBroadcastedOutputsFunction
     {
-        private readonly IRpcBitcoinClient _rpcBitcoinClient;
         private readonly RpcConnectionParams _connectionParams;
         private readonly IBroadcastedOutputRepository _broadcastedOutputRepository;
         private readonly IBitcoinOutputsService _bitcoinOutputsService;
 
-        public ReturnBroadcastedOutputsFunction(IRpcBitcoinClient rpcBitcoinClient,
+        public ReturnBroadcastedOutputsFunction(
             RpcConnectionParams connectionParams,
             IBroadcastedOutputRepository broadcastedOutputRepository,
             IBitcoinOutputsService bitcoinOutputsService)
-        {
-            _rpcBitcoinClient = rpcBitcoinClient;
+        {            
             _connectionParams = connectionParams;
             _broadcastedOutputRepository = broadcastedOutputRepository;
             _bitcoinOutputsService = bitcoinOutputsService;

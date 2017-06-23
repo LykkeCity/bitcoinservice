@@ -25,6 +25,25 @@ namespace AzureRepositories.Assets
         public int MinOutputsCount { get; set; }
         public int MaxOutputsCount { get; set; }
         public string ChangeWallet { get; set; }
+
+        public static class Archive
+        {
+            public static string GeneratePartition(string asset)
+            {
+                return "Archive_" + asset;
+            }
+
+            public static AssetSettingEntity Create(IAssetSetting setting)
+            {
+                return new AssetSettingEntity
+                {
+                    PartitionKey = GeneratePartition(setting.Asset),
+                    RowKey = Guid.NewGuid().ToString(),
+                    HotWallet = setting.HotWallet,
+                    ChangeWallet = setting.ChangeWallet
+                };
+            }
+        }
     }
 
 
@@ -41,6 +60,22 @@ namespace AzureRepositories.Assets
         public async Task<IEnumerable<IAssetSetting>> GetAssetSettings()
         {
             return await _table.GetDataAsync(AssetSettingEntity.GeneratePartitionKey());
+        }
+
+        public async Task UpdateAssetSetting(string asset, string hotWallet, string changeWallet)
+        {
+            var entity = await _table.GetDataAsync(AssetSettingEntity.GeneratePartitionKey(), asset);
+            if (entity != null)
+            {
+                var archive = AssetSettingEntity.Archive.Create(entity);
+                await _table.InsertAsync(archive);
+                await _table.ReplaceAsync(AssetSettingEntity.GeneratePartitionKey(), asset, updateEntity =>
+                {
+                    updateEntity.HotWallet = hotWallet;
+                    updateEntity.ChangeWallet = changeWallet;
+                    return updateEntity;
+                });
+            }
         }
     }
 }

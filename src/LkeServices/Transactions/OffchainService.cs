@@ -97,11 +97,12 @@ namespace LkeServices.Transactions
         private readonly TransactionBuildContextFactory _transactionBuildContextFactory;
         private readonly IBitcoinBroadcastService _broadcastService;
         private readonly CachedDataDictionary<string, IAsset> _assetRepository;
-        private readonly CachedDataDictionary<string, IAssetSetting> _assetSettingRepository;
+        private readonly CachedDataDictionary<string, IAssetSetting> _assetSettingCache;
         private readonly ISpentOutputService _spentOutputService;
         private readonly IPerformanceMonitorFactory _perfomanceMonitorFactory;
         private readonly BaseSettings _settings;
         private readonly ILog _logger;
+        private readonly IAssetSettingRepository _assetSettingRepository;
         private readonly IReturnBroadcastedOutputsMessageWriter _returnBroadcastedOutputsMessageWriter;
         private readonly IClosingChannelRepository _closingChannelRepository;
 
@@ -120,11 +121,12 @@ namespace LkeServices.Transactions
             TransactionBuildContextFactory transactionBuildContextFactory,
             IBitcoinBroadcastService broadcastService,
             CachedDataDictionary<string, IAsset> assetRepository,
-            CachedDataDictionary<string, IAssetSetting> assetSettingRepository,
+            CachedDataDictionary<string, IAssetSetting> assetSettingCache,
             ISpentOutputService spentOutputService,
             IPerformanceMonitorFactory perfomanceMonitorFactory,
             BaseSettings settings,
             ILog logger,
+            IAssetSettingRepository assetSettingRepository,
             IReturnBroadcastedOutputsMessageWriter returnBroadcastedOutputsMessageWriter,
             IClosingChannelRepository closingChannelRepository)
         {
@@ -142,11 +144,12 @@ namespace LkeServices.Transactions
             _transactionBuildContextFactory = transactionBuildContextFactory;
             _broadcastService = broadcastService;
             _assetRepository = assetRepository;
-            _assetSettingRepository = assetSettingRepository;
+            _assetSettingCache = assetSettingCache;
             _spentOutputService = spentOutputService;
             _perfomanceMonitorFactory = perfomanceMonitorFactory;
             _settings = settings;
             _logger = logger;
+            _assetSettingRepository = assetSettingRepository;
             _returnBroadcastedOutputsMessageWriter = returnBroadcastedOutputsMessageWriter;
             _closingChannelRepository = closingChannelRepository;
         }
@@ -293,13 +296,7 @@ namespace LkeServices.Transactions
                         throw new BackendException("There is another pending channel setup", ErrorCode.AnotherChannelSetupExists);
 
                     var assetSetting = await GetAssetSetting(asset.Id);
-
-                    var hotWalletAddress = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(assetSetting.HotWallet);
-
-                    var changeAddress = !string.IsNullOrEmpty(assetSetting.ChangeWallet)
-                                            ? OpenAssetsHelper.GetBitcoinAddressFormBase58Date(assetSetting.ChangeWallet)
-                                            : hotWalletAddress;
-
+                                    
                     var fiatCoef = assetSetting.CashinCoef;
 
                     var context = _transactionBuildContextFactory.Create(_connectionParams.Network);
@@ -315,15 +312,14 @@ namespace LkeServices.Transactions
                         {
                             clientChannelAmount = multisigAmount;
                             monitor.Step("Send from hotwallet to multisig");
-                            hubChannelAmount = await SendToMultisig(hotWalletAddress, multisig, asset, builder, context, hubAmount * fiatCoef, changeAddress, monitor);
+                            hubChannelAmount = await SendToMultisigFromHub(multisig, asset, builder, context, hubAmount * fiatCoef, monitor);
                         }
                         else
                         {
                             clientChannelAmount = currentChannel.ClientAmount +
                                                   Math.Max(0, multisigAmount - currentChannel.ClientAmount - currentChannel.HubAmount);
                             monitor.Step("Send from hotwallet to multisig");
-                            hubChannelAmount = await SendToMultisig(hotWalletAddress, multisig, asset, builder, context,
-                                Math.Max(0, hubAmount - currentChannel.HubAmount) * fiatCoef, changeAddress, monitor);
+                            hubChannelAmount = await SendToMultisigFromHub(multisig, asset, builder, context, Math.Max(0, hubAmount - currentChannel.HubAmount) * fiatCoef, monitor);
                             hubChannelAmount += currentChannel.HubAmount;
                         }
                         monitor.Step("Add fee");
@@ -1140,6 +1136,80 @@ namespace LkeServices.Transactions
             }
         }
 
+        private async Task<decimal> SendToMultisigFromHub(BitcoinAddress toMultisig, IAsset assetEntity, TransactionBuilder builder, TransactionBuildContext context, decimal amount, IPerformanceMonitor monitor)
+        {
+            if (amount <= 0)
+                return 0;
+            var assetSetting = await GetAssetSetting(assetEntity.Id);
+
+            var hotWalletAddress = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(assetSetting.HotWallet);
+
+            var changeAddress = !string.IsNullOrEmpty(assetSetting.ChangeWallet)
+                ? OpenAssetsHelper.GetBitcoinAddressFormBase58Date(assetSetting.ChangeWallet)
+                : hotWalletAddress;
+            IDestination newChangeWallet = null;
+            if (OpenAssetsHelper.IsBitcoin(assetEntity.Id))
+            {
+                decimal sentAmount = 0;
+                monitor.ChildProcess("Get uncolored outputs");
+                var unspentOutputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(hotWalletAddress.ToWif(), monitor: monitor)).ToList();
+                monitor.CompleteLastProcess();
+
+                var neededAmount = Money.FromUnit(amount, MoneyUnit.BTC);
+                var availableAmount = unspentOutputs.Cast<Coin>().DefaultIfEmpty().Select(o => o?.Amount ?? Money.Zero).Sum();
+
+                if (availableAmount < neededAmount && changeAddress != hotWalletAddress && assetSetting.Asset != Constants.DefaultAssetSetting)
+                {
+                    monitor.Step("Generate new change wallet");
+                    newChangeWallet = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(await CreateNewChangeWallet(assetSetting));
+
+                    monitor.Step("Get uncolored outputs from new hotwallet");
+                    var outputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(changeAddress.ToWif(), monitor: monitor)).ToList();
+                    sentAmount = await _transactionBuildHelper.SendWithChange(builder, context, outputs, toMultisig, neededAmount - availableAmount, newChangeWallet);
+                    neededAmount = availableAmount;
+                }
+
+                if (neededAmount > 0)
+                    sentAmount += await _transactionBuildHelper.SendWithChange(builder, context, unspentOutputs, toMultisig, neededAmount,
+                        newChangeWallet ?? changeAddress);
+
+                return sentAmount;
+            }
+            else
+            {
+                var asset = new BitcoinAssetId(assetEntity.BlockChainAssetId, _connectionParams.Network).AssetId;
+
+                monitor.ChildProcess("Get colored outputs");
+                var unspentOutputs = (await _bitcoinOutputsService.GetColoredUnspentOutputs(hotWalletAddress.ToWif(), asset, monitor: monitor)).ToList();
+                monitor.CompleteLastProcess();
+
+                var neededAmount = new AssetMoney(asset, amount, assetEntity.MultiplierPower).Quantity;
+                var availableAmount = unspentOutputs.Select(o => o.Amount.Quantity).DefaultIfEmpty().Sum();
+
+                if (availableAmount < neededAmount && changeAddress != hotWalletAddress && assetSetting.Asset != Constants.DefaultAssetSetting)
+                {
+                    monitor.Step("Generate new change wallet");
+                    newChangeWallet = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(await CreateNewChangeWallet(assetSetting));
+
+                    monitor.Step("Get colored outputs from new hotwallet");
+                    var outputs = (await _bitcoinOutputsService.GetColoredUnspentOutputs(changeAddress.ToWif(), asset, monitor: monitor)).ToList();
+                    _transactionBuildHelper.SendAssetWithChange(builder, context, outputs, toMultisig, new AssetMoney(asset, neededAmount - availableAmount), newChangeWallet);
+                    neededAmount = availableAmount;
+                }
+                if (neededAmount > 0)
+                    _transactionBuildHelper.SendAssetWithChange(builder, context, unspentOutputs,
+                        toMultisig, new AssetMoney(asset, neededAmount), newChangeWallet ?? changeAddress);
+
+                return new AssetMoney(asset, neededAmount).ToDecimal(assetEntity.MultiplierPower);
+            }
+        }
+
+        private async Task<string> CreateNewChangeWallet(IAssetSetting setting)
+        {
+            var newChangeWallet = await _signatureApiProvider.GetNextAddress(setting.ChangeWallet);
+            await _assetSettingRepository.UpdateAssetSetting(setting.Asset, setting.ChangeWallet, newChangeWallet);
+            return newChangeWallet;
+        }
 
 
         private ICoin FindCoin(Transaction tr, string multisig, string walletRedeemScript, decimal amount, IAsset asset)
@@ -1249,8 +1319,8 @@ namespace LkeServices.Transactions
 
         public async Task<IAssetSetting> GetAssetSetting(string asset)
         {
-            var setting = await _assetSettingRepository.GetItemAsync(asset) ??
-                          await _assetSettingRepository.GetItemAsync(Constants.DefaultAssetSetting);
+            var setting = await _assetSettingCache.GetItemAsync(asset) ??
+                          await _assetSettingCache.GetItemAsync(Constants.DefaultAssetSetting);
             if (setting == null)
                 throw new BackendException($"Asset setting is not found for {asset}", ErrorCode.AssetSettingNotFound);
             return setting;

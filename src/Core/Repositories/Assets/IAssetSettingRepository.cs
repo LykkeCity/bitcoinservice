@@ -22,5 +22,6 @@ namespace Core.Repositories.Assets
     public interface IAssetSettingRepository
     {
         Task<IEnumerable<IAssetSetting>> GetAssetSettings();
+        Task UpdateAssetSetting(string asset, string hotWallet, string changeWallet);
     }
 }
