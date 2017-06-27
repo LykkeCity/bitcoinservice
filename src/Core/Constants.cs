@@ -25,6 +25,7 @@ namespace Core
         public const string ReturnBroadcatedOutputsQueue = "return-broadcasted-outputs";
 
         public const string ProcessingBlockSetting = "ProcessingBlockSetting";
+        public const string CurrentPrivateIncrementSetting = "PrivateIncrement";
 
         public const string DefaultAssetSetting = "Default";
     }

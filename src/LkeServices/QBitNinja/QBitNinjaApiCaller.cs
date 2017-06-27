@@ -30,6 +30,13 @@ namespace LkeServices.QBitNinja
             return await client.GetBalance(BitcoinAddress.Create(walletAddress, _connectionParams.Network), unspentonly);
         }
 
+        public async Task<BalanceSummary> GetBalanceSummary(string walletAddress)
+        {
+            var client = _clientFactory();
+            client.Colored = true;
+            return await client.GetBalanceSummary(BitcoinAddress.Create(walletAddress, _connectionParams.Network));
+        }
+
         public Task<GetTransactionResponse> GetTransaction(string hash)
         {
             var client = _clientFactory();                        

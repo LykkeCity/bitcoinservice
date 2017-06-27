@@ -256,7 +256,6 @@ namespace BitcoinJob.Functions
 
         private async Task GenerateIssueAllowedCoins()
         {
-
             foreach (var asset in await _assetRepostory.Values())
             {
                 if (OpenAssetsHelper.IsBitcoin(asset.Id) || OpenAssetsHelper.IsLkk(asset.Id) || !asset.IssueAllowed)
@@ -265,6 +264,10 @@ namespace BitcoinJob.Functions
                 try
                 {
                     var setting = await GetAssetSetting(asset.Id);
+
+                    if (setting.HotWallet != setting.ChangeWallet)
+                        continue;
+
                     var hotWallet = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(setting.HotWallet);
                     var assetId = new BitcoinAssetId(asset.BlockChainAssetId).AssetId;
 

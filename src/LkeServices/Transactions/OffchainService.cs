@@ -296,7 +296,7 @@ namespace LkeServices.Transactions
                         throw new BackendException("There is another pending channel setup", ErrorCode.AnotherChannelSetupExists);
 
                     var assetSetting = await GetAssetSetting(asset.Id);
-                                    
+
                     var fiatCoef = assetSetting.CashinCoef;
 
                     var context = _transactionBuildContextFactory.Create(_connectionParams.Network);
@@ -1147,7 +1147,7 @@ namespace LkeServices.Transactions
             var changeAddress = !string.IsNullOrEmpty(assetSetting.ChangeWallet)
                 ? OpenAssetsHelper.GetBitcoinAddressFormBase58Date(assetSetting.ChangeWallet)
                 : hotWalletAddress;
-            IDestination newChangeWallet = null;
+
             if (OpenAssetsHelper.IsBitcoin(assetEntity.Id))
             {
                 decimal sentAmount = 0;
@@ -1160,18 +1160,18 @@ namespace LkeServices.Transactions
 
                 if (availableAmount < neededAmount && changeAddress != hotWalletAddress && assetSetting.Asset != Constants.DefaultAssetSetting)
                 {
-                    monitor.Step("Generate new change wallet");
-                    newChangeWallet = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(await CreateNewChangeWallet(assetSetting));
-
                     monitor.Step("Get uncolored outputs from new hotwallet");
                     var outputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(changeAddress.ToWif(), monitor: monitor)).ToList();
-                    sentAmount = await _transactionBuildHelper.SendWithChange(builder, context, outputs, toMultisig, neededAmount - availableAmount, newChangeWallet);
+                    sentAmount = await _transactionBuildHelper.SendWithChange(builder, context, outputs, toMultisig, neededAmount - availableAmount, changeAddress);
+
+                    monitor.Step("Update hotwallet");
+                    await _assetSettingRepository.UpdateHotWallet(assetSetting.Asset, assetSetting.ChangeWallet);
+
                     neededAmount = availableAmount;
                 }
 
                 if (neededAmount > 0)
-                    sentAmount += await _transactionBuildHelper.SendWithChange(builder, context, unspentOutputs, toMultisig, neededAmount,
-                        newChangeWallet ?? changeAddress);
+                    sentAmount += await _transactionBuildHelper.SendWithChange(builder, context, unspentOutputs, toMultisig, neededAmount, changeAddress);
 
                 return sentAmount;
             }
@@ -1188,29 +1188,21 @@ namespace LkeServices.Transactions
 
                 if (availableAmount < neededAmount && changeAddress != hotWalletAddress && assetSetting.Asset != Constants.DefaultAssetSetting)
                 {
-                    monitor.Step("Generate new change wallet");
-                    newChangeWallet = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(await CreateNewChangeWallet(assetSetting));
-
                     monitor.Step("Get colored outputs from new hotwallet");
                     var outputs = (await _bitcoinOutputsService.GetColoredUnspentOutputs(changeAddress.ToWif(), asset, monitor: monitor)).ToList();
-                    _transactionBuildHelper.SendAssetWithChange(builder, context, outputs, toMultisig, new AssetMoney(asset, neededAmount - availableAmount), newChangeWallet);
+                    _transactionBuildHelper.SendAssetWithChange(builder, context, outputs, toMultisig, new AssetMoney(asset, neededAmount - availableAmount), changeAddress);
+
+                    monitor.Step("Update hotwallet");
+                    await _assetSettingRepository.UpdateHotWallet(assetSetting.Asset, assetSetting.ChangeWallet);
+
                     neededAmount = availableAmount;
                 }
                 if (neededAmount > 0)
-                    _transactionBuildHelper.SendAssetWithChange(builder, context, unspentOutputs,
-                        toMultisig, new AssetMoney(asset, neededAmount), newChangeWallet ?? changeAddress);
+                    _transactionBuildHelper.SendAssetWithChange(builder, context, unspentOutputs, toMultisig, new AssetMoney(asset, neededAmount), changeAddress);
 
                 return new AssetMoney(asset, neededAmount).ToDecimal(assetEntity.MultiplierPower);
             }
         }
-
-        private async Task<string> CreateNewChangeWallet(IAssetSetting setting)
-        {
-            var newChangeWallet = await _signatureApiProvider.GetNextAddress(setting.ChangeWallet);
-            await _assetSettingRepository.UpdateAssetSetting(setting.Asset, setting.ChangeWallet, newChangeWallet);
-            return newChangeWallet;
-        }
-
 
         private ICoin FindCoin(Transaction tr, string multisig, string walletRedeemScript, decimal amount, IAsset asset)
         {

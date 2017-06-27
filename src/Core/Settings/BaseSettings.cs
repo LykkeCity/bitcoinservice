@@ -80,5 +80,6 @@ namespace Core.Settings
     public class Offchain
     {
         public bool UseOffchainGeneration { get; set; } = false;
+        public string HotWallet { get; set; }
     }
 }

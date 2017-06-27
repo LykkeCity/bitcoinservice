@@ -17,11 +17,16 @@ namespace Core.Repositories.Assets
         int MinOutputsCount { get; set; }
         int MaxOutputsCount { get; set; }
         string ChangeWallet { get; set; }
+        int PrivateIncrement { get; set; }
+
+        IAssetSetting Clone(string newId);
     }
 
     public interface IAssetSettingRepository
     {
+        Task Insert(IAssetSetting setting);
         Task<IEnumerable<IAssetSetting>> GetAssetSettings();
-        Task UpdateAssetSetting(string asset, string hotWallet, string changeWallet);
+        Task UpdateHotWallet(string asset, string hotWallet);
+        Task UpdateChangeAndIncrement(string asset, string changeWallet, int increment);
     }
 }
