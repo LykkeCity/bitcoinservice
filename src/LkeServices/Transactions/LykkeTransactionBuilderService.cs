@@ -32,11 +32,12 @@ namespace LkeServices.Transactions
 
         Task<CreateTransactionResponse> GetDestroyTransaction(BitcoinAddress bitcoinAddres, decimal modelAmount, IAsset asset, Guid transactionId);
 
-        Task<CreateTransactionResponse> GetTransferAllTransaction(BitcoinAddress from, BitcoinAddress to, Guid transactionId);        
+        Task<CreateTransactionResponse> GetTransferAllTransaction(BitcoinAddress from, BitcoinAddress to, Guid transactionId);
 
-       
+        Task<CreateTransactionResponse> GetMultipleTransferTransaction(BitcoinAddress destination, IAsset asset, Dictionary<string, decimal> transferAddresses, Guid transactionId);
 
         Task<Guid> AddTransactionId(Guid? transactionId, string rawRequest);
+
     }
 
     public class LykkeTransactionBuilderService : ILykkeTransactionBuilderService
@@ -44,7 +45,7 @@ namespace LkeServices.Transactions
         private readonly ITransactionBuildHelper _transactionBuildHelper;
         private readonly IBitcoinOutputsService _bitcoinOutputsService;
         private readonly ITransactionSignRequestRepository _signRequestRepository;
-        private readonly IBroadcastedOutputRepository _broadcastedOutputRepository;        
+        private readonly IBroadcastedOutputRepository _broadcastedOutputRepository;
         private readonly IPregeneratedOutputsQueueFactory _pregeneratedOutputsQueueFactory;
         private readonly ILog _log;
         private readonly IFeeReserveMonitoringWriter _feeReserveMonitoringWriter;
@@ -60,7 +61,7 @@ namespace LkeServices.Transactions
             ITransactionBuildHelper transactionBuildHelper,
             IBitcoinOutputsService bitcoinOutputsService,
             ITransactionSignRequestRepository signRequestRepository,
-            IBroadcastedOutputRepository broadcastedOutputRepository,            
+            IBroadcastedOutputRepository broadcastedOutputRepository,
             IPregeneratedOutputsQueueFactory pregeneratedOutputsQueueFactory,
             ILog log,
             IFeeReserveMonitoringWriter feeReserveMonitoringWriter,
@@ -73,7 +74,7 @@ namespace LkeServices.Transactions
             _transactionBuildHelper = transactionBuildHelper;
             _bitcoinOutputsService = bitcoinOutputsService;
             _signRequestRepository = signRequestRepository;
-            _broadcastedOutputRepository = broadcastedOutputRepository;            
+            _broadcastedOutputRepository = broadcastedOutputRepository;
             _pregeneratedOutputsQueueFactory = pregeneratedOutputsQueueFactory;
             _log = log;
             _feeReserveMonitoringWriter = feeReserveMonitoringWriter;
@@ -246,7 +247,7 @@ namespace LkeServices.Transactions
                     async Task<IDestination> GetChangeWallet(string asset)
                     {
                         var assetSetting = await _offchainService.GetAssetSetting(asset);
-                        return OpenAssetsHelper.GetBitcoinAddressFormBase58Date(!string.IsNullOrEmpty(assetSetting.ChangeWallet) ? assetSetting.ChangeWallet 
+                        return OpenAssetsHelper.GetBitcoinAddressFormBase58Date(!string.IsNullOrEmpty(assetSetting.ChangeWallet) ? assetSetting.ChangeWallet
                             : assetSetting.HotWallet);
                     };
 
@@ -306,6 +307,36 @@ namespace LkeServices.Transactions
             }, exception => (exception as BackendException)?.Code == ErrorCode.TransactionConcurrentInputsProblem, 3, _log);
         }
 
+        public Task<CreateTransactionResponse> GetMultipleTransferTransaction(BitcoinAddress destination, IAsset asset,
+            Dictionary<string, decimal> transferAddresses, Guid transactionId)
+        {
+            return Retry.Try(async () =>
+            {
+                var context = _transactionBuildContextFactory.Create(_connectionParams.Network);
+
+                return await context.Build(async () =>
+                {
+                    var builder = new TransactionBuilder();
+
+                    foreach (var transferAddress in transferAddresses)
+                    {
+                        var source = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(transferAddress.Key);
+                        await TransferOneDirection(builder, context, source, transferAddress.Value, asset, destination);
+                    }
+
+                    await _transactionBuildHelper.AddFee(builder, context);
+
+                    var buildedTransaction = builder.BuildTransaction(true);
+
+                    await _spentOutputService.SaveSpentOutputs(transactionId, buildedTransaction);
+
+                    await SaveNewOutputs(transactionId, buildedTransaction, context);
+
+                    return new CreateTransactionResponse(buildedTransaction.ToHex(), transactionId);
+                });
+            }, exception => (exception as BackendException)?.Code == ErrorCode.TransactionConcurrentInputsProblem, 3, _log);
+        }
+
 
         private async Task TransferOneDirection(TransactionBuilder builder, TransactionBuildContext context,
             BitcoinAddress @from, decimal amount, IAsset asset, BitcoinAddress to, bool addDust = true)
@@ -334,8 +365,8 @@ namespace LkeServices.Transactions
             await _broadcastedOutputRepository.InsertOutputs(
                     coloredOutputs.Select(o => new BroadcastedOutput(o, transactionId, _connectionParams.Network)).ToList());
         }
-       
-       
+
+
 
         public async Task<Guid> AddTransactionId(Guid? transactionId, string rawRequest)
         {

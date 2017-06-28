@@ -6,6 +6,7 @@ namespace Core.TransactionQueueWriter
         Transfer,
         TransferAll,
         Swap,        
-        Destroy
+        Destroy,
+        MultipleTransfers
     }
 }

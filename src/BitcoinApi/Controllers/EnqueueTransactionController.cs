@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -54,7 +55,7 @@ namespace BitcoinApi.Controllers
 
             await ValidateAddress(model.SourceAddress);
             await ValidateAddress(model.DestinationAddress);
-            
+
             var asset = await _assetRepository.GetAssetById(model.Asset);
             if (asset == null)
                 throw new BackendException("Provided asset is missing in database", ErrorCode.AssetNotFound);
@@ -202,6 +203,33 @@ namespace BitcoinApi.Controllers
                 Amount = model.Amount,
                 Asset = model.Asset,
                 Address = model.Address,
+            }.ToJson());
+
+            return Ok(new TransactionIdResponse
+            {
+                TransactionId = transactionId
+            });
+        }
+
+        /// <summary>
+        /// Add multiple transfer to queue
+        /// </summary>
+        /// <returns>Internal transaction id</returns>
+        [HttpPost("multipletransfer")]
+        [ProducesResponseType(typeof(TransactionIdResponse), 200)]
+        [ProducesResponseType(typeof(ApiException), 400)]
+        public async Task<IActionResult> CreateMultipleTransfer([FromBody]MultipleTransferRequest model)
+        {
+            foreach (var source in model.Sources)
+                await ValidateAddress(source.Address);
+
+            var transactionId = await _builder.AddTransactionId(model.TransactionId, $"MultipleTransfer: {model.ToJson()}");
+
+            await _transactionQueueWriter.AddCommand(transactionId, TransactionCommandType.MultipleTransfers, new MultipleTransferCommand
+            {
+                Destination = model.Destination,
+                Asset = model.Asset,
+                Addresses = model.Sources.ToDictionary(x => x.Address, x => x.Amount)
             }.ToJson());
 
             return Ok(new TransactionIdResponse
