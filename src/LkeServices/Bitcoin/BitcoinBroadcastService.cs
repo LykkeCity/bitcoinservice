@@ -44,17 +44,9 @@ namespace LkeServices.Bitcoin
             monitor?.Step("Broadcast transcation");
             await _rpcBitcoinClient.BroadcastTransaction(tx, transactionId);
             
-            monitor?.Step("Set transaction hash, postbroadcast and add to monitoring");
+            monitor?.Step("Set transaction hash and add to monitoring");
             await Task.WhenAll(
                 _broadcastedOutputRepository.SetTransactionHash(transactionId, hash),
-                Task.Run(async () =>
-                    {
-                        if (_settings.UseLykkeApi && useHandlers)
-                        {
-                            await _apiProvider.SendPostBroadcastNotification(new LykkeTransactionNotification(notifyTxId ?? transactionId, hash));
-                        }
-                    }
-                ),
                 _monitoringWriter.AddToMonitoring(transactionId, tx.GetHash().ToString())
             );
         }
