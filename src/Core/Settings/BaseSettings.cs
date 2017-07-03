@@ -63,6 +63,8 @@ namespace Core.Settings
         public int SpentOutputsExpirationDays { get; set; } = 7;
 
         public Offchain Offchain { get; set; } = new Offchain();
+
+        public RabbitMqSettings RabbitMq { get; set; } = new RabbitMqSettings();        
     }
 
     public class DbSettings

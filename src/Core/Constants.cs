@@ -28,5 +28,8 @@ namespace Core
         public const string CurrentPrivateIncrementSetting = "PrivateIncrement";
 
         public const string DefaultAssetSetting = "Default";
+
+
+        public const string RabbitMqExplorerNotificationQueue = "explorer-notifications";        
     }
 }
