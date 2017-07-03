@@ -31,6 +31,7 @@ namespace OffchainRequestCreator.Repositories
         string ExternalTransferId { get; }
         OffchainTransferType Type { get; }
         bool ChannelClosing { get; }
+        bool Onchain { get; set; }
     }
 
     public interface IOffchainTransferRepository
@@ -44,5 +45,7 @@ namespace OffchainRequestCreator.Repositories
         Task CompleteTransfer(string transferId);
 
         Task UpdateExternalTransferAndClosing(string transferId, string toString, bool closing = false);
+
+        Task<IEnumerable<IOffchainTransfer>> GetTransfers(DateTime from, DateTime to);
     }
 }

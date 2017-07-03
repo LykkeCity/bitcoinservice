@@ -20,6 +20,7 @@ namespace OffchainRequestCreator.Repositories
         public string ExternalTransferId { get; set; }
         public OffchainTransferType Type { get; set; }
         public bool ChannelClosing { get; set; }
+        public bool Onchain { get; set; }
 
         public class ByCommon
         {
@@ -129,6 +130,25 @@ namespace OffchainRequestCreator.Repositories
                     entity.ChannelClosing = closing;
                     return entity;
                 });
+        }
+
+        public async Task<IEnumerable<IOffchainTransfer>> GetTransfers(DateTime from, DateTime to)
+        {
+            var date1 = TableQuery.GenerateFilterConditionForDate(
+                "CreatedDt", QueryComparisons.GreaterThanOrEqual,
+                new DateTimeOffset(from));
+            var date2 = TableQuery.GenerateFilterConditionForDate(
+                "CreatedDt", QueryComparisons.LessThanOrEqual,
+                new DateTimeOffset(to));
+
+            string finalFilter = TableQuery.CombineFilters(
+                TableQuery.CombineFilters(
+                    TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, OffchainTransferEntity.ByCommon.GeneratePartitionKey()),
+                    TableOperators.And,
+                    date1),
+                TableOperators.And, date2);
+
+            return await _storage.WhereAsync(new TableQuery<OffchainTransferEntity>().Where(finalFilter));
         }
     }
 }
