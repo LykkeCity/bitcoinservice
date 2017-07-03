@@ -40,6 +40,7 @@ namespace BitcoinApi.Binders
 
             ioc.RegisterInstance(log);
             ioc.RegisterInstance(settings);
+            ioc.RegisterInstance(settings.RabbitMq);
             ioc.RegisterInstance(new RpcConnectionParams(settings));
 
             ioc.BindCommonServices();

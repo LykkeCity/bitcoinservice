@@ -15,6 +15,7 @@ using NBitcoin.OpenAsset;
 using Common;
 using Common.Log;
 using Core;
+using Core.ExplorerNotification;
 using Core.Outputs;
 using Core.Performance;
 using Core.Providers;
@@ -104,6 +105,7 @@ namespace LkeServices.Transactions
         private readonly ILog _logger;
         private readonly IAssetSettingRepository _assetSettingRepository;
         private readonly IReturnBroadcastedOutputsMessageWriter _returnBroadcastedOutputsMessageWriter;
+        private readonly IExplorerNotificationService _explorerNotificationService;
         private readonly IClosingChannelRepository _closingChannelRepository;
 
         public OffchainService(
@@ -128,6 +130,7 @@ namespace LkeServices.Transactions
             ILog logger,
             IAssetSettingRepository assetSettingRepository,
             IReturnBroadcastedOutputsMessageWriter returnBroadcastedOutputsMessageWriter,
+            IExplorerNotificationService explorerNotificationService,
             IClosingChannelRepository closingChannelRepository)
         {
             _transactionBuildHelper = transactionBuildHelper;
@@ -151,6 +154,7 @@ namespace LkeServices.Transactions
             _logger = logger;
             _assetSettingRepository = assetSettingRepository;
             _returnBroadcastedOutputsMessageWriter = returnBroadcastedOutputsMessageWriter;
+            _explorerNotificationService = explorerNotificationService;
             _closingChannelRepository = closingChannelRepository;
         }
 
@@ -574,6 +578,9 @@ namespace LkeServices.Transactions
                             }
                         })
                     );
+                    _explorerNotificationService.OpenChannel(channel.ChannelId.ToString(), hash, asset.Id,
+                        address.MultisigAddress, new PubKey(address.ClientPubKey).ToString(_connectionParams.Network),
+                        new PubKey(address.ExchangePubKey).ToString(_connectionParams.Network));
                 }
                 monitor.Step("Update amounts and complete transfer");
 
@@ -581,6 +588,9 @@ namespace LkeServices.Transactions
                     _offchainChannelRepository.UpdateAmounts(address.MultisigAddress, asset.Id, hubCommitment.ClientAmount, hubCommitment.HubAmount),
                     _offchainTransferRepository.CompleteTransfer(address.MultisigAddress, asset.Id, transfer.TransferId)
                 );
+
+
+                _explorerNotificationService.Transfer(channel.ChannelId.ToString(), (notifyTxId ?? transfer.TransferId).ToString(), hubCommitment.ClientAmount, hubCommitment.HubAmount, DateTime.UtcNow);
 
                 return new OffchainFinalizeResponse()
                 {
@@ -903,7 +913,10 @@ namespace LkeServices.Transactions
 
             await _spentOutputService.SaveSpentOutputs(closing.ClosingChannelId, tr);
 
-            return tr.GetHash().ToString();
+            var hash = tr.GetHash().ToString();
+            _explorerNotificationService.CloseChannel(closing.ChannelId.ToString(), hash);
+
+            return hash;
         }
 
         public async Task SpendCommitmemtByMultisig(ICommitment commitment, ICoin spendingCoin, string destination)

@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Net.Http;
 using Autofac;
+using Core;
 using Core.Bitcoin;
+using Core.ExplorerNotification;
 using Core.Outputs;
 using Core.Performance;
 using Core.Providers;
 using Core.QBitNinja;
 using Core.Settings;
 using LkeServices.Bitcoin;
+using LkeServices.ExplorerNotifiaction;
 using LkeServices.Multisig;
 using LkeServices.Outputs;
 using LkeServices.Performance;
@@ -54,6 +57,18 @@ namespace LkeServices
             ioc.RegisterType<FailedTransactionsManager>().As<IFailedTransactionsManager>();
             ioc.RegisterType<PerformanceMonitorFactory>().As<IPerformanceMonitorFactory>();
             ioc.RegisterType<SpentOutputService>().As<ISpentOutputService>();
+
+            ioc.RegisterType<RabbitMqPublisher>().Named<IRabbitMqPublisher>(Constants.RabbitMqExplorerNotificationQueue)
+                .WithParameter("queue", Constants.RabbitMqExplorerNotificationQueue).SingleInstance().AutoActivate();
+
+            ioc.Register<Func<string, IRabbitMqPublisher>>(x =>
+            {
+                var resolver = x.Resolve<IComponentContext>();
+                return queue => resolver.ResolveNamed<IRabbitMqPublisher>(queue);
+            });
+
+            ioc.RegisterType<RabbitExplorerNotifitcationService>().As<IExplorerNotificationService>();
+
             BindApiProviders(ioc);
         }
 

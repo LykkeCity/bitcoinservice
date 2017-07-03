@@ -55,7 +55,8 @@ namespace BackgroundWorker.Binders
             ioc.RegisterInstance(log);
             ioc.RegisterInstance(settings);
             ioc.RegisterInstance(new RpcConnectionParams(settings));
-            
+            ioc.RegisterInstance(settings.RabbitMq);
+
             ioc.BindCommonServices();
             ioc.BindAzure(settings, log);
             ioc.BindMongo(settings);
