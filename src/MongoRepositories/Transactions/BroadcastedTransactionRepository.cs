@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Core.Repositories.Transactions;
@@ -10,7 +11,7 @@ namespace MongoRepositories.Transactions
 {
     public class BroadcastedTransactionEntity : MongoEntity, IBroadcastedTransaction
     {
-        
+
         [BsonIgnore]
         public string Hash => BsonId;
 
@@ -20,7 +21,7 @@ namespace MongoRepositories.Transactions
         public static BroadcastedTransactionEntity Create(string hash, Guid transactionId)
         {
             return new BroadcastedTransactionEntity
-            {                
+            {
                 BsonId = hash,
                 TransactionId = transactionId
             };
@@ -29,8 +30,8 @@ namespace MongoRepositories.Transactions
 
     public class BroadcastedTransactionRepository : IBroadcastedTransactionRepository
     {
-    
-        private readonly IMongoStorage<BroadcastedTransactionEntity> _storage;        
+
+        private readonly IMongoStorage<BroadcastedTransactionEntity> _storage;
 
         public BroadcastedTransactionRepository(IMongoStorage<BroadcastedTransactionEntity> storage)
         {
@@ -45,6 +46,11 @@ namespace MongoRepositories.Transactions
         public async Task<IBroadcastedTransaction> GetTransaction(string hash)
         {
             return await _storage.GetDataAsync(hash);
-        }        
+        }
+
+        public async Task<IBroadcastedTransaction> GetTransactionById(Guid id)
+        {
+            return (await _storage.GetDataAsync(x => x.TransactionId == id)).FirstOrDefault();
+        }
     }
 }

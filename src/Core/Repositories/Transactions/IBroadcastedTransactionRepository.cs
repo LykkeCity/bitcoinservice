@@ -16,6 +16,7 @@ namespace Core.Repositories.Transactions
         Task InsertTransaction(string hash, Guid transactionId);
 
         Task<IBroadcastedTransaction> GetTransaction(string hash);
-      
+
+        Task<IBroadcastedTransaction> GetTransactionById(Guid id);
     }
 }

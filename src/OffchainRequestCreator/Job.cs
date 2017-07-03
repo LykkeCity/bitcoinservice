@@ -22,7 +22,7 @@ namespace PoisonMessagesReenqueue
 
         public async Task Start()
         {
-            //await GetStatistics(DateTime.UtcNow.AddDays(-10), DateTime.UtcNow);
+            //await GetStatistics(DateTime.UtcNow.AddDays(-5), DateTime.UtcNow);
         }
 
         private async Task AddRequest(string client, string asset, decimal amount,
@@ -41,26 +41,38 @@ namespace PoisonMessagesReenqueue
 
             var byType = trasnfers.GroupBy(x => x.Type);
 
+            WriteLine($"Operation Settlement Asset Number");
+
             foreach (var type in byType)
             {
                 var onchainCount = type.Count(x => x.Onchain);
                 var offchainCount = type.Count(x => !x.Onchain);
 
-                //FromHub --> SettlementFromHub
-                //FromClient-- > SettlementFromClient
-
-                WriteLine(type.Key.ToString());
-                WriteLine($"Onchain: {onchainCount}, offchain: {offchainCount}");
-                WriteLine("");
+                string typeName;
+                switch (type.Key)
+                {
+                    case OffchainTransferType.FromHub:
+                        typeName = "SettlementFromHub";
+                        break;
+                    case OffchainTransferType.FromClient:
+                        typeName = "SettlementFromClient";
+                        break;
+                    default:
+                        typeName = type.Key.ToString();
+                        break;
+                }
 
                 var byAsset = type.GroupBy(x => x.AssetId);
 
                 foreach (var asset in byAsset)
                 {
-                    WriteLine($"     {string.Format("{0, -5}", asset.Key)} - onchain: {asset.Count(x => x.Onchain)}, offchain: {asset.Count(x => !x.Onchain)}");
+                    WriteLine($"{typeName} onchain {asset.Key} {asset.Count(x => x.Onchain)}");
                 }
 
-                WriteLine("");
+                foreach (var asset in byAsset)
+                {
+                    WriteLine($"{typeName} offchain {asset.Key} {asset.Count(x => !x.Onchain)}");
+                }
             }
         }
 

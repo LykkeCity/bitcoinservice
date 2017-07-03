@@ -13,6 +13,7 @@ using Core.Repositories.Assets;
 using LkeServices.Transactions;
 using NBitcoin;
 using System.Reflection;
+using BitcoinApi.Models.Offchain;
 using Common;
 using Core.Helpers;
 using Core.Repositories.Transactions;
@@ -31,13 +32,14 @@ namespace BitcoinApi.Controllers
         private readonly ITransactionSignRequestRepository _transactionSignRequestRepository;
         private readonly ITransactionBlobStorage _transactionBlobStorage;
         private readonly IBitcoinBroadcastService _broadcastService;
+        private readonly IBroadcastedTransactionRepository _broadcastedTransactionRepository;
 
         public TransactionController(ILykkeTransactionBuilderService builder,
             IAssetRepository assetRepository,
             Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
             ITransactionSignRequestRepository transactionSignRequestRepository,
             ITransactionBlobStorage transactionBlobStorage,
-            IBitcoinBroadcastService broadcastService)
+            IBitcoinBroadcastService broadcastService, IBroadcastedTransactionRepository broadcastedTransactionRepository)
         {
             _builder = builder;
             _assetRepository = assetRepository;
@@ -45,6 +47,7 @@ namespace BitcoinApi.Controllers
             _transactionSignRequestRepository = transactionSignRequestRepository;
             _transactionBlobStorage = transactionBlobStorage;
             _broadcastService = broadcastService;
+            _broadcastedTransactionRepository = broadcastedTransactionRepository;
         }
 
         /// <summary>
@@ -113,6 +116,22 @@ namespace BitcoinApi.Controllers
             var fullSigned = new Transaction(fullSignedHex);
 
             await _broadcastService.BroadcastTransaction(model.TransactionId, fullSigned, useHandlers: false);
+        }
+
+        /// <summary>
+        ///  Return transaction hash by internal id
+        /// </summary>
+        [HttpGet("{transactionId}")]
+        [ProducesResponseType(typeof(TransactionHashResponse), 200)]
+        [ProducesResponseType(typeof(ApiException), 400)]
+        public async Task<IActionResult> Get(Guid transactionId)
+        {
+            var tr = await _broadcastedTransactionRepository.GetTransactionById(transactionId);
+
+            if (tr == null)
+                throw new BackendException("Transaction was not found", ErrorCode.BadInputParameter);
+
+            return Ok(new TransactionHashResponse(tr.Hash));
         }
     }
 }
