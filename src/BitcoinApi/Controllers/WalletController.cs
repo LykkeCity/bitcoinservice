@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System.Linq;
+using System.Threading.Tasks;
+using BitcoinApi.Filters;
 using BitcoinApi.Models;
 using Core.Bitcoin;
 using Core.Providers;
@@ -37,6 +39,23 @@ namespace BitcoinApi.Controllers
             {
                 MultiSigAddress = address.MultisigAddress,
                 ColoredMultiSigAddress = coloredMultisigAddress
+            };
+        }
+
+        /// <summary>
+        /// Returns all registered multisigs
+        /// </summary>
+        /// <returns>Array with all multisigs</returns>
+        [HttpGet("all")]
+        [ProducesResponseType(typeof(GetAllWalletsResult), 200)]
+        [ProducesResponseType(typeof(ApiException), 400)]
+        public async Task<GetAllWalletsResult> GetAllWallets()
+        {
+            var data = await _multisigService.GetAllMultisigs();
+
+            return new GetAllWalletsResult
+            {
+                Multisigs = data.Select(x => x.MultisigAddress)
             };
         }
     }

@@ -15,6 +15,7 @@ namespace LkeServices.Multisig
     {
         Task<IWalletAddress> GetOrCreateMultisig(string clientPubKey);
         Task<IWalletAddress> GetMultisig(string clientPubKey);
+        Task<IEnumerable<IWalletAddress>> GetAllMultisigs();
     }
 
     public class MultisigService : IMultisigService
@@ -34,7 +35,7 @@ namespace LkeServices.Multisig
             _signatureApiProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
             _connectionParams = connectionParams;
         }
-        
+
         public async Task<IWalletAddress> GetOrCreateMultisig(string clientPubKey)
         {
             var multisig = await _walletAddressRepository.GetByClientPubKey(clientPubKey);
@@ -50,10 +51,15 @@ namespace LkeServices.Multisig
             return await _walletAddressRepository.GetByClientPubKey(clientPubKey);
         }
 
+        public async Task<IEnumerable<IWalletAddress>> GetAllMultisigs()
+        {
+            return await _walletAddressRepository.GetAllAddresses();
+        }
+
         private async Task<IWalletAddress> CreateMultisig(string clientPubKey, string exchangePubKey)
         {
             var scriptPubKey = MultisigHelper.GenerateMultisigRedeemScript(clientPubKey, exchangePubKey);
-            var address =  await _walletAddressRepository.Create(scriptPubKey.GetScriptAddress(_connectionParams.Network).ToWif(),
+            var address = await _walletAddressRepository.Create(scriptPubKey.GetScriptAddress(_connectionParams.Network).ToWif(),
                 clientPubKey, exchangePubKey, scriptPubKey.ToString());
             _notificationService.CreateMultisig(address.MultisigAddress, DateTime.UtcNow);
             return address;
