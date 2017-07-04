@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Text;
 using Common;
-using Newtonsoft.Json;
 
-namespace LkeServices.ExplorerNotifiaction
+namespace LkeServices.RabbitNotifiaction
 {
     public class BaseNotificationContract
     {
@@ -94,5 +92,13 @@ namespace LkeServices.ExplorerNotifiaction
                 TimeAdd = timeAdd
             };
         }
-    }    
+    }
+
+
+    public class MultisigNotification
+    {
+        public string Multisig { get; set; }
+
+        public DateTime Date { get; set; }
+    }
 }

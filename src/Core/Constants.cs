@@ -26,10 +26,13 @@ namespace Core
 
         public const string ProcessingBlockSetting = "ProcessingBlockSetting";
         public const string CurrentPrivateIncrementSetting = "PrivateIncrement";
+        public const string MaxOffchainTxCount = "MaxOffchainTxCount";
+
 
         public const string DefaultAssetSetting = "Default";
 
 
-        public const string RabbitMqExplorerNotificationQueue = "explorer-notifications";        
+        public const string RabbitMqExplorerNotification = "onh.offchainnotifications";
+        public const string RabbitMqMultisigNotification = "multisignotifications";
     }
 }

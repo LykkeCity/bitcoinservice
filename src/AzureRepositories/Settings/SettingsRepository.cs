@@ -47,6 +47,16 @@ namespace AzureRepositories.Settings
             return (T)Convert.ChangeType(setting.Value, typeof(T));
         }
 
+        public Task<T> Get<T>(string key, T defaultValue)
+        {
+            throw new NotImplementedException();
+        }
+
+        Task<T> ISettingsRepository.Set<T>(string key, T value)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task Set<T>(string key, T value)
         {
             return _table.InsertOrReplaceAsync(new SettingsEntity(key, value?.ToString()));

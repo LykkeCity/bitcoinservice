@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Core.Bitcoin;
 using Core.Helpers;
 using Core.Providers;
+using Core.RabbitNotification;
 using Core.Repositories.Wallets;
 using LkeServices.Providers;
 
@@ -19,14 +20,17 @@ namespace LkeServices.Multisig
     public class MultisigService : IMultisigService
     {
         private readonly IWalletAddressRepository _walletAddressRepository;
+        private readonly IRabbitNotificationService _notificationService;
         private readonly ISignatureApiProvider _signatureApiProvider;
         private readonly RpcConnectionParams _connectionParams;
 
         public MultisigService(IWalletAddressRepository walletAddressRepository,
             Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
+            IRabbitNotificationService notificationService,
             RpcConnectionParams connectionParams)
         {
             _walletAddressRepository = walletAddressRepository;
+            _notificationService = notificationService;
             _signatureApiProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
             _connectionParams = connectionParams;
         }
@@ -49,8 +53,10 @@ namespace LkeServices.Multisig
         private async Task<IWalletAddress> CreateMultisig(string clientPubKey, string exchangePubKey)
         {
             var scriptPubKey = MultisigHelper.GenerateMultisigRedeemScript(clientPubKey, exchangePubKey);
-            return await _walletAddressRepository.Create(scriptPubKey.GetScriptAddress(_connectionParams.Network).ToWif(),
+            var address =  await _walletAddressRepository.Create(scriptPubKey.GetScriptAddress(_connectionParams.Network).ToWif(),
                 clientPubKey, exchangePubKey, scriptPubKey.ToString());
+            _notificationService.CreateMultisig(address.MultisigAddress, DateTime.UtcNow);
+            return address;
         }
     }
 }

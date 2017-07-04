@@ -15,10 +15,10 @@ using NBitcoin.OpenAsset;
 using Common;
 using Common.Log;
 using Core;
-using Core.ExplorerNotification;
 using Core.Outputs;
 using Core.Performance;
 using Core.Providers;
+using Core.RabbitNotification;
 using Core.Repositories.Offchain;
 using Core.Repositories.RevokeKeys;
 using Core.Repositories.TransactionOutputs;
@@ -105,7 +105,7 @@ namespace LkeServices.Transactions
         private readonly ILog _logger;
         private readonly IAssetSettingRepository _assetSettingRepository;
         private readonly IReturnBroadcastedOutputsMessageWriter _returnBroadcastedOutputsMessageWriter;
-        private readonly IExplorerNotificationService _explorerNotificationService;
+        private readonly IRabbitNotificationService _rabbitNotificationService;
         private readonly IClosingChannelRepository _closingChannelRepository;
 
         public OffchainService(
@@ -130,7 +130,7 @@ namespace LkeServices.Transactions
             ILog logger,
             IAssetSettingRepository assetSettingRepository,
             IReturnBroadcastedOutputsMessageWriter returnBroadcastedOutputsMessageWriter,
-            IExplorerNotificationService explorerNotificationService,
+            IRabbitNotificationService rabbitNotificationService,
             IClosingChannelRepository closingChannelRepository)
         {
             _transactionBuildHelper = transactionBuildHelper;
@@ -154,7 +154,7 @@ namespace LkeServices.Transactions
             _logger = logger;
             _assetSettingRepository = assetSettingRepository;
             _returnBroadcastedOutputsMessageWriter = returnBroadcastedOutputsMessageWriter;
-            _explorerNotificationService = explorerNotificationService;
+            _rabbitNotificationService = rabbitNotificationService;
             _closingChannelRepository = closingChannelRepository;
         }
 
@@ -578,7 +578,7 @@ namespace LkeServices.Transactions
                             }
                         })
                     );
-                    _explorerNotificationService.OpenChannel(channel.ChannelId.ToString(), hash, asset.Id,
+                    _rabbitNotificationService.OpenChannel(channel.ChannelId.ToString(), hash, asset.Id,
                         address.MultisigAddress, new PubKey(address.ClientPubKey).ToString(_connectionParams.Network),
                         new PubKey(address.ExchangePubKey).ToString(_connectionParams.Network));
                 }
@@ -590,7 +590,7 @@ namespace LkeServices.Transactions
                 );
 
 
-                _explorerNotificationService.Transfer(channel.ChannelId.ToString(), (notifyTxId ?? transfer.TransferId).ToString(), hubCommitment.ClientAmount, hubCommitment.HubAmount, DateTime.UtcNow);
+                _rabbitNotificationService.Transfer(channel.ChannelId.ToString(), (notifyTxId ?? transfer.TransferId).ToString(), hubCommitment.ClientAmount, hubCommitment.HubAmount, DateTime.UtcNow);
 
                 return new OffchainFinalizeResponse()
                 {
@@ -914,14 +914,13 @@ namespace LkeServices.Transactions
             await _spentOutputService.SaveSpentOutputs(closing.ClosingChannelId, tr);
 
             var hash = tr.GetHash().ToString();
-            _explorerNotificationService.CloseChannel(closing.ChannelId.ToString(), hash);
+            _rabbitNotificationService.CloseChannel(closing.ChannelId.ToString(), hash);
 
             return hash;
         }
 
         public async Task SpendCommitmemtByMultisig(ICommitment commitment, ICoin spendingCoin, string destination)
         {
-
             TransactionBuildContext context = _transactionBuildContextFactory.Create(_connectionParams.Network);
 
             var destinationAddress = BitcoinAddress.Create(destination);
@@ -1149,6 +1148,22 @@ namespace LkeServices.Transactions
             }
         }
 
+        private async Task<IAssetSetting> CreateAssetSetting(string assetId, IAssetSetting defaultSetttings)
+        {
+            var clone = defaultSetttings.Clone(assetId);
+            clone.ChangeWallet = defaultSetttings.ChangeWallet;
+            clone.HotWallet = defaultSetttings.ChangeWallet;
+            try
+            {
+                await _assetSettingRepository.Insert(clone);
+            }
+            catch
+            {
+                return await _assetSettingRepository.GetAssetSetting(assetId) ?? defaultSetttings;
+            }
+            return clone;
+        }
+
         private async Task<decimal> SendToMultisigFromHub(BitcoinAddress toMultisig, IAsset assetEntity, TransactionBuilder builder, TransactionBuildContext context, decimal amount, IPerformanceMonitor monitor)
         {
             if (amount <= 0)
@@ -1159,7 +1174,7 @@ namespace LkeServices.Transactions
 
             var changeAddress = !string.IsNullOrEmpty(assetSetting.ChangeWallet)
                 ? OpenAssetsHelper.GetBitcoinAddressFormBase58Date(assetSetting.ChangeWallet)
-                : hotWalletAddress;
+                : hotWalletAddress;            
 
             if (OpenAssetsHelper.IsBitcoin(assetEntity.Id))
             {
@@ -1171,15 +1186,20 @@ namespace LkeServices.Transactions
                 var neededAmount = Money.FromUnit(amount, MoneyUnit.BTC);
                 var availableAmount = unspentOutputs.Cast<Coin>().DefaultIfEmpty().Select(o => o?.Amount ?? Money.Zero).Sum();
 
-                if (availableAmount < neededAmount && changeAddress != hotWalletAddress && assetSetting.Asset != Constants.DefaultAssetSetting)
+                if (availableAmount < neededAmount && changeAddress != hotWalletAddress)
                 {
+                    if (assetSetting.Asset == Constants.DefaultAssetSetting)
+                        assetSetting = await CreateAssetSetting(assetEntity.Id, assetSetting);
+                    
                     monitor.Step("Get uncolored outputs from new hotwallet");
                     var outputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(changeAddress.ToWif(), monitor: monitor)).ToList();
                     sentAmount = await _transactionBuildHelper.SendWithChange(builder, context, outputs, toMultisig, neededAmount - availableAmount, changeAddress);
 
-                    monitor.Step("Update hotwallet");
-                    await _assetSettingRepository.UpdateHotWallet(assetSetting.Asset, assetSetting.ChangeWallet);
-
+                    if (assetSetting.Asset != Constants.DefaultAssetSetting)
+                    {
+                        monitor.Step("Update hotwallet");
+                        await _assetSettingRepository.UpdateHotWallet(assetSetting.Asset, assetSetting.ChangeWallet);
+                    }
                     neededAmount = availableAmount;
                 }
 
@@ -1199,15 +1219,20 @@ namespace LkeServices.Transactions
                 var neededAmount = new AssetMoney(asset, amount, assetEntity.MultiplierPower).Quantity;
                 var availableAmount = unspentOutputs.Select(o => o.Amount.Quantity).DefaultIfEmpty().Sum();
 
-                if (availableAmount < neededAmount && changeAddress != hotWalletAddress && assetSetting.Asset != Constants.DefaultAssetSetting)
+                if (availableAmount < neededAmount && changeAddress != hotWalletAddress)
                 {
+                    if (assetSetting.Asset == Constants.DefaultAssetSetting)
+                        assetSetting = await CreateAssetSetting(assetEntity.Id, assetSetting);
+
                     monitor.Step("Get colored outputs from new hotwallet");
                     var outputs = (await _bitcoinOutputsService.GetColoredUnspentOutputs(changeAddress.ToWif(), asset, monitor: monitor)).ToList();
                     _transactionBuildHelper.SendAssetWithChange(builder, context, outputs, toMultisig, new AssetMoney(asset, neededAmount - availableAmount), changeAddress);
 
-                    monitor.Step("Update hotwallet");
-                    await _assetSettingRepository.UpdateHotWallet(assetSetting.Asset, assetSetting.ChangeWallet);
-
+                    if (assetSetting.Asset != Constants.DefaultAssetSetting)
+                    {
+                        monitor.Step("Update hotwallet");
+                        await _assetSettingRepository.UpdateHotWallet(assetSetting.Asset, assetSetting.ChangeWallet);
+                    }
                     neededAmount = availableAmount;
                 }
                 if (neededAmount > 0)

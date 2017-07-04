@@ -28,5 +28,6 @@ namespace Core.Repositories.Assets
         Task<IEnumerable<IAssetSetting>> GetAssetSettings();
         Task UpdateHotWallet(string asset, string hotWallet);
         Task UpdateChangeAndIncrement(string asset, string changeWallet, int increment);
+        Task<IAssetSetting> GetAssetSetting(string assetId);
     }
 }

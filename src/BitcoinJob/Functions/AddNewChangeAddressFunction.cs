@@ -44,9 +44,10 @@ namespace BitcoinJob.Functions
             _signatureApiProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
         }
 
-        [TimerTrigger("00:30:00")]
+        [TimerTrigger("00:00:01")]
         public async Task Process()
         {
+            var maxTxCount = await _settingsRepository.Get(Constants.MaxOffchainTxCount, MaxTxCount);
             var assets = await _assetRepository.Values();
 
             foreach (var asset in assets)
@@ -58,7 +59,7 @@ namespace BitcoinJob.Functions
 
                 var summary = await _qBitNinjaApiCaller.GetBalanceSummary(setting.HotWallet);
 
-                if (summary.Confirmed.TransactionCount < MaxTxCount)
+                if (summary.Confirmed.TransactionCount < maxTxCount)
                     continue;
 
                 await _logger.WriteInfoAsync(nameof(AddNewChangeAddressFunction), nameof(Process), $"Asset: {asset.Id}", "Start generating new change wallet");

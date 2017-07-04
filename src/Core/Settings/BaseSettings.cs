@@ -64,7 +64,7 @@ namespace Core.Settings
 
         public Offchain Offchain { get; set; } = new Offchain();
 
-        public RabbitMqSettings RabbitMq { get; set; } = new RabbitMqSettings();        
+        public Rabbit RabbitMq { get; set; } = new Rabbit();        
     }
 
     public class DbSettings
@@ -83,5 +83,11 @@ namespace Core.Settings
     {
         public bool UseOffchainGeneration { get; set; } = false;
         public string HotWallet { get; set; }
+    }
+
+    public class Rabbit
+    {
+        public RabbitMqConnectionSettings ExplorerNotificationConnection { get; set; } = new RabbitMqConnectionSettings();
+        public RabbitMqConnectionSettings MultisigNotificationConnection { get; set; } = new RabbitMqConnectionSettings();
     }
 }

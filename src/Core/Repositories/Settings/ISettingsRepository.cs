@@ -8,6 +8,7 @@ namespace Core.Repositories.Settings
     public interface ISettingsRepository
     {
         Task<T> Get<T>(string key);
-        Task Set<T>(string key, T value);
+        Task<T> Get<T>(string key, T defaultValue);
+        Task<T> Set<T>(string key, T value);
     }
 }

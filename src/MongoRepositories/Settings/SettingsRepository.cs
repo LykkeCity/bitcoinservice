@@ -30,12 +30,22 @@ namespace MongoRepositories.Settings
         {
             _table = table;
         }
-        public async Task<T> Get<T>(string key)
+        public Task<T> Get<T>(string key)
+        {
+            return Get<T>(key, default(T));
+        }
+
+        public async Task<T> Get<T>(string key, T defaultValue)
         {
             var setting = await _table.GetDataAsync(key);
             if (setting == null)
-                return default(T);
+                return defaultValue;
             return (T)Convert.ChangeType(setting.Value, typeof(T));
+        }
+
+        Task<T> ISettingsRepository.Set<T>(string key, T value)
+        {
+            throw new NotImplementedException();
         }
 
         public Task Set<T>(string key, T value)

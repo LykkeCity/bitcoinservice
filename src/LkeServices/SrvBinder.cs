@@ -3,20 +3,20 @@ using System.Net.Http;
 using Autofac;
 using Core;
 using Core.Bitcoin;
-using Core.ExplorerNotification;
 using Core.Outputs;
 using Core.Performance;
 using Core.Providers;
 using Core.QBitNinja;
+using Core.RabbitNotification;
 using Core.Settings;
 using LkeServices.Bitcoin;
-using LkeServices.ExplorerNotifiaction;
 using LkeServices.Multisig;
 using LkeServices.Outputs;
 using LkeServices.Performance;
 using LkeServices.Providers;
 using LkeServices.Providers.Rest;
 using LkeServices.QBitNinja;
+using LkeServices.RabbitNotifiaction;
 using LkeServices.Signature;
 using LkeServices.Transactions;
 using QBitNinja.Client;
@@ -58,8 +58,22 @@ namespace LkeServices
             ioc.RegisterType<PerformanceMonitorFactory>().As<IPerformanceMonitorFactory>();
             ioc.RegisterType<SpentOutputService>().As<ISpentOutputService>();
 
-            ioc.RegisterType<RabbitMqPublisher>().Named<IRabbitMqPublisher>(Constants.RabbitMqExplorerNotificationQueue)
-                .WithParameter("queue", Constants.RabbitMqExplorerNotificationQueue).SingleInstance().AutoActivate();
+            ioc.Register(x =>
+                {
+                    var resolver = x.Resolve<IComponentContext>();
+                    var settings = resolver.Resolve<BaseSettings>();
+                    return new RabbitMqPublisher(settings.RabbitMq.ExplorerNotificationConnection.ConnectionString, 
+                                                 settings.RabbitMq.ExplorerNotificationConnection.Exchange);
+                }).Named<IRabbitMqPublisher>(Constants.RabbitMqExplorerNotification).SingleInstance().AutoActivate();
+
+            ioc.Register(x =>
+            {
+                var resolver = x.Resolve<IComponentContext>();
+                var settings = resolver.Resolve<BaseSettings>();
+                return new RabbitMqPublisher(settings.RabbitMq.MultisigNotificationConnection.ConnectionString,
+                    settings.RabbitMq.MultisigNotificationConnection.Exchange);
+            }).Named<IRabbitMqPublisher>(Constants.RabbitMqMultisigNotification).SingleInstance().AutoActivate();
+
 
             ioc.Register<Func<string, IRabbitMqPublisher>>(x =>
             {
@@ -67,7 +81,7 @@ namespace LkeServices
                 return queue => resolver.ResolveNamed<IRabbitMqPublisher>(queue);
             });
 
-            ioc.RegisterType<RabbitExplorerNotifitcationService>().As<IExplorerNotificationService>();
+            ioc.RegisterType<RabbitNotificationService>().As<IRabbitNotificationService>();
 
             BindApiProviders(ioc);
         }

@@ -139,5 +139,10 @@ namespace AzureRepositories.Assets
                 });
             }
         }
+
+        public async Task<IAssetSetting> GetAssetSetting(string assetId)
+        {
+            return await _table.GetDataAsync(AssetSettingEntity.ById.GeneratePartition(), assetId);
+        }
     }
 }
