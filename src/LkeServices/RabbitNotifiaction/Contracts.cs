@@ -95,9 +95,9 @@ namespace LkeServices.RabbitNotifiaction
     }
 
 
-    public class MultisigNotification
+    public class AddressNotification
     {
-        public string Multisig { get; set; }
+        public string Address { get; set; }
 
         public DateTime Date { get; set; }
     }

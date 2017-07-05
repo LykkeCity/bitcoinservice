@@ -42,9 +42,9 @@ namespace LkeServices.RabbitNotifiaction
         public void CreateMultisig(string multisig, DateTime timeAdd)
         {
             var publisher = _rabbitMqPublisherFactory(Constants.RabbitMqMultisigNotification);
-            var data = new MultisigNotification
+            var data = new AddressNotification
             {
-                Multisig = multisig,
+                Address = multisig,
                 Date = timeAdd
             };
             publisher.Publish(data.ToJson());
