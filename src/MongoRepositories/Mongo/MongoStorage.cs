@@ -163,7 +163,7 @@ namespace MongoRepositories.Mongo
 	    public async Task<IEnumerable<T>> GetTopRecordsAsync(Expression<Func<T, bool>> filter, Expression<Func<T, object>> sortSelector, SortDirection direction, int limit)
 	    {
 	        return await RetryQuery(async () =>
-	        {
+	        {               
 	            var query = _collection.Find(filter);
 	            query = direction == SortDirection.Ascending ? query.SortBy(sortSelector) : query.SortByDescending(sortSelector);
 	            return await query.Limit(limit).ToListAsync();

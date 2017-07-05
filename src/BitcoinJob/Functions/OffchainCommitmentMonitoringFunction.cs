@@ -27,6 +27,7 @@ namespace BitcoinJob.Functions
         private readonly IAssetRepository _assetRepository;
         private readonly ISettingsRepository _settingsRepository;
         private readonly IRpcBitcoinClient _rpcBitcoinClient;
+        private readonly ICommitmentBroadcastRepository _commitmentBroadcastRepository;
         private readonly RpcConnectionParams _connectionParams;
         private readonly BaseSettings _baseSettings;
 
@@ -36,6 +37,7 @@ namespace BitcoinJob.Functions
             IAssetRepository assetRepository,
             ISettingsRepository settingsRepository,
             IRpcBitcoinClient rpcBitcoinClient,
+            ICommitmentBroadcastRepository commitmentBroadcastRepository,
             RpcConnectionParams connectionParams, BaseSettings baseSettings)
         {
             _qBitNinjaApiCaller = qBitNinjaApiCaller;
@@ -46,6 +48,7 @@ namespace BitcoinJob.Functions
             _assetRepository = assetRepository;
             _settingsRepository = settingsRepository;
             _rpcBitcoinClient = rpcBitcoinClient;
+            _commitmentBroadcastRepository = commitmentBroadcastRepository;
             _connectionParams = connectionParams;
             _baseSettings = baseSettings;
         }
@@ -106,15 +109,19 @@ namespace BitcoinJob.Functions
                         $"CommitmentId: {commitment.CommitmentId}", "Last commitment was broadcasted");
 
                 await _offchainService.CloseChannel(commitment);
+                await _commitmentBroadcastRepository.InsertCommitmentBroadcast(commitment.CommitmentId, spendingCoin.Outpoint.Hash.ToString(),
+                    CommitmentBroadcastType.Valid, commitment.ClientAmount, commitment.HubAmount, commitment.ClientAmount, commitment.HubAmount, null);
                 return;
             }
             await _logger.WriteWarningAsync("OffchainCommitmentMonitoringFunction", "ProcessBroadcastedCommitment",
                         $"CommitmentId: {commitment.CommitmentId}", "Commitment is not last.");
             if (commitment.Type == CommitmentType.Client)
             {
-                await _offchainService.SpendCommitmemtByMultisig(commitment, spendingCoin,
+                var hash = await _offchainService.SpendCommitmemtByMultisig(commitment, spendingCoin,
                     _baseSettings.HotWalletForPregeneratedOutputs);
                 await _offchainService.CloseChannel(commitment);
+                await _commitmentBroadcastRepository.InsertCommitmentBroadcast(commitment.CommitmentId, spendingCoin.Outpoint.Hash.ToString(),
+                    CommitmentBroadcastType.Revoked, commitment.ClientAmount, commitment.HubAmount, lastCommitment.ClientAmount, lastCommitment.HubAmount, hash);
             }
             else
             {

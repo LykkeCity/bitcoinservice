@@ -54,7 +54,7 @@ namespace LkeServices.Transactions
 
         Task<string> BroadcastClosingChannel(string clientPubKey, IAsset asset, string signedByClientTransaction, Guid? notifyTxId = null);
 
-        Task SpendCommitmemtByMultisig(ICommitment commitment, ICoin spendingCoin, string destination);
+        Task<string> SpendCommitmemtByMultisig(ICommitment commitment, ICoin spendingCoin, string destination);
 
         Task<string> BroadcastCommitment(string clientPubKey, IAsset asset, string transaction);
 
@@ -77,6 +77,8 @@ namespace LkeServices.Transactions
         Task<IAssetSetting> GetAssetSetting(string asset);
 
         Task<IEnumerable<IOffchainChannel>> GetCurrentChannels(string multisig);
+
+        Task<IEnumerable<CommitmentBroadcastInfo>> GetCommitmentBroadcasts(int limit);
     }
 
     public class OffchainService : IOffchainService
@@ -106,6 +108,7 @@ namespace LkeServices.Transactions
         private readonly IAssetSettingRepository _assetSettingRepository;
         private readonly IReturnBroadcastedOutputsMessageWriter _returnBroadcastedOutputsMessageWriter;
         private readonly IRabbitNotificationService _rabbitNotificationService;
+        private readonly ICommitmentBroadcastRepository _commitmentBroadcastRepository;
         private readonly IClosingChannelRepository _closingChannelRepository;
 
         public OffchainService(
@@ -131,6 +134,7 @@ namespace LkeServices.Transactions
             IAssetSettingRepository assetSettingRepository,
             IReturnBroadcastedOutputsMessageWriter returnBroadcastedOutputsMessageWriter,
             IRabbitNotificationService rabbitNotificationService,
+            ICommitmentBroadcastRepository commitmentBroadcastRepository,
             IClosingChannelRepository closingChannelRepository)
         {
             _transactionBuildHelper = transactionBuildHelper;
@@ -155,6 +159,7 @@ namespace LkeServices.Transactions
             _assetSettingRepository = assetSettingRepository;
             _returnBroadcastedOutputsMessageWriter = returnBroadcastedOutputsMessageWriter;
             _rabbitNotificationService = rabbitNotificationService;
+            _commitmentBroadcastRepository = commitmentBroadcastRepository;
             _closingChannelRepository = closingChannelRepository;
         }
 
@@ -919,13 +924,13 @@ namespace LkeServices.Transactions
             return hash;
         }
 
-        public async Task SpendCommitmemtByMultisig(ICommitment commitment, ICoin spendingCoin, string destination)
+        public async Task<string> SpendCommitmemtByMultisig(ICommitment commitment, ICoin spendingCoin, string destination)
         {
             TransactionBuildContext context = _transactionBuildContextFactory.Create(_connectionParams.Network);
 
             var destinationAddress = BitcoinAddress.Create(destination);
 
-            await context.Build(async () =>
+            return await context.Build(async () =>
                 {
                     TransactionBuilder builder = new TransactionBuilder();
                     builder.AddCoins(spendingCoin);
@@ -960,7 +965,7 @@ namespace LkeServices.Transactions
 
                     await _spentOutputService.SaveSpentOutputs(id, signedTr);
 
-                    return Task.CompletedTask;
+                    return signedTr.GetHash().ToString();
                 });
         }
 
@@ -1174,7 +1179,7 @@ namespace LkeServices.Transactions
 
             var changeAddress = !string.IsNullOrEmpty(assetSetting.ChangeWallet)
                 ? OpenAssetsHelper.GetBitcoinAddressFormBase58Date(assetSetting.ChangeWallet)
-                : hotWalletAddress;            
+                : hotWalletAddress;
 
             if (OpenAssetsHelper.IsBitcoin(assetEntity.Id))
             {
@@ -1190,7 +1195,7 @@ namespace LkeServices.Transactions
                 {
                     if (assetSetting.Asset == Constants.DefaultAssetSetting)
                         assetSetting = await CreateAssetSetting(assetEntity.Id, assetSetting);
-                    
+
                     monitor.Step("Get uncolored outputs from new hotwallet");
                     var outputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(changeAddress.ToWif(), monitor: monitor)).ToList();
                     sentAmount = await _transactionBuildHelper.SendWithChange(builder, context, outputs, toMultisig, neededAmount - availableAmount, changeAddress);
@@ -1361,6 +1366,12 @@ namespace LkeServices.Transactions
             return await _offchainChannelRepository.GetChannelsOfMultisig(multisig);
         }
 
+        public async Task<IEnumerable<CommitmentBroadcastInfo>> GetCommitmentBroadcasts(int limit)
+        {
+            return (await _commitmentBroadcastRepository.GetLastCommitmentBroadcasts(limit)).Select(o => new CommitmentBroadcastInfo(o))
+                .ToList();
+        }
+
 
         private class CreationCommitmentResult
         {
@@ -1442,5 +1453,32 @@ namespace LkeServices.Transactions
     public class AssetBalanceInfo
     {
         public List<MultisigBalanceInfo> Balances { get; set; }
+    }
+
+    public class CommitmentBroadcastInfo
+    {
+        public Guid CommitmentId { get; set; }
+        public string TransactionHash { get; set; }
+        public DateTime Date { get; set; }
+        public CommitmentBroadcastType Type { get; set; }
+        public decimal ClientAmount { get; set; }
+        public decimal HubAmount { get; set; }
+        public decimal RealClientAmount { get; set; }
+        public decimal RealHubAmount { get; set; }
+        public string PenaltyTransactionHash { get; set; }
+
+
+        public CommitmentBroadcastInfo(ICommitmentBroadcast commitmentBroadcast)
+        {
+            CommitmentId = commitmentBroadcast.CommitmentId;
+            TransactionHash = commitmentBroadcast.TransactionHash;
+            Date = commitmentBroadcast.Date;
+            Type = commitmentBroadcast.Type;
+            ClientAmount = commitmentBroadcast.ClientAmount;
+            HubAmount = commitmentBroadcast.HubAmount;
+            RealClientAmount = commitmentBroadcast.RealClientAmount;
+            RealHubAmount = commitmentBroadcast.RealHubAmount;
+            PenaltyTransactionHash = commitmentBroadcast.PenaltyTransactionHash;
+        }
     }
 }

@@ -86,6 +86,9 @@ namespace MongoRepositories
 
             ioc.RegisterInstance(new InternalSpentOutputRepository(new MongoStorage<InternalSpentOutput>(mongoClient, "InternalSpentOutputs")))
                 .As<IInternalSpentOutputRepository>();
+
+            ioc.RegisterInstance(new CommitmentBroadcastRepository(new MongoStorage<CommitmentBroadcastEntity>(mongoClient, "CommitmentBroadcasts")))
+                .As<ICommitmentBroadcastRepository>();
         }        
     }
 }

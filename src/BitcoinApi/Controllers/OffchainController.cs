@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using BitcoinApi.Filters;
 using BitcoinApi.Models;
@@ -186,6 +187,16 @@ namespace BitcoinApi.Controllers
             return new AssetBalanceInfoResponse(await _offchain.GetAssetBalanceInfo(assetObj));
         }
 
+        [HttpGet("commitment/broadcasts")]
+        [ProducesResponseType(typeof(AssetBalanceInfoResponse), 200)]
+        [ProducesResponseType(typeof(ApiException), 400)]
+        public async Task<CommitmentBroadcastResponse> GetCommitmentBroadcasts([FromQuery] int limit)
+        {
+            return new CommitmentBroadcastResponse
+            {
+                CommitmentBroadcasts = (await _offchain.GetCommitmentBroadcasts(limit)).ToList()
+            };
+        }
 
         private async Task<IAsset> GetAsset(string assetId)
         {
