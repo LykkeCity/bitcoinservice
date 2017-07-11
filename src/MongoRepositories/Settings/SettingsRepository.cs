@@ -41,12 +41,7 @@ namespace MongoRepositories.Settings
             if (setting == null)
                 return defaultValue;
             return (T)Convert.ChangeType(setting.Value, typeof(T));
-        }
-
-        Task<T> ISettingsRepository.Set<T>(string key, T value)
-        {
-            throw new NotImplementedException();
-        }
+        }       
 
         public Task Set<T>(string key, T value)
         {

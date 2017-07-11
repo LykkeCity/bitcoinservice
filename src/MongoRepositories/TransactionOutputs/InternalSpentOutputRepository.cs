@@ -28,5 +28,15 @@ namespace MongoRepositories.TransactionOutputs
         {
             return await _table.GetDataAsync();
         }
+
+        public Task Insert(string transactionHash, int n)
+        {
+            return _table.InsertAsync(new InternalSpentOutput
+            {
+                TransactionHash = transactionHash,
+                N = n,
+                BsonId = Guid.NewGuid().ToString()
+            });
+        }
     }
 }

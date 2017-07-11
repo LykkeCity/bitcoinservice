@@ -15,5 +15,7 @@ namespace Core.Repositories.TransactionOutputs
     public interface IInternalSpentOutputRepository
     {
         Task<IEnumerable<IInternalSpentOutput>> GetInternalSpentOutputs();
+        Task Insert(string transactionHash, int n);
     }
+    
 }

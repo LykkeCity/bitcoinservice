@@ -50,12 +50,7 @@ namespace AzureRepositories.Settings
         public Task<T> Get<T>(string key, T defaultValue)
         {
             throw new NotImplementedException();
-        }
-
-        Task<T> ISettingsRepository.Set<T>(string key, T value)
-        {
-            throw new NotImplementedException();
-        }
+        }      
 
         public Task Set<T>(string key, T value)
         {
