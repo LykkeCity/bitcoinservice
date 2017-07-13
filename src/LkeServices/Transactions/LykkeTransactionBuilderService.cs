@@ -350,10 +350,10 @@ namespace LkeServices.Transactions
 
                     foreach (var output in buildedTransaction.Outputs)
                     {
-                        if (output.ScriptPubKey.GetDestinationAddress(_connectionParams.Network) == destination &&
-                            output.Value == new Money(transferAddresses.Sum(x => x.Value), MoneyUnit.BTC))
+                        if (output.ScriptPubKey.GetDestinationAddress(_connectionParams.Network) == destination)
                         {
                             output.Value -= fee;
+                            break;
                         }
                     }
                     
