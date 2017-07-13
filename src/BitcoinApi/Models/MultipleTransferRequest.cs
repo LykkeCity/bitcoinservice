@@ -12,6 +12,8 @@ namespace BitcoinApi.Models
 
         public string Destination { get; set; }
 
+        public decimal Fee { get; set; }
+
         public IEnumerable<ToOneAddress> Sources { get; set; }
     }
 

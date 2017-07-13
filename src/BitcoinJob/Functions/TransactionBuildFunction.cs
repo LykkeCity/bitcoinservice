@@ -107,6 +107,7 @@ namespace BitcoinJob.Functions
                             OpenAssetsHelper.GetBitcoinAddressFormBase58Date(multipleTransfer.Destination),
                             await _assetRepository.GetAssetById(multipleTransfer.Asset),
                             multipleTransfer.Addresses,
+                            multipleTransfer.Fee,
                             message.TransactionId);
                         break;
                     default:

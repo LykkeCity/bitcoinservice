@@ -10,6 +10,8 @@ namespace Core.TransactionQueueWriter.Commands
 
         public string Asset { get; set; }
 
+        public decimal Fee { get; set; }
+
         public Dictionary<string, decimal> Addresses { get; set; }
     }
 }

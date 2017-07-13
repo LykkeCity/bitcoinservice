@@ -34,7 +34,7 @@ namespace LkeServices.Transactions
 
         Task<CreateTransactionResponse> GetTransferAllTransaction(BitcoinAddress from, BitcoinAddress to, Guid transactionId);
 
-        Task<CreateTransactionResponse> GetMultipleTransferTransaction(BitcoinAddress destination, IAsset asset, Dictionary<string, decimal> transferAddresses, Guid transactionId);
+        Task<CreateTransactionResponse> GetMultipleTransferTransaction(BitcoinAddress destination, IAsset asset, Dictionary<string, decimal> transferAddresses, decimal multipleTransferFee, Guid transactionId);
 
         Task<Guid> AddTransactionId(Guid? transactionId, string rawRequest);
 
@@ -307,8 +307,7 @@ namespace LkeServices.Transactions
             }, exception => (exception as BackendException)?.Code == ErrorCode.TransactionConcurrentInputsProblem, 3, _log);
         }
 
-        public Task<CreateTransactionResponse> GetMultipleTransferTransaction(BitcoinAddress destination, IAsset asset,
-            Dictionary<string, decimal> transferAddresses, Guid transactionId)
+        public Task<CreateTransactionResponse> GetMultipleTransferTransaction(BitcoinAddress destination, IAsset asset, Dictionary<string, decimal> transferAddresses, decimal multipleTransferFee, Guid transactionId)
         {
             return Retry.Try(async () =>
             {
@@ -324,10 +323,40 @@ namespace LkeServices.Transactions
                         await TransferOneDirection(builder, context, source, transferAddress.Value, asset, destination);
                     }
 
-                    await _transactionBuildHelper.AddFee(builder, context);
+                    Transaction buildedTransaction;
+                    try
+                    {
+                        buildedTransaction = builder.BuildTransaction(true);
+                    }
+                    catch (NotEnoughFundsException ex)
+                    {
+                        if (ex.Missing is Money)
+                        {
+                            var missingAmount = ((Money)ex.Missing).Satoshi;
+                            _transactionBuildHelper.AddFakeInput(builder, new Money(missingAmount, MoneyUnit.Satoshi));
+                            buildedTransaction = builder.BuildTransaction(true);
+                        }
+                        else throw;
+                    }
 
-                    var buildedTransaction = builder.BuildTransaction(true);
+                    _transactionBuildHelper.RemoveFakeInput(buildedTransaction);
 
+                    _transactionBuildHelper.AggregateOutputs(buildedTransaction);
+
+                    var fee = new Money(multipleTransferFee, MoneyUnit.BTC);
+
+                    if (multipleTransferFee == 0)
+                        fee = await _transactionBuildHelper.CalcFee(buildedTransaction);
+
+                    foreach (var output in buildedTransaction.Outputs)
+                    {
+                        if (output.ScriptPubKey.GetDestinationAddress(_connectionParams.Network) == destination &&
+                            output.Value == new Money(transferAddresses.Sum(x => x.Value), MoneyUnit.BTC))
+                        {
+                            output.Value -= fee;
+                        }
+                    }
+                    
                     await _spentOutputService.SaveSpentOutputs(transactionId, buildedTransaction);
 
                     await SaveNewOutputs(transactionId, buildedTransaction, context);

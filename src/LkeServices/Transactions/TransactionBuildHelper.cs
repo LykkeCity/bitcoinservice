@@ -25,6 +25,7 @@ namespace LkeServices.Transactions
         void RemoveFakeInput(Transaction tr);
         void AggregateOutputs(Transaction tr);
         Task AddFee(Transaction tr, TransactionBuildContext context);
+        Task<Money> CalcFee(Transaction tr);
     }
 
     public class TransactionBuildHelper : ITransactionBuildHelper
@@ -111,7 +112,7 @@ namespace LkeServices.Transactions
             context.AddCoins(orderedCoins.Take(cnt));
             builder.AddCoins(orderedCoins.Take(cnt));
 
-            var sent =  await Send(builder, context, destination, amount, addDust);
+            var sent = await Send(builder, context, destination, amount, addDust);
 
             if (sendAmount - amount > 0)
                 await Send(builder, context, changeDestination, sendAmount - amount, addDust);
@@ -122,7 +123,7 @@ namespace LkeServices.Transactions
         {
             var newAmount = Money.Max(GetDust(destination, addDust), amount);
             builder.Send(destination, newAmount);
-            if (newAmount > amount)            
+            if (newAmount > amount)
                 context.AddExtraAmount(await _extraAmountRepository.Add(destination.ScriptPubKey.GetDestinationAddress(_connectionParams.Network).ToWif(),
                             newAmount - amount));
             return newAmount.ToDecimal(MoneyUnit.BTC);
@@ -252,6 +253,11 @@ namespace LkeServices.Transactions
                 }
 
             } while (true);
+        }
+
+        public Task<Money> CalcFee(Transaction tr)
+        {
+            return _feeProvider.CalcFeeForTransaction(tr);
         }
     }
 }

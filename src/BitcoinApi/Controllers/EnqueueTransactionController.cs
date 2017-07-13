@@ -229,7 +229,8 @@ namespace BitcoinApi.Controllers
             {
                 Destination = model.Destination,
                 Asset = model.Asset,
-                Addresses = model.Sources.ToDictionary(x => x.Address, x => x.Amount)
+                Addresses = model.Sources.ToDictionary(x => x.Address, x => x.Amount),
+                Fee = model.Fee
             }.ToJson());
 
             return Ok(new TransactionIdResponse
