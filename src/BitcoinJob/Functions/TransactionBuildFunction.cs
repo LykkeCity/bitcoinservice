@@ -101,15 +101,6 @@ namespace BitcoinJob.Functions
                                                         await _assetRepository.GetAssetById(destroy.Asset),
                                                         message.TransactionId);
                         break;
-                    case TransactionCommandType.MultipleTransfers:
-                        var multipleTransfer = message.Command.DeserializeJson<MultipleTransferCommand>();
-                        transactionResponse = await _lykkeTransactionBuilderService.GetMultipleTransferTransaction(
-                            OpenAssetsHelper.GetBitcoinAddressFormBase58Date(multipleTransfer.Destination),
-                            await _assetRepository.GetAssetById(multipleTransfer.Asset),
-                            multipleTransfer.Addresses,
-                            multipleTransfer.Fee,
-                            message.TransactionId);
-                        break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }

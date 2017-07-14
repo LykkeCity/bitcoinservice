@@ -25,7 +25,7 @@ namespace LkeServices.Transactions
         void RemoveFakeInput(Transaction tr);
         void AggregateOutputs(Transaction tr);
         Task AddFee(Transaction tr, TransactionBuildContext context);
-        Task<Money> CalcFee(Transaction tr);
+        Task<Money> CalcFee(Transaction tr, int feeRate = 0);
     }
 
     public class TransactionBuildHelper : ITransactionBuildHelper
@@ -255,9 +255,9 @@ namespace LkeServices.Transactions
             } while (true);
         }
 
-        public Task<Money> CalcFee(Transaction tr)
+        public Task<Money> CalcFee(Transaction tr, int feeRate = 0)
         {
-            return _feeProvider.CalcFeeForTransaction(tr);
+            return _feeProvider.CalcFeeForTransaction(tr, feeRate);
         }
     }
 }

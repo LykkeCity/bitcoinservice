@@ -211,34 +211,6 @@ namespace BitcoinApi.Controllers
             });
         }
 
-        /// <summary>
-        /// Add multiple transfer to queue
-        /// </summary>
-        /// <returns>Internal transaction id</returns>
-        [HttpPost("multipletransfer")]
-        [ProducesResponseType(typeof(TransactionIdResponse), 200)]
-        [ProducesResponseType(typeof(ApiException), 400)]
-        public async Task<IActionResult> CreateMultipleTransfer([FromBody]MultipleTransferRequest model)
-        {
-            foreach (var source in model.Sources)
-                await ValidateAddress(source.Address);
-
-            var transactionId = await _builder.AddTransactionId(model.TransactionId, $"MultipleTransfer: {model.ToJson()}");
-
-            await _transactionQueueWriter.AddCommand(transactionId, TransactionCommandType.MultipleTransfers, new MultipleTransferCommand
-            {
-                Destination = model.Destination,
-                Asset = model.Asset,
-                Addresses = model.Sources.ToDictionary(x => x.Address, x => x.Amount),
-                Fee = model.Fee
-            }.ToJson());
-
-            return Ok(new TransactionIdResponse
-            {
-                TransactionId = transactionId
-            });
-        }
-
         [HttpPost("retry")]
         [ProducesResponseType(200)]
         [ProducesResponseType(typeof(ApiException), 400)]

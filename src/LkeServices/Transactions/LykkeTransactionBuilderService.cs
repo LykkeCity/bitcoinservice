@@ -34,7 +34,7 @@ namespace LkeServices.Transactions
 
         Task<CreateTransactionResponse> GetTransferAllTransaction(BitcoinAddress from, BitcoinAddress to, Guid transactionId);
 
-        Task<CreateTransactionResponse> GetMultipleTransferTransaction(BitcoinAddress destination, IAsset asset, Dictionary<string, decimal> transferAddresses, decimal multipleTransferFee, Guid transactionId);
+        Task<CreateTransactionResponse> GetMultipleTransferTransaction(BitcoinAddress destination, IAsset asset, Dictionary<string, decimal> transferAddresses, int feeRate, Guid transactionId);
 
         Task<Guid> AddTransactionId(Guid? transactionId, string rawRequest);
 
@@ -307,7 +307,7 @@ namespace LkeServices.Transactions
             }, exception => (exception as BackendException)?.Code == ErrorCode.TransactionConcurrentInputsProblem, 3, _log);
         }
 
-        public Task<CreateTransactionResponse> GetMultipleTransferTransaction(BitcoinAddress destination, IAsset asset, Dictionary<string, decimal> transferAddresses, decimal multipleTransferFee, Guid transactionId)
+        public Task<CreateTransactionResponse> GetMultipleTransferTransaction(BitcoinAddress destination, IAsset asset, Dictionary<string, decimal> transferAddresses, int feeRate, Guid transactionId)
         {
             return Retry.Try(async () =>
             {
@@ -316,6 +316,8 @@ namespace LkeServices.Transactions
                 return await context.Build(async () =>
                 {
                     var builder = new TransactionBuilder();
+
+                    builder.SetChange(destination, ChangeType.Uncolored);
 
                     foreach (var transferAddress in transferAddresses)
                     {
@@ -343,10 +345,7 @@ namespace LkeServices.Transactions
 
                     _transactionBuildHelper.AggregateOutputs(buildedTransaction);
 
-                    var fee = new Money(multipleTransferFee, MoneyUnit.BTC);
-
-                    if (multipleTransferFee == 0)
-                        fee = await _transactionBuildHelper.CalcFee(buildedTransaction);
+                    var fee = await _transactionBuildHelper.CalcFee(buildedTransaction, feeRate);
 
                     foreach (var output in buildedTransaction.Outputs)
                     {
@@ -356,7 +355,7 @@ namespace LkeServices.Transactions
                             break;
                         }
                     }
-                    
+
                     await _spentOutputService.SaveSpentOutputs(transactionId, buildedTransaction);
 
                     await SaveNewOutputs(transactionId, buildedTransaction, context);

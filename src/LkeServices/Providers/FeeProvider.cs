@@ -26,9 +26,13 @@ namespace LkeServices.Providers
             return builder.EstimateFees(builder.BuildTransaction(false), await GetFeeRate());
         }
 
-        public Task<Money> CalcFeeForTransaction(Transaction tr)
+        public async Task<Money> CalcFeeForTransaction(Transaction tr, int feeRate = 0)
         {
-            return CalcFee(tr.ToBytes().Length);
+            var size = tr.ToBytes().Length;
+            if (feeRate == 0)
+                return await CalcFee(size);
+
+            return new FeeRate(new Money(feeRate * 1000, MoneyUnit.Satoshi)).GetFee(size);
         }
 
         public async Task<FeeRate> GetFeeRate()

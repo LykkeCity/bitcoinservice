@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using BitcoinApi.Filters;
@@ -18,6 +19,8 @@ using Common;
 using Core.Helpers;
 using Core.Repositories.Transactions;
 using Core.Repositories.TransactionSign;
+using Core.TransactionQueueWriter;
+using Core.TransactionQueueWriter.Commands;
 using LkeServices.Providers;
 using TransactionResponse = BitcoinApi.Models.TransactionResponse;
 
@@ -33,13 +36,15 @@ namespace BitcoinApi.Controllers
         private readonly ITransactionBlobStorage _transactionBlobStorage;
         private readonly IBitcoinBroadcastService _broadcastService;
         private readonly IBroadcastedTransactionRepository _broadcastedTransactionRepository;
+        private readonly IOffchainService _offchainService;
+
 
         public TransactionController(ILykkeTransactionBuilderService builder,
             IAssetRepository assetRepository,
             Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
             ITransactionSignRequestRepository transactionSignRequestRepository,
             ITransactionBlobStorage transactionBlobStorage,
-            IBitcoinBroadcastService broadcastService, IBroadcastedTransactionRepository broadcastedTransactionRepository)
+            IBitcoinBroadcastService broadcastService, IBroadcastedTransactionRepository broadcastedTransactionRepository, IOffchainService offchainService)
         {
             _builder = builder;
             _assetRepository = assetRepository;
@@ -48,6 +53,7 @@ namespace BitcoinApi.Controllers
             _transactionBlobStorage = transactionBlobStorage;
             _broadcastService = broadcastService;
             _broadcastedTransactionRepository = broadcastedTransactionRepository;
+            _offchainService = offchainService;
         }
 
         /// <summary>
@@ -116,6 +122,55 @@ namespace BitcoinApi.Controllers
             var fullSigned = new Transaction(fullSignedHex);
 
             await _broadcastService.BroadcastTransaction(model.TransactionId, fullSigned, useHandlers: false);
+        }
+
+        /// <summary>
+        /// Broadcast multiple transfer transaction
+        /// </summary>
+        /// <returns>Internal transaction id and hash</returns>
+        [HttpPost("multipletransfer")]
+        [ProducesResponseType(typeof(TransactionIdAndHashResponse), 200)]
+        [ProducesResponseType(typeof(ApiException), 400)]
+        public async Task<IActionResult> CreateMultipleTransfer([FromBody]MultipleTransferRequest model)
+        {
+            foreach (var source in model.Sources)
+                await ValidateAddress(source.Address);
+
+            var destAddress = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(model.Destination);
+            if (destAddress == null)
+                throw new BackendException("Invalid destination address provided", ErrorCode.InvalidAddress);
+
+            var asset = await _assetRepository.GetAssetById(model.Asset);
+            if (asset == null)
+                throw new BackendException("Provided asset is missing in database", ErrorCode.AssetNotFound);
+
+            var transactionId = await _builder.AddTransactionId(model.TransactionId, $"MultipleTransfer: {model.ToJson()}");
+
+            var response = await _builder.GetMultipleTransferTransaction(destAddress, asset,
+                model.Sources.ToDictionary(x => x.Address, x => x.Amount), model.FeeRate, transactionId);
+
+            var fullSignedHex = await _signatureApiProvider.SignTransaction(response.Transaction);
+
+            await _transactionBlobStorage.AddOrReplaceTransaction(transactionId, TransactionBlobType.Signed, fullSignedHex);
+
+            var fullSigned = new Transaction(fullSignedHex);
+
+            await _broadcastService.BroadcastTransaction(transactionId, fullSigned, useHandlers: false);
+
+            return Ok(new TransactionIdAndHashResponse
+            {
+                TransactionId = transactionId,
+                Hash = fullSigned.GetHash().ToString()
+            });
+        }
+
+        private async Task ValidateAddress(string address, bool checkOffchain = true)
+        {
+            var bitcoinAddres = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(address);
+            if (bitcoinAddres == null)
+                throw new BackendException($"Invalid Address provided: {address}", ErrorCode.InvalidAddress);
+            if (checkOffchain && await _offchainService.HasChannel(address))
+                throw new BackendException("Address was used in offchain", ErrorCode.AddressUsedInOffchain);
         }
 
         /// <summary>
