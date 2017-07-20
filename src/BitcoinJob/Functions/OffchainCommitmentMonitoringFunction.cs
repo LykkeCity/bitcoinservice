@@ -21,44 +21,42 @@ namespace BitcoinJob.Functions
     {
         private readonly IQBitNinjaApiCaller _qBitNinjaApiCaller;
         private readonly ILog _logger;
-        private readonly ICommitmentRepository _commitmentRepository;        
+        private readonly ICommitmentRepository _commitmentRepository;
         private readonly IOffchainService _offchainService;
         private readonly ISlackNotifier _slackNotifier;
         private readonly IAssetRepository _assetRepository;
         private readonly ISettingsRepository _settingsRepository;
         private readonly IRpcBitcoinClient _rpcBitcoinClient;
         private readonly ICommitmentBroadcastRepository _commitmentBroadcastRepository;
-        private readonly RpcConnectionParams _connectionParams;
-        private readonly BaseSettings _baseSettings;
+        private readonly RpcConnectionParams _connectionParams;        
 
-        public OffchainCommitmentMonitoringFunction(IQBitNinjaApiCaller qBitNinjaApiCaller, ILog logger, ICommitmentRepository commitmentRepository,            
+        public OffchainCommitmentMonitoringFunction(IQBitNinjaApiCaller qBitNinjaApiCaller, ILog logger, ICommitmentRepository commitmentRepository,
             IOffchainService offchainService,
             ISlackNotifier slackNotifier,
             IAssetRepository assetRepository,
             ISettingsRepository settingsRepository,
             IRpcBitcoinClient rpcBitcoinClient,
             ICommitmentBroadcastRepository commitmentBroadcastRepository,
-            RpcConnectionParams connectionParams, BaseSettings baseSettings)
+            RpcConnectionParams connectionParams)
         {
             _qBitNinjaApiCaller = qBitNinjaApiCaller;
             _logger = logger;
-            _commitmentRepository = commitmentRepository;            
+            _commitmentRepository = commitmentRepository;
             _offchainService = offchainService;
             _slackNotifier = slackNotifier;
             _assetRepository = assetRepository;
             _settingsRepository = settingsRepository;
             _rpcBitcoinClient = rpcBitcoinClient;
             _commitmentBroadcastRepository = commitmentBroadcastRepository;
-            _connectionParams = connectionParams;
-            _baseSettings = baseSettings;
+            _connectionParams = connectionParams;            
         }
 
         [TimerTrigger("00:01:00")]
         public async Task Monitoring()
         {
             var currentBlock = await _settingsRepository.Get<int>(Constants.ProcessingBlockSetting);
-            if (currentBlock == 0)            
-                currentBlock = await _rpcBitcoinClient.GetBlockCount() - 1;            
+            if (currentBlock == 0)
+                currentBlock = await _rpcBitcoinClient.GetBlockCount() - 1;
             var dbCommitments = (await _commitmentRepository.GetMonitoringCommitments()).GroupBy(o => o.LockedAddress).ToDictionary(o => o.Key, o => o);
             do
             {
@@ -117,8 +115,8 @@ namespace BitcoinJob.Functions
                         $"CommitmentId: {commitment.CommitmentId}", "Commitment is not last.");
             if (commitment.Type == CommitmentType.Client)
             {
-                var hash = await _offchainService.SpendCommitmemtByMultisig(commitment, spendingCoin,
-                    _baseSettings.HotWalletForPregeneratedOutputs);
+                var assetSettings = await _offchainService.GetAssetSetting(commitment.AssetId);
+                var hash = await _offchainService.SpendCommitmemtByMultisig(commitment, spendingCoin, !string.IsNullOrEmpty(assetSettings.ChangeWallet) ? assetSettings.ChangeWallet : assetSettings.HotWallet);
                 await _offchainService.CloseChannel(commitment);
                 await _commitmentBroadcastRepository.InsertCommitmentBroadcast(commitment.CommitmentId, spendingCoin.Outpoint.Hash.ToString(),
                     CommitmentBroadcastType.Revoked, commitment.ClientAmount, commitment.HubAmount, lastCommitment.ClientAmount, lastCommitment.HubAmount, hash);

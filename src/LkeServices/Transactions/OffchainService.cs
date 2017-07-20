@@ -990,22 +990,22 @@ namespace LkeServices.Transactions
 
             var lastCommitment = await _commitmentRepository.GetLastCommitment(address.MultisigAddress, asset.Id, commitment.Type);
 
-            //if (commitment.CommitmentId != lastCommitment.CommitmentId)
-            //    throw new BackendException("Commitment is expired", ErrorCode.CommitmentExpired);
+            if (commitment.CommitmentId != lastCommitment.CommitmentId)
+                throw new BackendException("Commitment is expired", ErrorCode.CommitmentExpired);
 
             TransactionBuildContext context = _transactionBuildContextFactory.Create(_connectionParams.Network);
 
             return await context.Build(async () =>
             {
                 var transaction = new Transaction(transactionHex);
-                await _transactionBuildHelper.AddFee(transaction, context);
+                await _transactionBuildHelper.AddFeeWithoutChange(transaction, context);
 
                 var signed = await _signatureApiProvider.SignTransaction(transaction.ToHex());
                 var signedTr = new Transaction(signed);
 
                 await _broadcastService.BroadcastTransaction(commitment.CommitmentId, signedTr);
 
-                //await CloseChannel(commitment);
+                await CloseChannel(commitment);
 
                 return signedTr.GetHash().ToString();
             });

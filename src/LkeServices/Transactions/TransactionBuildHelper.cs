@@ -25,6 +25,7 @@ namespace LkeServices.Transactions
         void RemoveFakeInput(Transaction tr);
         void AggregateOutputs(Transaction tr);
         Task AddFee(Transaction tr, TransactionBuildContext context);
+        Task AddFeeWithoutChange(Transaction tr, TransactionBuildContext context);
         Task<Money> CalcFee(Transaction tr, int feeRate = 0);
     }
 
@@ -253,6 +254,24 @@ namespace LkeServices.Transactions
                 }
 
             } while (true);
+        }
+
+        public async Task AddFeeWithoutChange(Transaction tr, TransactionBuildContext context)
+        {
+            Money fee = Money.Zero;
+            var providedAmount = Money.Zero;
+            var queue = _pregeneratedOutputsQueueFactory.CreateFeeQueue();
+            do
+            {
+                var feeInput = await queue.DequeueCoin();
+                context.AddCoins(true, feeInput);
+                tr.Inputs.Add(new TxIn
+                {
+                    PrevOut = feeInput.Outpoint
+                });
+                providedAmount += feeInput.Amount;
+                fee = await _feeProvider.CalcFeeForTransaction(tr);                
+            } while (fee > providedAmount);
         }
 
         public Task<Money> CalcFee(Transaction tr, int feeRate = 0)
