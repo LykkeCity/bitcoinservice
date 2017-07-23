@@ -62,5 +62,10 @@ namespace MongoRepositories.Walelts
         {
             return await _storage.GetDataAsync();
         }
+
+        public async Task<IWalletAddress> GetByMultisig(string multisig)
+        {
+            return (await _storage.GetDataAsync(o => o.MultisigAddress == multisig)).FirstOrDefault();
+        }
     }
 }

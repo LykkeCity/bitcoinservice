@@ -15,6 +15,7 @@ namespace LkeServices.Multisig
     {
         Task<IWalletAddress> GetOrCreateMultisig(string clientPubKey);
         Task<IWalletAddress> GetMultisig(string clientPubKey);
+        Task<IWalletAddress> GetMultisigByAddr(string multisig);
         Task<IEnumerable<IWalletAddress>> GetAllMultisigs();
     }
 
@@ -49,6 +50,11 @@ namespace LkeServices.Multisig
         public async Task<IWalletAddress> GetMultisig(string clientPubKey)
         {
             return await _walletAddressRepository.GetByClientPubKey(clientPubKey);
+        }
+
+        public async Task<IWalletAddress> GetMultisigByAddr(string multisig)
+        {
+            return await _walletAddressRepository.GetByMultisig(multisig);
         }
 
         public async Task<IEnumerable<IWalletAddress>> GetAllMultisigs()

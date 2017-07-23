@@ -55,8 +55,10 @@ namespace LkeServices.Transactions
         Task<string> BroadcastClosingChannel(string clientPubKey, IAsset asset, string signedByClientTransaction, Guid? notifyTxId = null);
 
         Task<string> SpendCommitmemtByMultisig(ICommitment commitment, ICoin spendingCoin, string destination);
+        Task<string> SpendCommitmemtByPubkey(ICommitment commitment, ICoin spendingCoin, string destination);
 
         Task<string> BroadcastCommitment(string clientPubKey, IAsset asset, string transaction);
+        Task<string> BroadcastCommitment(string multisig, IAsset asset);
 
         Task CloseChannel(ICommitment commitment);
 
@@ -83,7 +85,7 @@ namespace LkeServices.Transactions
 
     public class OffchainService : IOffchainService
     {
-        private const int OneDayDelay = 6 * 24; // 24 hours * 6 blocks in hour
+        public const int OneDayDelay = 6 * 24; // 24 hours * 6 blocks in hour
         private const SigHash CommitmentSignatureType = SigHash.All | SigHash.AnyoneCanPay;
 
         private readonly ITransactionBuildHelper _transactionBuildHelper;
@@ -109,6 +111,7 @@ namespace LkeServices.Transactions
         private readonly IReturnBroadcastedOutputsMessageWriter _returnBroadcastedOutputsMessageWriter;
         private readonly IRabbitNotificationService _rabbitNotificationService;
         private readonly ICommitmentBroadcastRepository _commitmentBroadcastRepository;
+        private readonly ISpendCommitmentMonitoringWriter _spendCommitmentMonitoringWriter;
         private readonly IClosingChannelRepository _closingChannelRepository;
 
         public OffchainService(
@@ -135,6 +138,7 @@ namespace LkeServices.Transactions
             IReturnBroadcastedOutputsMessageWriter returnBroadcastedOutputsMessageWriter,
             IRabbitNotificationService rabbitNotificationService,
             ICommitmentBroadcastRepository commitmentBroadcastRepository,
+            ISpendCommitmentMonitoringWriter spendCommitmentMonitoringWriter,
             IClosingChannelRepository closingChannelRepository)
         {
             _transactionBuildHelper = transactionBuildHelper;
@@ -160,6 +164,7 @@ namespace LkeServices.Transactions
             _returnBroadcastedOutputsMessageWriter = returnBroadcastedOutputsMessageWriter;
             _rabbitNotificationService = rabbitNotificationService;
             _commitmentBroadcastRepository = commitmentBroadcastRepository;
+            _spendCommitmentMonitoringWriter = spendCommitmentMonitoringWriter;
             _closingChannelRepository = closingChannelRepository;
         }
 
@@ -955,7 +960,7 @@ namespace LkeServices.Transactions
                         Pushes = new[] { new byte[0], new byte[0], new byte[0] }
                     };
 
-                    tr.Inputs[0].ScriptSig = OffchainScriptCommitmentTemplate.GenerateScriptSig(scriptParams);
+                    tr.Inputs.First(o => o.PrevOut == spendingCoin.Outpoint).ScriptSig = OffchainScriptCommitmentTemplate.GenerateScriptSig(scriptParams);
 
                     var signed = await _signatureApiProvider.SignTransaction(tr.ToHex(), additionalSecrets: new[] { privateRevokeKey });
 
@@ -968,6 +973,51 @@ namespace LkeServices.Transactions
                     return signedTr.GetHash().ToString();
                 });
         }
+
+
+        public async Task<string> SpendCommitmemtByPubkey(ICommitment commitment, ICoin spendingCoin, string destination)
+        {
+            var context = _transactionBuildContextFactory.Create(_connectionParams.Network);
+
+            var destinationAddress = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(destination);
+
+            return await context.Build(async () =>
+            {
+                var builder = new TransactionBuilder();
+                builder.AddCoins(spendingCoin);
+                if (OpenAssetsHelper.IsBitcoin(commitment.AssetId))
+                    builder.Send(destinationAddress, spendingCoin.Amount);
+                else
+                    builder.SendAsset(destinationAddress, ((ColoredCoin)spendingCoin).Amount);
+                await _transactionBuildHelper.AddFee(builder, context);
+
+                var tr = builder.BuildTransaction(false);
+                tr.Inputs.First(o => o.PrevOut == spendingCoin.Outpoint).Sequence = new Sequence(144);
+                tr.Version = 2;
+
+                var redeem = commitment.LockedScript.ToScript();                
+                var scriptParams = new OffchainScriptParams
+                {
+                    IsMultisig = false,
+                    RedeemScript = redeem.ToBytes(),
+                    Pushes = new[] { new byte[0] }
+                };
+
+                tr.Inputs.First(o => o.PrevOut == spendingCoin.Outpoint).ScriptSig = OffchainScriptCommitmentTemplate.GenerateScriptSig(scriptParams);
+
+                var signed = await _signatureApiProvider.SignTransaction(tr.ToHex());
+
+                var signedTr = new Transaction(signed);
+                var id = Guid.NewGuid();
+                await _broadcastService.BroadcastTransaction(id, signedTr);
+
+                await _spentOutputService.SaveSpentOutputs(id, signedTr);
+
+                return signedTr.GetHash().ToString();
+            });
+        }
+
+
 
         public async Task<string> BroadcastCommitment(string clientPubKey, IAsset asset, string transactionHex)
         {
@@ -1003,12 +1053,31 @@ namespace LkeServices.Transactions
                 var signed = await _signatureApiProvider.SignTransaction(transaction.ToHex());
                 var signedTr = new Transaction(signed);
 
+                var hash = signedTr.GetHash().ToString();
+
                 await _broadcastService.BroadcastTransaction(commitment.CommitmentId, signedTr);
+
+                if (commitment.Type == CommitmentType.Hub && commitment.HubAmount > 0)
+                    await _spendCommitmentMonitoringWriter.AddToMonitoring(commitment.CommitmentId, hash);
+
+                await _commitmentBroadcastRepository.InsertCommitmentBroadcast(commitment.CommitmentId, hash,
+                    CommitmentBroadcastType.Valid, commitment.ClientAmount, commitment.HubAmount, commitment.ClientAmount, commitment.HubAmount, null);
 
                 await CloseChannel(commitment);
 
-                return signedTr.GetHash().ToString();
+                return hash;
             });
+        }
+
+        public async Task<string> BroadcastCommitment(string multisig, IAsset asset)
+        {
+            var address = await _multisigService.GetMultisigByAddr(multisig);
+
+            if (address == null)
+                throw new BackendException($"Multisig is not registered", ErrorCode.BadInputParameter);
+
+            var lastCommitment = await _commitmentRepository.GetLastCommitment(address.MultisigAddress, asset.Id, CommitmentType.Hub);
+            return await BroadcastCommitment(address.ClientPubKey, asset, lastCommitment.SignedTransaction);
         }
 
         public async Task CloseChannel(ICommitment commitment)
@@ -1385,100 +1454,6 @@ namespace LkeServices.Transactions
                 LockedAddress = lockedAddress;
                 LockedScript = lockedScript;
             }
-        }
-    }
-
-    public class OffchainResponse
-    {
-        public Guid TransferId { get; set; }
-
-        public string TransactionHex { get; set; }
-    }
-
-
-    public class OffchainFinalizeResponse : OffchainResponse
-    {
-        public string Hash { get; set; }
-    }
-
-    public class CashoutOffchainResponse : OffchainResponse
-    {
-        public bool ChannelClosed { get; set; }
-    }
-
-    public class OffchainBalance
-    {
-        public Dictionary<string, OffchainBalanceInfo> Channels { get; set; } = new Dictionary<string, OffchainBalanceInfo>();
-    }
-
-    public class OffchainBalanceInfo
-    {
-        public decimal ClientAmount { get; set; }
-
-        public decimal HubAmount { get; set; }
-
-        public string TransactionHash { get; set; }
-        public bool Actual { get; set; }
-    }
-
-    public class OffchainChannelInfo : OffchainBalanceInfo
-    {
-        public Guid ChannelId { get; set; }
-
-        public DateTime Date { get; set; }
-    }
-
-    public class OffchainCommitmentInfo
-    {
-        public DateTime Date { get; set; }
-
-        public decimal ClientAmount { get; set; }
-
-        public decimal HubAmount { get; set; }
-
-        public Guid ClientCommitment { get; set; }
-
-        public Guid HubCommitment { get; set; }
-    }
-
-    public class MultisigBalanceInfo
-    {
-        public string Multisig { get; set; }
-
-        public decimal ClientAmount { get; set; }
-
-        public decimal HubAmount { get; set; }
-    }
-
-    public class AssetBalanceInfo
-    {
-        public List<MultisigBalanceInfo> Balances { get; set; }
-    }
-
-    public class CommitmentBroadcastInfo
-    {
-        public Guid CommitmentId { get; set; }
-        public string TransactionHash { get; set; }
-        public DateTime Date { get; set; }
-        public CommitmentBroadcastType Type { get; set; }
-        public decimal ClientAmount { get; set; }
-        public decimal HubAmount { get; set; }
-        public decimal RealClientAmount { get; set; }
-        public decimal RealHubAmount { get; set; }
-        public string PenaltyTransactionHash { get; set; }
-
-
-        public CommitmentBroadcastInfo(ICommitmentBroadcast commitmentBroadcast)
-        {
-            CommitmentId = commitmentBroadcast.CommitmentId;
-            TransactionHash = commitmentBroadcast.TransactionHash;
-            Date = commitmentBroadcast.Date;
-            Type = commitmentBroadcast.Type;
-            ClientAmount = commitmentBroadcast.ClientAmount;
-            HubAmount = commitmentBroadcast.HubAmount;
-            RealClientAmount = commitmentBroadcast.RealClientAmount;
-            RealHubAmount = commitmentBroadcast.RealHubAmount;
-            PenaltyTransactionHash = commitmentBroadcast.PenaltyTransactionHash;
         }
     }
 }

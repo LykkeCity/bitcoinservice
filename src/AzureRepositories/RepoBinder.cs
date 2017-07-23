@@ -127,6 +127,7 @@ namespace AzureRepositories
             ioc.RegisterType<TransactionMonitoringWriter>().As<ITransactionMonitoringWriter>().SingleInstance();
             ioc.RegisterType<FeeReserveMonitoringWriter>().As<IFeeReserveMonitoringWriter>().SingleInstance();
             ioc.RegisterType<ReturnBroadcastedOutputsMessageWriter>().As<IReturnBroadcastedOutputsMessageWriter>().SingleInstance();
+            ioc.RegisterType<SpendCommitmentMonitoringWriter>().As<ISpendCommitmentMonitoringWriter>().SingleInstance();
         }
     }
 }

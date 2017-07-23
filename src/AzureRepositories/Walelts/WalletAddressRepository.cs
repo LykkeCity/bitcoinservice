@@ -91,5 +91,10 @@ namespace AzureRepositories.Walelts
         {
             return await _storage.GetDataAsync(WalletAddressEntity.ByMultisig.GeneratePartitionKey());
         }
+
+        public Task<IWalletAddress> GetByMultisig(string multisig)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -19,5 +19,6 @@ namespace Core.Repositories.Wallets
         Task<string> GetRedeemScript(string multisigAdress);
         Task<IWalletAddress> GetByClientPubKey(string clientPubKey);
         Task<IEnumerable<IWalletAddress>> GetAllAddresses();
+        Task<IWalletAddress> GetByMultisig(string multisig);
     }
 }
