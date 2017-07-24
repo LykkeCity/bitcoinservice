@@ -995,7 +995,7 @@ namespace LkeServices.Transactions
                 tr.Inputs.First(o => o.PrevOut == spendingCoin.Outpoint).Sequence = new Sequence(144);
                 tr.Version = 2;
 
-                var redeem = commitment.LockedScript.ToScript();                
+                var redeem = commitment.LockedScript.ToScript();
                 var scriptParams = new OffchainScriptParams
                 {
                     IsMultisig = false,
@@ -1048,7 +1048,7 @@ namespace LkeServices.Transactions
             return await context.Build(async () =>
             {
                 var transaction = new Transaction(transactionHex);
-                await _transactionBuildHelper.AddFeeWithoutChange(transaction, context);
+                await _transactionBuildHelper.AddFeeWithoutChange(transaction, context, 1);
 
                 var signed = await _signatureApiProvider.SignTransaction(transaction.ToHex());
                 var signedTr = new Transaction(signed);
