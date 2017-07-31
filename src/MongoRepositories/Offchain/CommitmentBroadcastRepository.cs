@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Core.Repositories.Offchain;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 using MongoRepositories.Mongo;
 
@@ -12,6 +13,7 @@ namespace MongoRepositories.Offchain
 {
     public class CommitmentBroadcastEntity : MongoEntity, ICommitmentBroadcast
     {
+        [BsonRepresentation(BsonType.String)]
         public Guid CommitmentId { get; set; }
         public string TransactionHash { get; set; }
         public DateTime Date { get; set; }
@@ -75,7 +77,7 @@ namespace MongoRepositories.Offchain
         }
 
         public async Task<IEnumerable<ICommitmentBroadcast>> GetLastCommitmentBroadcasts(int limit)
-        {            
+        {
             return await _table.GetTopRecordsAsync(o => true, o => o.Date, SortDirection.Descending, limit);
         }
     }
