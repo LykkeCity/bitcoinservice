@@ -992,7 +992,7 @@ namespace LkeServices.Transactions
                 await _transactionBuildHelper.AddFee(builder, context);
 
                 var tr = builder.BuildTransaction(false);
-                tr.Inputs.First(o => o.PrevOut == spendingCoin.Outpoint).Sequence = new Sequence(144);
+                tr.Inputs.First(o => o.PrevOut == spendingCoin.Outpoint).Sequence = new Sequence(OneDayDelay);
                 tr.Version = 2;
 
                 var redeem = commitment.LockedScript.ToScript();

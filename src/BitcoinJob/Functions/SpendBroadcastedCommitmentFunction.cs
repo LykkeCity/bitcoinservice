@@ -21,6 +21,9 @@ namespace BitcoinJob.Functions
 {
     public class SpendBroadcastedCommitmentFunction
     {
+
+        private readonly TimeSpan MessageProcessDelay = TimeSpan.FromMinutes(10);
+
         private readonly IOffchainService _offchainService;
         private readonly IQBitNinjaApiCaller _qBitNinjaApiCaller;
         private readonly ICommitmentRepository _commitmentRepository;
@@ -40,22 +43,28 @@ namespace BitcoinJob.Functions
         [QueueTrigger(Constants.SpendCommitmentOutputQueue)]
         public async Task Process(SpendCommitmentMonitorindMessage message, QueueTriggeringContext context)
         {
-            var delay = TimeSpan.FromHours(OffchainService.OneDayDelay * TimeSpan.FromMinutes(10).TotalHours);
-            if (DateTime.UtcNow - message.PutDateTime < delay)
+            if (DateTime.UtcNow - message.LastTryTime.GetValueOrDefault() < MessageProcessDelay)
             {
-                context.MoveMessageToEnd();
-                context.SetCountQueueBasedDelay(10000, 100);
+                MoveToEnd(context, message);
+                return;
+            }
+            message.LastTryTime = DateTime.UtcNow;
+
+            var tr = await _qBitNinjaApiCaller.GetTransaction(message.TransactionHash);
+            if (tr?.Block == null || tr.Block.Confirmations < OffchainService.OneDayDelay)
+            {
+                MoveToEnd(context, message);
                 return;
             }
             var commitment = await _commitmentRepository.GetCommitment(message.CommitmentId);
             var lockedAddr = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(commitment.LockedAddress);
-            var coin = (await _qBitNinjaApiCaller.GetTransaction(message.TransactionHash)).ReceivedCoins
-                .FirstOrDefault(o => o.TxOut.ScriptPubKey.GetDestinationAddress(_connectionParams.Network) == lockedAddr);            
-            if (coin == null)            
+            var coin = tr.ReceivedCoins
+                .FirstOrDefault(o => o.TxOut.ScriptPubKey.GetDestinationAddress(_connectionParams.Network) == lockedAddr);
+            if (coin == null)
                 throw new Exception("Not found coin for spending for " + message.ToJson());
 
             if (coin is Coin)
-                coin = ((Coin) coin).ToScriptCoin(commitment.LockedScript.ToScript());
+                coin = ((Coin)coin).ToScriptCoin(commitment.LockedScript.ToScript());
             else
             {
                 var colored = coin as ColoredCoin;
@@ -73,10 +82,14 @@ namespace BitcoinJob.Functions
             catch (Exception ex)
             {
                 await _log.WriteErrorAsync(nameof(SpendBroadcastedCommitmentFunction), nameof(Process), message.ToJson(), ex);
-                context.MoveMessageToEnd();
-                context.SetCountQueueBasedDelay(10000, 100);
+                MoveToEnd(context, message);
             }
         }
 
+        private static void MoveToEnd(QueueTriggeringContext context, SpendCommitmentMonitorindMessage message)
+        {
+            context.MoveMessageToEnd(message.ToJson());
+            context.SetCountQueueBasedDelay(10000, 100);
+        }
     }
 }

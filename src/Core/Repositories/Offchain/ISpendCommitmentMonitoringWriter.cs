@@ -15,6 +15,8 @@ namespace Core.Repositories.Offchain
     {
         public DateTime PutDateTime { get; set; }
 
+        public DateTime? LastTryTime { get; set; }
+
         public Guid CommitmentId { get; set; }
 
         public string TransactionHash { get; set; }

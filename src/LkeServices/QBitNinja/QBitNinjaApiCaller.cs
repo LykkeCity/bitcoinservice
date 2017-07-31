@@ -40,7 +40,7 @@ namespace LkeServices.QBitNinja
         public Task<GetTransactionResponse> GetTransaction(string hash)
         {
             var client = _clientFactory();
-            client.Colored = true;
+            client.Colored = true;            
             return client.GetTransaction(uint256.Parse(hash));
         }
 
