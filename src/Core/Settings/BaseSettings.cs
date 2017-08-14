@@ -64,7 +64,9 @@ namespace Core.Settings
 
         public Offchain Offchain { get; set; } = new Offchain();
 
-        public Rabbit RabbitMq { get; set; } = new Rabbit();        
+        public Rabbit RabbitMq { get; set; } = new Rabbit();       
+        
+        public BccSettings Bcc { get; set; } = new BccSettings();
     }
 
     public class DbSettings
@@ -89,5 +91,13 @@ namespace Core.Settings
     {
         public RabbitMqConnectionSettings ExplorerNotificationConnection { get; set; } = new RabbitMqConnectionSettings();
         public RabbitMqConnectionSettings MultisigNotificationConnection { get; set; } = new RabbitMqConnectionSettings();
+    }
+
+    public class BccSettings
+    {
+        public NetworkType NetworkType { get; set; }
+        public string RPCUsername { get; set; }
+        public string RPCPassword { get; set; }
+        public string RPCServerIpAddress { get; set; }
     }
 }

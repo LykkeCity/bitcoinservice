@@ -15,7 +15,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Lykke.Common" Version="1.1.69" />
+    <PackageReference Include="Autofac" Version="4.6.1" />
+    <PackageReference Include="Lykke.Common" Version="1.1.79" />
     <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="1.1.0" />
     <PackageReference Include="Microsoft.Extensions.PlatformAbstractions" Version="1.0.0" />
     <PackageReference Include="RabbitMQ.Client" Version="5.0.1-rc2" />

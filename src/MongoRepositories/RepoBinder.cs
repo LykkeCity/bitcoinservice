@@ -52,7 +52,7 @@ namespace MongoRepositories
                 .As<ISettingsRepository>();
 
             ioc.RegisterInstance(new SpentOutputRepository(new MongoStorage<OutputEntity>(mongoClient, "SpentOutputs")))
-                .As<ISpentOutputRepository>();
+                .As<ISpentOutputRepository>();           
 
             ioc.RegisterInstance(new BroadcastedTransactionRepository(new MongoStorage<BroadcastedTransactionEntity>(mongoClient, "BroadcastedTransactions")))
                 .As<IBroadcastedTransactionRepository>();
@@ -89,6 +89,9 @@ namespace MongoRepositories
 
             ioc.RegisterInstance(new CommitmentBroadcastRepository(new MongoStorage<CommitmentBroadcastEntity>(mongoClient, "CommitmentBroadcasts")))
                 .As<ICommitmentBroadcastRepository>();
+
+            ioc.RegisterInstance(new SpentOutputRepository(new MongoStorage<OutputEntity>(mongoClient, "BccSpentOutputs")))
+                .Keyed<ISpentOutputRepository>(Constants.BccKey);
         }        
     }
 }

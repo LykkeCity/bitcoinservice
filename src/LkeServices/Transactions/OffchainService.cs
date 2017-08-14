@@ -344,10 +344,10 @@ namespace LkeServices.Transactions
 
                         var hex = tr.ToHex();
                         monitor.Step("Create transfer");
-                        var transfer = await _offchainTransferRepository.CreateTransfer(multisig.ToWif(), asset.Id, false);
+                        var transfer = await _offchainTransferRepository.CreateTransfer(multisig.ToString(), asset.Id, false);
                         transferId = transfer.TransferId;
                         monitor.Step("Create channel");
-                        var channel = await _offchainChannelRepository.CreateChannel(multisig.ToWif(), asset.Id, hex, clientChannelAmount,
+                        var channel = await _offchainChannelRepository.CreateChannel(multisig.ToString(), asset.Id, hex, clientChannelAmount,
                             hubChannelAmount);
 
                         monitor.Step("Save spent outputs");
@@ -418,8 +418,8 @@ namespace LkeServices.Transactions
 
                     var hex = tr.ToHex();
 
-                    var transfer = await _offchainTransferRepository.CreateTransfer(multisig.ToWif(), asset.Id, false);
-                    var channel = await _offchainChannelRepository.CreateChannel(multisig.ToWif(), asset.Id, hex, clientChannelAmount,
+                    var transfer = await _offchainTransferRepository.CreateTransfer(multisig.ToString(), asset.Id, false);
+                    var channel = await _offchainChannelRepository.CreateChannel(multisig.ToString(), asset.Id, hex, clientChannelAmount,
                         hubChannelAmount);
 
                     await _spentOutputService.SaveSpentOutputs(channel.ChannelId, tr);
@@ -658,7 +658,7 @@ namespace LkeServices.Transactions
             {
                 var builder = new TransactionBuilder();
 
-                var coin = FindCoin(new Transaction(channel.FullySignedChannel), multisig.ToWif(), address.RedeemScript,
+                var coin = FindCoin(new Transaction(channel.FullySignedChannel), multisig.ToString(), address.RedeemScript,
                     channel.ClientAmount + channel.HubAmount, asset);
 
                 builder.AddCoins(coin);
@@ -704,8 +704,8 @@ namespace LkeServices.Transactions
                 var hex = tr.ToHex();
                 if (!isFullClosing)
                 {
-                    var transfer = await _offchainTransferRepository.CreateTransfer(multisig.ToWif(), asset.Id, false);
-                    var newChannel = await _offchainChannelRepository.CreateChannel(multisig.ToWif(), asset.Id, hex, channel.ClientAmount - amount, savedHubAmount);
+                    var transfer = await _offchainTransferRepository.CreateTransfer(multisig.ToString(), asset.Id, false);
+                    var newChannel = await _offchainChannelRepository.CreateChannel(multisig.ToString(), asset.Id, hex, channel.ClientAmount - amount, savedHubAmount);
 
                     await _spentOutputService.SaveSpentOutputs(newChannel.ChannelId, tr);
                     await SaveNewOutputs(tr, context, newChannel.ChannelId);
@@ -768,7 +768,7 @@ namespace LkeServices.Transactions
             {
                 var builder = new TransactionBuilder();
 
-                var coin = FindCoin(new Transaction(channel.FullySignedChannel), multisig.ToWif(), address.RedeemScript,
+                var coin = FindCoin(new Transaction(channel.FullySignedChannel), multisig.ToString(), address.RedeemScript,
                     channel.ClientAmount + channel.HubAmount, asset);
 
                 builder.AddCoins(coin);
@@ -799,8 +799,8 @@ namespace LkeServices.Transactions
                 var hex = tr.ToHex();
                 if (!isFullClosing)
                 {
-                    var transfer = await _offchainTransferRepository.CreateTransfer(multisig.ToWif(), asset.Id, false);
-                    var newChannel = await _offchainChannelRepository.CreateChannel(multisig.ToWif(), asset.Id, hex, channel.ClientAmount, 0);
+                    var transfer = await _offchainTransferRepository.CreateTransfer(multisig.ToString(), asset.Id, false);
+                    var newChannel = await _offchainChannelRepository.CreateChannel(multisig.ToString(), asset.Id, hex, channel.ClientAmount, 0);
 
                     await _spentOutputService.SaveSpentOutputs(newChannel.ChannelId, tr);
                     await SaveNewOutputs(tr, context, newChannel.ChannelId);
@@ -835,9 +835,9 @@ namespace LkeServices.Transactions
                 throw new BackendException("Amount can't be equals to zero", ErrorCode.BadInputParameter);
             var context = _transactionBuildContextFactory.Create(_connectionParams.Network);
 
-            var currentClosing = await _closingChannelRepository.GetClosingChannel(multisig.ToWif(), asset.Id);
+            var currentClosing = await _closingChannelRepository.GetClosingChannel(multisig.ToString(), asset.Id);
             if (currentClosing != null)
-                await _closingChannelRepository.CompleteClosingChannel(multisig.ToWif(), asset.Id, currentClosing.ClosingChannelId);
+                await _closingChannelRepository.CompleteClosingChannel(multisig.ToString(), asset.Id, currentClosing.ClosingChannelId);
 
 
             return await context.Build(async () =>
@@ -847,14 +847,14 @@ namespace LkeServices.Transactions
                 {
                     if (OpenAssetsHelper.IsBitcoin(asset.Id))
                     {
-                        var unspentOutputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(multisig.ToWif())).ToList();
+                        var unspentOutputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(multisig.ToString())).ToList();
                         await _transactionBuildHelper.SendWithChange(builder, context, unspentOutputs, cashoutAddress, Money.FromUnit(amount, MoneyUnit.BTC),
                                 multisig);
                     }
                     else
                     {
                         var assetId = new BitcoinAssetId(asset.BlockChainAssetId, _connectionParams.Network).AssetId;
-                        var unspentOutputs = (await _bitcoinOutputsService.GetColoredUnspentOutputs(multisig.ToWif(), assetId)).ToList();
+                        var unspentOutputs = (await _bitcoinOutputsService.GetColoredUnspentOutputs(multisig.ToString(), assetId)).ToList();
 
                         var sendAmount = new AssetMoney(assetId, amount, asset.MultiplierPower);
                         _transactionBuildHelper.SendAssetWithChange(builder, context, unspentOutputs, cashoutAddress, sendAmount, multisig);
@@ -869,7 +869,7 @@ namespace LkeServices.Transactions
 
                 var hex = tr.ToHex();
 
-                var closing = await _closingChannelRepository.CreateClosingChannel(multisig.ToWif(), asset.Id, Guid.Empty, hex);
+                var closing = await _closingChannelRepository.CreateClosingChannel(multisig.ToString(), asset.Id, Guid.Empty, hex);
                 await SaveNewOutputs(tr, context, closing.ClosingChannelId);
 
                 return new CashoutOffchainResponse
@@ -1188,7 +1188,7 @@ namespace LkeServices.Transactions
                 Money sendAmount;
 
                 monitor.ChildProcess("Get uncolored outputs");
-                var unspentOutputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(from.ToWif(), monitor: monitor)).ToList();
+                var unspentOutputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(from.ToString(), monitor: monitor)).ToList();
                 monitor.CompleteLastProcess();
 
                 if (amount < 0)
@@ -1207,7 +1207,7 @@ namespace LkeServices.Transactions
                 long sendAmount;
 
                 monitor.ChildProcess("Get colored outputs");
-                var unspentOutputs = (await _bitcoinOutputsService.GetColoredUnspentOutputs(from.ToWif(), asset, monitor: monitor)).ToList();
+                var unspentOutputs = (await _bitcoinOutputsService.GetColoredUnspentOutputs(from.ToString(), asset, monitor: monitor)).ToList();
                 monitor.CompleteLastProcess();
 
                 if (amount < 0)
@@ -1254,7 +1254,7 @@ namespace LkeServices.Transactions
             {
                 decimal sentAmount = 0;
                 monitor.ChildProcess("Get uncolored outputs");
-                var unspentOutputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(hotWalletAddress.ToWif(), monitor: monitor)).ToList();
+                var unspentOutputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(hotWalletAddress.ToString(), monitor: monitor)).ToList();
                 monitor.CompleteLastProcess();
 
                 var neededAmount = Money.FromUnit(amount, MoneyUnit.BTC);
@@ -1266,7 +1266,7 @@ namespace LkeServices.Transactions
                         assetSetting = await CreateAssetSetting(assetEntity.Id, assetSetting);
 
                     monitor.Step("Get uncolored outputs from new hotwallet");
-                    var outputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(changeAddress.ToWif(), monitor: monitor)).ToList();
+                    var outputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(changeAddress.ToString(), monitor: monitor)).ToList();
                     sentAmount = await _transactionBuildHelper.SendWithChange(builder, context, outputs, toMultisig, neededAmount - availableAmount, changeAddress);
 
                     if (assetSetting.Asset != Constants.DefaultAssetSetting)
@@ -1287,7 +1287,7 @@ namespace LkeServices.Transactions
                 var asset = new BitcoinAssetId(assetEntity.BlockChainAssetId, _connectionParams.Network).AssetId;
 
                 monitor.ChildProcess("Get colored outputs");
-                var unspentOutputs = (await _bitcoinOutputsService.GetColoredUnspentOutputs(hotWalletAddress.ToWif(), asset, monitor: monitor)).ToList();
+                var unspentOutputs = (await _bitcoinOutputsService.GetColoredUnspentOutputs(hotWalletAddress.ToString(), asset, monitor: monitor)).ToList();
                 monitor.CompleteLastProcess();
 
                 var neededAmount = new AssetMoney(asset, amount, assetEntity.MultiplierPower).Quantity;
@@ -1299,7 +1299,7 @@ namespace LkeServices.Transactions
                         assetSetting = await CreateAssetSetting(assetEntity.Id, assetSetting);
 
                     monitor.Step("Get colored outputs from new hotwallet");
-                    var outputs = (await _bitcoinOutputsService.GetColoredUnspentOutputs(changeAddress.ToWif(), asset, monitor: monitor)).ToList();
+                    var outputs = (await _bitcoinOutputsService.GetColoredUnspentOutputs(changeAddress.ToString(), asset, monitor: monitor)).ToList();
                     _transactionBuildHelper.SendAssetWithChange(builder, context, outputs, toMultisig, new AssetMoney(asset, neededAmount - availableAmount), changeAddress);
 
                     if (assetSetting.Asset != Constants.DefaultAssetSetting)
@@ -1322,14 +1322,14 @@ namespace LkeServices.Transactions
             {
                 var money = new Money(amount, MoneyUnit.BTC);
                 return tr.Outputs.AsCoins().FirstOrDefault(o => o.Amount == money &&
-                        o.ScriptPubKey.GetDestinationAddress(_connectionParams.Network).ToWif() == multisig)
+                        o.ScriptPubKey.GetDestinationAddress(_connectionParams.Network).ToString() == multisig)
                         ?.ToScriptCoin(new Script(walletRedeemScript));
             }
             var assetMoney = new AssetMoney(new BitcoinAssetId(asset.BlockChainAssetId), amount, asset.MultiplierPower);
             uint markerPosition;
             var marker = ColorMarker.Get(tr, out markerPosition);
             var found = tr.Outputs.AsIndexedOutputs()
-                .FirstOrDefault(o => o.TxOut.ScriptPubKey.GetDestinationAddress(_connectionParams.Network)?.ToWif() == multisig &&
+                .FirstOrDefault(o => o.TxOut.ScriptPubKey.GetDestinationAddress(_connectionParams.Network)?.ToString() == multisig &&
                                      o.N > markerPosition && marker.Quantities[o.N - markerPosition - 1] == (ulong)assetMoney.Quantity);
             return found?.ToCoin().ToScriptCoin(new Script(walletRedeemScript)).ToColoredCoin(assetMoney);
         }
@@ -1340,7 +1340,7 @@ namespace LkeServices.Transactions
         {
             var multisig = new BitcoinScriptAddress(wallet.MultisigAddress, _connectionParams.Network);
             var channel = new Transaction(channelTr);
-            var spendCoin = FindCoin(channel, multisig.ToWif(), wallet.RedeemScript, lockedAmount + unlockedAmount, asset);
+            var spendCoin = FindCoin(channel, multisig.ToString(), wallet.RedeemScript, lockedAmount + unlockedAmount, asset);
 
             if (spendCoin == null)
                 throw new BackendException($"Not found output in setup channel with amount {lockedAmount + unlockedAmount}", ErrorCode.NoCoinsFound);
@@ -1385,7 +1385,7 @@ namespace LkeServices.Transactions
             _transactionBuildHelper.AddFakeInput(builder, fakeAmount);
             var tr = builder.BuildTransaction(true);
             _transactionBuildHelper.RemoveFakeInput(tr);
-            return new CreationCommitmentResult(tr, lockedAddress.ToWif(), script.ToHex());
+            return new CreationCommitmentResult(tr, lockedAddress.ToString(), script.ToHex());
         }
 
         public async Task<decimal> GetClientBalance(string multisig, IAsset asset)

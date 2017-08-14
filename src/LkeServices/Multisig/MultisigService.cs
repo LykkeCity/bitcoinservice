@@ -65,7 +65,7 @@ namespace LkeServices.Multisig
         private async Task<IWalletAddress> CreateMultisig(string clientPubKey, string exchangePubKey)
         {
             var scriptPubKey = MultisigHelper.GenerateMultisigRedeemScript(clientPubKey, exchangePubKey);
-            var address = await _walletAddressRepository.Create(scriptPubKey.GetScriptAddress(_connectionParams.Network).ToWif(),
+            var address = await _walletAddressRepository.Create(scriptPubKey.GetScriptAddress(_connectionParams.Network).ToString(),
                 clientPubKey, exchangePubKey, scriptPubKey.ToString());
             _notificationService.CreateMultisig(address.MultisigAddress, DateTime.UtcNow);
             return address;

@@ -24,6 +24,10 @@ namespace Core.Providers
 
         [Post("/api/bitcoin/nextaddress")]
         Task<PubKeyResponse> GetNextAddress([Body]NextAddressRequest request);
+
+
+        [Post("/api/BitcoinCash/sign")]
+        Task<TransactionResponse> SignBccTransaction([Body] TransactionSignRequest request);
     }
 
     public interface ISignatureApiProvider
@@ -31,6 +35,7 @@ namespace Core.Providers
         Task<string> GeneratePubKey();
         
         Task<string> SignTransaction(string transaction, SigHash hashType = SigHash.All, string[] additionalSecrets = null);
+        Task<string> SignBccTransaction(string transaction, SigHash hashType = SigHash.All, string[] additionalSecrets = null);
         Task<string> GetNextAddress(string address);
         Task AddKey(string privateKey);
     }

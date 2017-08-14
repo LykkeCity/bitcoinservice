@@ -149,7 +149,7 @@ namespace BitcoinJob.Functions
                     var queue = _pregeneratedOutputsQueueFactory.Create(asset.BlockChainAssetId);
                     while (await queue.Count() < _baseSettings.MinPregeneratedAssetOutputsCount)
                     {
-                        var coins = await _bitcoinOutputsService.GetUncoloredUnspentOutputs(hotWallet.ToWif());
+                        var coins = await _bitcoinOutputsService.GetUncoloredUnspentOutputs(hotWallet.ToString());
                         TransactionBuilder builder = new TransactionBuilder();
 
                         builder.AddCoins(coins);
@@ -165,7 +165,7 @@ namespace BitcoinJob.Functions
                         await _bitcoinClient.BroadcastTransaction(signedTr, transactionId);
 
                         await queue.EnqueueOutputs(signedTr.Outputs.AsCoins()
-                            .Where(o => o.ScriptPubKey.GetDestinationAddress(_connectionParams.Network).ToWif() == asset.AssetAddress &&
+                            .Where(o => o.ScriptPubKey.GetDestinationAddress(_connectionParams.Network).ToString() == asset.AssetAddress &&
                                         o.TxOut.Value == _dustSize).ToArray());
 
                         await FinishOutputs(transactionId, signedTr, hotWallet);
@@ -184,7 +184,7 @@ namespace BitcoinJob.Functions
         {
 
             await _broadcastedOutputRepository.InsertOutputs(tr.Outputs.AsCoins()
-                .Where(o => o.ScriptPubKey.GetDestinationAddress(_connectionParams.Network).ToWif() == hotWallet.ToWif())
+                .Where(o => o.ScriptPubKey.GetDestinationAddress(_connectionParams.Network).ToString() == hotWallet.ToString())
                 .Select(o => new BroadcastedOutput(o, transactionId, _connectionParams.Network)));
             await _broadcastedOutputRepository.SetTransactionHash(transactionId, tr.GetHash().ToString());
 

@@ -33,7 +33,7 @@ namespace BitcoinApi.Controllers
         {
             var address = await _multisigService.GetOrCreateMultisig(clientPubKey);
 
-            var coloredMultisigAddress = BitcoinAddress.Create(address.MultisigAddress).ToColoredAddress().ToWif();
+            var coloredMultisigAddress = BitcoinAddress.Create(address.MultisigAddress).ToColoredAddress().ToString();
 
             return new GetWalletResult
             {
