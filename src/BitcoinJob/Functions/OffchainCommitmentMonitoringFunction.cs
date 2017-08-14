@@ -69,7 +69,7 @@ namespace BitcoinJob.Functions
 
                     foreach (var transactionOutput in transaction.Outputs.AsIndexedOutputs())
                     {
-                        var address = transactionOutput.TxOut.ScriptPubKey.GetDestinationAddress(_connectionParams.Network)?.ToWif();
+                        var address = transactionOutput.TxOut.ScriptPubKey.GetDestinationAddress(_connectionParams.Network)?.ToString();
                         if (address != null && dbCommitments.ContainsKey(address))
                         {
                             var commitments = dbCommitments[address].OrderByDescending(o => o.CreateDt).ToList();

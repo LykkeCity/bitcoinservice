@@ -53,12 +53,12 @@ namespace LkeServices.Transactions
         public async Task Transfer(BitcoinAddress @from, BitcoinAddress to, decimal amount)
         {
             var amountMoney = Money.FromUnit(amount, MoneyUnit.BTC);
-            var coins = (await _bccOutputService.GetUnspentOutputs(from.ToWif())).OfType<Coin>().Cast<ICoin>().ToList();
+            var coins = (await _bccOutputService.GetUnspentOutputs(from.ToString())).OfType<Coin>().Cast<ICoin>().ToList();
 
             var availableAmount = coins.Select(o => o.Amount).DefaultIfEmpty().Select(o => (Money)o ?? Money.Zero).Sum();
 
             await _log.WriteInfoAsync(nameof(BccTransactionService), nameof(Transfer), null,
-                $"Available amount of {from.ToWif()} - {availableAmount} satoshis");
+                $"Available amount of {from.ToString()} - {availableAmount} satoshis");
 
             var builder = new TransactionBuilder();
             var context = new TransactionBuildContext(_connectionParams.Network, null, null);

@@ -44,7 +44,7 @@ namespace BitcoinJob.Functions
             _signatureApiProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
         }
 
-        [TimerTrigger("00:00:01")]
+        [TimerTrigger("00:30:00")]
         public async Task Process()
         {
             var maxTxCount = await _settingsRepository.Get(Constants.MaxOffchainTxCount, MaxTxCount);

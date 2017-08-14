@@ -37,12 +37,12 @@ namespace ClientSecretMigration
                 try
                 {
                     var secret = new BitcoinSecret(item.PrivateKey);
-                    var address = secret.GetAddress().ToWif();
+                    var address = secret.GetAddress().ToString();
 
                     if (await _keyRepository.GetPrivateKey(address) == null)
                     {
 
-                        var encrypted = Encryption.EncryptAesString(secret.ToWif(), _password);
+                        var encrypted = Encryption.EncryptAesString(secret.ToString(), _password);
                         await _keyRepository.CreatePrivateKey(address, encrypted);
                     }
 

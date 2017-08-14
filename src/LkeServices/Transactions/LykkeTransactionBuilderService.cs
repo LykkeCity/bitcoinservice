@@ -199,7 +199,7 @@ namespace LkeServices.Transactions
 
                     var assetId = new BitcoinAssetId(asset.BlockChainAssetId, _connectionParams.Network).AssetId;
                     var coins =
-                        (await _bitcoinOutputsService.GetColoredUnspentOutputs(bitcoinAddres.ToWif(), assetId)).ToList();
+                        (await _bitcoinOutputsService.GetColoredUnspentOutputs(bitcoinAddres.ToString(), assetId)).ToList();
 
                     builder.SetChange(bitcoinAddres, ChangeType.Colored);
                     builder.AddCoins(coins);
@@ -238,8 +238,8 @@ namespace LkeServices.Transactions
                 return await context.Build(async () =>
                 {
                     var builder = new TransactionBuilder();
-                    var uncoloredCoins = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(from.ToWif())).ToList();
-                    var coloredCoins = (await _bitcoinOutputsService.GetColoredUnspentOutputs(from.ToWif())).ToList();
+                    var uncoloredCoins = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(from.ToString())).ToList();
+                    var coloredCoins = (await _bitcoinOutputsService.GetColoredUnspentOutputs(from.ToString())).ToList();
 
                     if (uncoloredCoins.Count == 0 && coloredCoins.Count == 0)
                         throw new BackendException("Address has no unspent outputs", ErrorCode.NoCoinsFound);
@@ -270,7 +270,7 @@ namespace LkeServices.Transactions
                     }
                     foreach (var assetGroup in coloredCoins.GroupBy(o => o.AssetId))
                     {
-                        var asset = assets.First(o => o.BlockChainAssetId == assetGroup.Key.GetWif(_connectionParams.Network).ToWif());
+                        var asset = assets.First(o => o.BlockChainAssetId == assetGroup.Key.GetWif(_connectionParams.Network).ToString());
 
                         var channel = channels.FirstOrDefault(o => o.Asset == asset.Id);
 
@@ -369,7 +369,7 @@ namespace LkeServices.Transactions
         private async Task TransferOneDirection(TransactionBuilder builder, TransactionBuildContext context,
             BitcoinAddress @from, decimal amount, IAsset asset, BitcoinAddress to, bool addDust = true)
         {
-            var fromStr = from.ToWif();
+            var fromStr = from.ToString();
 
             if (OpenAssetsHelper.IsBitcoin(asset.Id))
             {

@@ -125,7 +125,7 @@ namespace LkeServices.Transactions
             var newAmount = Money.Max(GetDust(destination, addDust), amount);
             builder.Send(destination, newAmount);
             if (newAmount > amount)
-                context.AddExtraAmount(await _extraAmountRepository.Add(destination.ScriptPubKey.GetDestinationAddress(_connectionParams.Network).ToWif(),
+                context.AddExtraAmount(await _extraAmountRepository.Add(destination.ScriptPubKey.GetDestinationAddress(_connectionParams.Network).ToString(),
                             newAmount - amount));
             return newAmount.ToDecimal(MoneyUnit.BTC);
         }

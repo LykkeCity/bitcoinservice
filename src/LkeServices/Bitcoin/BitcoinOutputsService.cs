@@ -69,19 +69,15 @@ namespace LkeServices.Bitcoin
         private async Task<IEnumerable<ICoin>> ToScriptCoins(string walletAddress, List<ICoin> coins)
         {
             var address = BitcoinAddress.Create(walletAddress);
-            switch (address.Type)
+            if (address is BitcoinScriptAddress)
             {
-                case Base58Type.PUBKEY_ADDRESS:
-                    return coins;
-                case Base58Type.SCRIPT_ADDRESS:
-                    var redeem = await _walletAddressRepository.GetRedeemScript(walletAddress);
-                    return coins.OfType<Coin>().Select(x => new ScriptCoin(x, new Script(redeem)))
-                        .Concat(
-                            coins.OfType<ColoredCoin>().Select(x => new ScriptCoin(x, new Script(redeem)).ToColoredCoin(x.Amount))
-                                .Cast<ICoin>());
-                default:
-                    throw new NotImplementedException();
+                var redeem = await _walletAddressRepository.GetRedeemScript(walletAddress);
+                return coins.OfType<Coin>().Select(x => new ScriptCoin(x, new Script(redeem)))
+                    .Concat(
+                        coins.OfType<ColoredCoin>().Select(x => new ScriptCoin(x, new Script(redeem)).ToColoredCoin(x.Amount))
+                            .Cast<ICoin>());
             }
+            return coins;
         }
 
         private async Task AddBroadcastedOutputs(List<ICoin> coins, string walletAddress, int confirmationsCount, IPerformanceMonitor monitor)

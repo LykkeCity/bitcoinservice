@@ -11,14 +11,11 @@ namespace Core.OpenAssets
     public static class OpenAssetsHelper
     {
         public static BitcoinAddress GetBitcoinAddressFormBase58Date(string base58Data)
-        {
-            var base58Decoded = Base58Data.GetFromBase58Data(base58Data);
-            var address = base58Decoded as BitcoinAddress;
-            if (address != null)
-            {
-                return address;
-            }
-            return (base58Decoded as BitcoinColoredAddress)?.Address;
+        {            
+            var address = BitcoinAddress.Create(base58Data);
+            if (address != null)           
+                return address;            
+            return new BitcoinColoredAddress(base58Data)?.Address;            
         }
 
         public static bool IsBitcoin(string asset)

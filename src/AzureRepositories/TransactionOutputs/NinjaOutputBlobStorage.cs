@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using AzureStorage;
+using Core.OpenAssets;
 using Core.Repositories.TransactionOutputs;
 using NBitcoin;
 using QBitNinja.Client;
@@ -25,7 +26,7 @@ namespace AzureRepositories.TransactionOutputs
         {
             try
             {
-                var str = Serializer.ToString(coins, Base58Data.GetFromBase58Data(address).Network);
+                var str = Serializer.ToString(coins,OpenAssetsHelper.GetBitcoinAddressFormBase58Date(address).Network);
 
                 await _storage.SaveBlobAsync(BlobContainer, $"{address}_{DateTime.UtcNow:yyyy-MM-dd_HH-mm-ss.fff}.txt", Encoding.UTF8.GetBytes(str));
             }

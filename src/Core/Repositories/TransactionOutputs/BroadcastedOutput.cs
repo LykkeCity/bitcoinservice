@@ -27,7 +27,7 @@ namespace Core.Repositories.TransactionOutputs
 
         private BroadcastedOutput(ICoin coin, Network net)
         {
-            Address = coin.TxOut.ScriptPubKey.GetDestinationAddress(net).ToWif();
+            Address = coin.TxOut.ScriptPubKey.GetDestinationAddress(net).ToString();
             ScriptPubKey = coin.TxOut.ScriptPubKey.ToHex();
             N = (int)coin.Outpoint.N;
             var coin1 = coin as Coin;
