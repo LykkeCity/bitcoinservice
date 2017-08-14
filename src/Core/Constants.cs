@@ -37,5 +37,10 @@ namespace Core
 
         public const string RabbitMqExplorerNotification = "onh.offchainnotifications";
         public const string RabbitMqMultisigNotification = "multisignotifications";
+
+        public const string BccKey = "bcc";
+        public const int BccBlock = 478558;
+
+        public const string BccTransferQueue = "bcc-transfer";
     }
 }

@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Net.Http;
 using Autofac;
+using Autofac.Features.AttributeFilters;
 using Core;
+using Core.Bcc;
 using Core.Bitcoin;
 using Core.Outputs;
 using Core.Performance;
@@ -9,6 +11,7 @@ using Core.Providers;
 using Core.QBitNinja;
 using Core.RabbitNotification;
 using Core.Settings;
+using LkeServices.Bcc;
 using LkeServices.Bitcoin;
 using LkeServices.Multisig;
 using LkeServices.Outputs;
@@ -62,7 +65,7 @@ namespace LkeServices
                 {
                     var resolver = x.Resolve<IComponentContext>();
                     var settings = resolver.Resolve<BaseSettings>();
-                    return new RabbitMqPublisher(settings.RabbitMq.ExplorerNotificationConnection.ConnectionString, 
+                    return new RabbitMqPublisher(settings.RabbitMq.ExplorerNotificationConnection.ConnectionString,
                                                  settings.RabbitMq.ExplorerNotificationConnection.Exchange);
                 }).Named<IRabbitMqPublisher>(Constants.RabbitMqExplorerNotification).SingleInstance().AutoActivate();
 
@@ -84,6 +87,26 @@ namespace LkeServices
             ioc.RegisterType<RabbitNotificationService>().As<IRabbitNotificationService>();
 
             BindApiProviders(ioc);
+
+            BindBccServices(ioc);
+        }
+
+        private static void BindBccServices(ContainerBuilder ioc)
+        {
+            ioc.Register(x =>
+            {
+                var resolver = x.Resolve<IComponentContext>();
+                var settings = resolver.Resolve<BaseSettings>();
+                return new RpcConnectionParams(settings.Bcc);
+            }).Keyed<RpcConnectionParams>(Constants.BccKey).SingleInstance();
+
+            ioc.RegisterType<BccQBitNinjaApiCaller>().As<IBccQbBitNinjaApiCaller>().WithAttributeFiltering();
+
+            ioc.RegisterType<BccOutputService>().As<IBccOutputService>().WithAttributeFiltering();
+            
+            ioc.RegisterType<RpcBccClient>().Keyed<IRpcBitcoinClient>(Constants.BccKey).WithAttributeFiltering();
+
+            ioc.RegisterType<BccTransactionService>().As<IBccTransactionService>().WithAttributeFiltering();
         }
 
         private static void BindApiProviders(ContainerBuilder ioc)

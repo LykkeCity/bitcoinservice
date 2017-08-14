@@ -20,5 +20,13 @@ namespace Core.Bitcoin
             IpAddress = settings.RPCServerIpAddress;
             Network = settings.NetworkType == NetworkType.Main ? Network.Main : Network.TestNet;
         }
+
+        public RpcConnectionParams(BccSettings settings)
+        {
+            UserName = settings.RPCUsername;
+            Password = settings.RPCPassword;
+            IpAddress = settings.RPCServerIpAddress;
+            Network = settings.NetworkType == NetworkType.Main ? Network.Main : Network.TestNet;
+        }
     }
 }
