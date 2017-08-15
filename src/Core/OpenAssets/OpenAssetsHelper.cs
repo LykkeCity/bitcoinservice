@@ -11,8 +11,17 @@ namespace Core.OpenAssets
     public static class OpenAssetsHelper
     {
         public static BitcoinAddress GetBitcoinAddressFormBase58Date(string base58Data)
-        {            
-            var address = BitcoinAddress.Create(base58Data);
+        {
+            BitcoinAddress address = null;
+            try
+            {
+                address = BitcoinAddress.Create(base58Data);
+            }
+            // ReSharper disable once EmptyGeneralCatchClause
+            catch (Exception)
+            {
+            }
+
             if (address != null)           
                 return address;            
             return new BitcoinColoredAddress(base58Data)?.Address;            
