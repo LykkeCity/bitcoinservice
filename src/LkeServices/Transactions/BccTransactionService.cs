@@ -34,7 +34,7 @@ namespace LkeServices.Transactions
         private readonly ITransactionBuildHelper _transactionBuildHelper;
         private readonly ILog _log;
         private readonly IRpcBitcoinClient _rpcBitcoinClient;
-        private ISignatureApiProvider _signatureApi;
+        private readonly ISignatureApiProvider _signatureApi;
 
         public BccTransactionService(IBccOutputService bccOutputService, [KeyFilter(Constants.BccKey)] ISpentOutputRepository spentOutputRepository,
             [KeyFilter(Constants.BccKey)] RpcConnectionParams connectionParams, ITransactionBuildHelper transactionBuildHelper,
@@ -50,7 +50,7 @@ namespace LkeServices.Transactions
             _signatureApi = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
         }
 
-        public async Task Transfer(BitcoinAddress @from, BitcoinAddress to, decimal amount)
+        public async Task Transfer(BitcoinAddress from, BitcoinAddress to, decimal amount)
         {
             var amountMoney = Money.FromUnit(amount, MoneyUnit.BTC);
             var coins = (await _bccOutputService.GetUnspentOutputs(from.ToString())).OfType<Coin>().Cast<ICoin>().ToList();
@@ -58,7 +58,7 @@ namespace LkeServices.Transactions
             var availableAmount = coins.Select(o => o.Amount).DefaultIfEmpty().Select(o => (Money)o ?? Money.Zero).Sum();
 
             await _log.WriteInfoAsync(nameof(BccTransactionService), nameof(Transfer), null,
-                $"Available amount of {from.ToString()} - {availableAmount} satoshis");
+                $"Available amount of {from} - {availableAmount} satoshis");
 
             var builder = new TransactionBuilder();
             var context = new TransactionBuildContext(_connectionParams.Network, null, null);
