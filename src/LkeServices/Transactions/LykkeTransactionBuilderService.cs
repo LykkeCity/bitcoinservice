@@ -351,6 +351,8 @@ namespace LkeServices.Transactions
                     {
                         if (output.ScriptPubKey.GetDestinationAddress(_connectionParams.Network) == destination)
                         {
+                            if (output.Value <= fee)
+                                throw new BackendException("Amount is lower than fee", ErrorCode.NotEnoughBitcoinAvailable);
                             output.Value -= fee;
                             break;
                         }
