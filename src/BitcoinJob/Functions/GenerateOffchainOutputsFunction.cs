@@ -68,7 +68,7 @@ namespace BitcoinJob.Functions
             _broadcastedOutputRepository = broadcastedOutputRepository;
             _emailNotifier = emailNotifier;
             _slackNotifier = slackNotifier;
-            _spentOutputService = spentOutputService;            
+            _spentOutputService = spentOutputService;
             _pregeneratedOutputsQueueFactory = pregeneratedOutputsQueueFactory;
             _signatureApi = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
         }
@@ -121,7 +121,7 @@ namespace BitcoinJob.Functions
                 var asset = await _assetRepostory.GetItemAsync(assetId);
                 var setting = await GetAssetSetting(assetId);
                 var hotWallet = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(setting.HotWallet);
-               
+
                 var assetIdObj = new BitcoinAssetId(asset.BlockChainAssetId).AssetId;
 
                 var outputs = await _bitcoinOutputsService.GetColoredUnspentOutputs(setting.HotWallet, assetIdObj, 0, false);
@@ -129,7 +129,15 @@ namespace BitcoinJob.Functions
                 var balance = outputs.Aggregate(new AssetMoney(assetIdObj, 0), (accum, coin) => accum + coin.Amount);
                 var outputSize = new AssetMoney(assetIdObj, setting.OutputSize, asset.MultiplierPower);
 
-                if (balance.ToDecimal(asset.MultiplierPower) < setting.MinBalance)
+
+                var changeBalance = new AssetMoney(assetIdObj);
+                if (setting.ChangeWallet != setting.HotWallet && !string.IsNullOrEmpty(setting.ChangeWallet))
+                {
+                    var changeOutputs = await _bitcoinOutputsService.GetColoredUnspentOutputs(setting.ChangeWallet, assetIdObj, 0, false);
+                    changeBalance = changeOutputs.Aggregate(new AssetMoney(assetIdObj, 0), (accum, coin) => accum + coin.Amount);
+                }
+
+                if ((balance + changeBalance).ToDecimal(asset.MultiplierPower) < setting.MinBalance)
                     await SendBalanceNotifications(assetId, setting.HotWallet, setting.MinBalance);
 
                 var existingCoinsCount = outputs.Count(o => o.Amount <= outputSize && o.Amount.Quantity > outputSize.Quantity / 2);
@@ -161,10 +169,18 @@ namespace BitcoinJob.Functions
                 var hotWallet = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(setting.HotWallet);
 
                 var outputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(setting.HotWallet, 0, false)).Cast<Coin>().ToList();
+
                 var balance = new Money(outputs.DefaultIfEmpty().Sum(o => o?.Amount ?? Money.Zero));
                 var outputSize = new Money(setting.OutputSize, MoneyUnit.BTC);
 
-                if (balance.ToDecimal(MoneyUnit.BTC) < setting.MinBalance)
+                Money changeBalance = Money.Zero;
+                if (setting.ChangeWallet != setting.HotWallet && !string.IsNullOrEmpty(setting.ChangeWallet))
+                {
+                    var changeOutputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(setting.ChangeWallet, 0, false)).Cast<Coin>().ToList();
+                    changeBalance = new Money(changeOutputs.DefaultIfEmpty().Sum(o => o?.Amount ?? Money.Zero));
+                }
+
+                if ((balance + changeBalance).ToDecimal(MoneyUnit.BTC) < setting.MinBalance)
                     await SendBalanceNotifications("BTC", setting.HotWallet, setting.MinBalance);
 
 
@@ -260,7 +276,7 @@ namespace BitcoinJob.Functions
             {
                 if (OpenAssetsHelper.IsBitcoin(asset.Id) || OpenAssetsHelper.IsLkk(asset.Id) || !asset.IssueAllowed)
                     continue;
-               
+
                 try
                 {
                     var setting = await GetAssetSetting(asset.Id);

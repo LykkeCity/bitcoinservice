@@ -54,7 +54,9 @@ namespace MongoRepositories.TransactionOutputs
             Action<MongoServerException> throwIfBackend = (exception) =>
             {
                 if (exception != null && exception.IsDuplicateError())
-                    throw new BackendException("entity already exists", ErrorCode.TransactionConcurrentInputsProblem);
+                    throw new BackendException("entity already exists " + 
+                        ((exception as MongoBulkWriteException<OutputEntity>)?.UnprocessedRequests.FirstOrDefault() as InsertOneModel<OutputEntity>)
+                        ?.Document.BsonId, ErrorCode.TransactionConcurrentInputsProblem);
             };
 
             try
