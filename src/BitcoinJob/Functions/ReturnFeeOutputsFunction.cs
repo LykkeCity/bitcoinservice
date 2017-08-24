@@ -26,7 +26,7 @@ namespace BitcoinJob.Functions
             _settings = settings;
         }
 
-        [TimerTrigger("05:00:00")]
+        //[TimerTrigger("05:00:00")]
         public async Task Work()
         {
             var queue = _pregeneratedOutputsQueueFactory.CreateFeeQueue();
