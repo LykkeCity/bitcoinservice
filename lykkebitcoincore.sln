@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26403.7
+VisualStudioVersion = 15.0.26430.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Main", "Main", "{1FC3A478-F724-4616-9A01-BF4135174569}"
 EndProject
@@ -39,6 +39,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MongoRepositories", "src\MongoRepositories\MongoRepositories.csproj", "{7AADB346-235C-4A4B-8CB0-15EE0A48AF96}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OffchainRequestCreator", "src\OffchainRequestCreator\OffchainRequestCreator.csproj", "{69CED1ED-F05F-49DE-97B2-97FDA07B80A9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExportBccBalances", "src\ExportBccBalances\ExportBccBalances.csproj", "{98A44F17-8493-4489-97F5-C414CD973B5A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -102,6 +104,10 @@ Global
 		{69CED1ED-F05F-49DE-97B2-97FDA07B80A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{69CED1ED-F05F-49DE-97B2-97FDA07B80A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{69CED1ED-F05F-49DE-97B2-97FDA07B80A9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{98A44F17-8493-4489-97F5-C414CD973B5A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{98A44F17-8493-4489-97F5-C414CD973B5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{98A44F17-8493-4489-97F5-C414CD973B5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{98A44F17-8493-4489-97F5-C414CD973B5A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -119,5 +125,6 @@ Global
 		{94B4DDF2-FA02-4832-8904-A7D304C9C175} = {C2A5F2F4-8E2A-489A-ACC0-5F2DE12B5E23}
 		{7AADB346-235C-4A4B-8CB0-15EE0A48AF96} = {4F5EBE08-0B29-4CC0-A11A-0D16BC979C33}
 		{69CED1ED-F05F-49DE-97B2-97FDA07B80A9} = {C2A5F2F4-8E2A-489A-ACC0-5F2DE12B5E23}
+		{98A44F17-8493-4489-97F5-C414CD973B5A} = {C2A5F2F4-8E2A-489A-ACC0-5F2DE12B5E23}
 	EndGlobalSection
 EndGlobal
