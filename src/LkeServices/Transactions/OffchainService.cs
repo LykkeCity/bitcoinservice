@@ -774,12 +774,25 @@ namespace LkeServices.Transactions
                 builder.AddCoins(coin);
 
                 bool isBtc = OpenAssetsHelper.IsBitcoin(asset.Id);
+                var hubAmount = 0M;
                 if (isBtc)
                 {
-                    builder.Send(hotWallet, Money.FromUnit(channel.HubAmount, MoneyUnit.BTC));
+                    var multisigDust = new TxOut(Money.Zero, multisig.ScriptPubKey).GetDustThreshold(builder.StandardTransactionPolicy.MinRelayTxFee);
 
-                    if (channel.ClientAmount > 0)
-                        builder.Send(multisig, new Money(channel.ClientAmount, MoneyUnit.BTC));
+                    var multisigAmount = new Money(channel.ClientAmount, MoneyUnit.BTC);
+                    var cashoutAmount = Money.FromUnit(channel.HubAmount, MoneyUnit.BTC);
+
+                    if (multisigAmount > 0 && multisigAmount < multisigDust)
+                    {
+                        cashoutAmount -= (multisigDust - multisigAmount);
+                        multisigAmount = multisigDust;
+                    }
+
+                    builder.Send(hotWallet, cashoutAmount);
+                    hubAmount = channel.HubAmount - cashoutAmount.ToDecimal(MoneyUnit.BTC);
+
+                    if (multisigAmount > 0)
+                        builder.Send(multisig, multisigAmount);
                 }
                 else
                 {
@@ -800,7 +813,7 @@ namespace LkeServices.Transactions
                 if (!isFullClosing)
                 {
                     var transfer = await _offchainTransferRepository.CreateTransfer(multisig.ToString(), asset.Id, false);
-                    var newChannel = await _offchainChannelRepository.CreateChannel(multisig.ToString(), asset.Id, hex, channel.ClientAmount, 0);
+                    var newChannel = await _offchainChannelRepository.CreateChannel(multisig.ToString(), asset.Id, hex, channel.ClientAmount, hubAmount);
 
                     await _spentOutputService.SaveSpentOutputs(newChannel.ChannelId, tr);
                     await SaveNewOutputs(tr, context, newChannel.ChannelId);
@@ -1352,8 +1365,24 @@ namespace LkeServices.Transactions
 
             var lockedAddress = script.GetScriptAddress(_connectionParams.Network);
 
+
+            var unlockedDust = new TxOut(Money.Zero, unlockedAddress.ScriptPubKey).GetDustThreshold(builder.StandardTransactionPolicy.MinRelayTxFee);
+            var lockedDust = new TxOut(Money.Zero, lockedAddress.ScriptPubKey).GetDustThreshold(builder.StandardTransactionPolicy.MinRelayTxFee);
+
             if (OpenAssetsHelper.IsBitcoin(asset.Id))
             {
+                if (unlockedAmount < unlockedDust.ToDecimal(MoneyUnit.BTC))
+                {
+                    lockedAmount += unlockedAmount;
+                    unlockedAmount = 0;
+                }
+
+                if (lockedAmount < lockedDust.ToDecimal(MoneyUnit.BTC))
+                {
+                    unlockedAmount += lockedAmount;
+                    lockedAmount = 0;
+                }
+
                 if (unlockedAmount > 0)
                     builder.Send(unlockedAddress, new Money(unlockedAmount, MoneyUnit.BTC));
                 if (lockedAmount > 0)
@@ -1367,12 +1396,12 @@ namespace LkeServices.Transactions
                 if (unlockedAmount > 0)
                 {
                     builder.SendAsset(unlockedAddress, new AssetMoney(assetId, unlockedAmount, asset.MultiplierPower));
-                    dustAmount += new TxOut(Money.Zero, unlockedAddress.ScriptPubKey).GetDustThreshold(builder.StandardTransactionPolicy.MinRelayTxFee);
+                    dustAmount += unlockedDust;
                 }
                 if (lockedAmount > 0)
                 {
                     builder.SendAsset(lockedAddress, new AssetMoney(assetId, lockedAmount, asset.MultiplierPower));
-                    dustAmount += new TxOut(Money.Zero, lockedAddress.ScriptPubKey).GetDustThreshold(builder.StandardTransactionPolicy.MinRelayTxFee);
+                    dustAmount += lockedDust;
                 }
                 additionalBtc = dustAmount - sendAmount;
             }

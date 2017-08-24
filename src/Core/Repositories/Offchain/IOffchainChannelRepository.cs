@@ -25,6 +25,8 @@ namespace Core.Repositories.Offchain
 
         bool IsBroadcasted { get; }
 
+        DateTime BsonCreateDt { get; }
+
         DateTime CreateDt { get; }
 
         Guid? PrevChannelTransactionId { get; set; }
@@ -52,6 +54,7 @@ namespace Core.Repositories.Offchain
         Task RevertChannel(string multisig, string asset, Guid channelId);
         Task<bool> HasChannel(string multisig);
         Task<IEnumerable<IOffchainChannel>> GetChannels(string asset);
+        Task<IEnumerable<IOffchainChannel>> GetAllChannels(string asset);
         Task<IEnumerable<IOffchainChannel>> GetChannelsOfMultisig(string multisig);
     }
 }
