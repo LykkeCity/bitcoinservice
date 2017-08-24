@@ -25,6 +25,7 @@ namespace AzureRepositories.Offchain
         public string FullySignedChannel { get; set; }
 
         public bool IsBroadcasted { get; set; }
+        public DateTime BsonCreateDt { get; set; }
         public DateTime CreateDt => Timestamp.DateTime;
 
         public Guid? PrevChannelTransactionId { get; set; }
@@ -214,6 +215,11 @@ namespace AzureRepositories.Offchain
         }
 
         public Task<IEnumerable<IOffchainChannel>> GetChannels(string asset)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IEnumerable<IOffchainChannel>> GetAllChannels(string asset)
         {
             throw new NotImplementedException();
         }

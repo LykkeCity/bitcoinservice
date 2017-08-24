@@ -41,6 +41,8 @@ namespace Core
         public const string BccKey = "bcc";
         public const int BccBlock = 478558;
 
+        public static readonly DateTime PrevBccBlockTime = new DateTime(2017, 08, 01, 13, 16, 14, DateTimeKind.Utc);
+
         public const string BccTransferQueue = "bcc-transfer";
     }
 }

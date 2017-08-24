@@ -211,6 +211,11 @@ namespace MongoRepositories.Offchain
             return await _table.GetDataAsync(o => o.Asset == asset && o.Actual);
         }
 
+        public async Task<IEnumerable<IOffchainChannel>> GetAllChannels(string asset)
+        {
+            return await _table.GetDataAsync(o => o.Asset == asset);
+        }
+
         public async Task<IEnumerable<IOffchainChannel>> GetChannelsOfMultisig(string multisig)
         {
             return await _table.GetDataAsync(o => o.Multisig == multisig && o.Actual);

@@ -51,8 +51,7 @@ namespace BitcoinJob.Functions
             }
             if (DateTime.UtcNow - message.PutDateTime > TimeSpan.FromSeconds(_settings.BroadcastMonitoringPeriodSeconds))
             {
-                context.MoveMessageToPoison(message.ToJson());
-                await _slackNotifier.ErrorAsync($"Transaction with hash {message.TransactionHash} has no confirmations");
+                context.MoveMessageToPoison(message.ToJson());                
                 await _failedTransactionManager.InsertFailedTransaction(message.TransactionId, message.TransactionHash, message.LastError);
             }
             else
