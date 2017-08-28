@@ -31,7 +31,7 @@ namespace BitcoinApi.Controllers
             return new SplitTransactionResponse(result);
         }
 
-        [HttpGet("broadcast")]
+        [HttpPost("broadcast")]
         [ProducesResponseType(typeof(TransactionHashResponse), 200)]
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<TransactionHashResponse> Broadcast([FromBody]BccBroadcastModel model)
