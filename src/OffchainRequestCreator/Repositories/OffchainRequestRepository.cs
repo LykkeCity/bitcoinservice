@@ -24,6 +24,8 @@ namespace OffchainRequestCreator.Repositories
 
         public OffchainTransferType TransferType { get; set; }
 
+        public DateTime? ServerLock { get; set; }
+
         public static class ByRecord
         {
             public static string Partition = "OffchainSignatureRequestEntity";
@@ -158,6 +160,13 @@ namespace OffchainRequestCreator.Repositories
             await _table.DeleteAsync(OffchainRequestEntity.ByClient.GeneratePartition(record.ClientId), requestId);
 
             await _table.InsertOrReplaceAsync(OffchainRequestEntity.Archieved.Create(record));
+        }
+
+        public async Task DeleteRequest(string requestId)
+        {
+            var record = await _table.DeleteAsync(OffchainRequestEntity.ByRecord.Partition, requestId);
+
+            await _table.DeleteAsync(OffchainRequestEntity.ByClient.GeneratePartition(record.ClientId), requestId);
         }
     }
 }

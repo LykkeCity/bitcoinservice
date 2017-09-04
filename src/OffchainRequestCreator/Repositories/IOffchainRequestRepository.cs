@@ -28,6 +28,8 @@ namespace OffchainRequestCreator.Repositories
         int TryCount { get; }
 
         OffchainTransferType TransferType { get; }
+
+        DateTime? ServerLock { get; }
     }
 
     public interface IOffchainRequestRepository
@@ -43,5 +45,7 @@ namespace OffchainRequestCreator.Repositories
         Task<IOffchainRequest> LockRequest(string requestId);
 
         Task Complete(string requestId);
+
+        Task DeleteRequest(string requestId);
     }
 }

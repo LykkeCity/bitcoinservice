@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using AzureStorage.Queue;
+using Common;
 using Microsoft.Extensions.Configuration;
 using OffchainRequestCreator.Repositories;
 
@@ -23,6 +25,69 @@ namespace PoisonMessagesReenqueue
         public async Task Start()
         {
             //await GetStatistics(DateTime.UtcNow.AddDays(-5), DateTime.UtcNow);
+
+
+            var transafers = await _offchainTransferRepository.GetTransfersByDate(OffchainTransferType.FromHub, DateTime.UtcNow.AddHours(-16),
+                DateTime.UtcNow);
+
+            var groupped = transafers.Where(x => !x.IsChild).GroupBy(x => x.OrderId).ToDictionary(x => x.Key, x => x.Count())
+                .OrderByDescending(x => x.Value);
+
+            var values = groupped.Select(x => x.Value);
+
+            var av = values.Average();
+
+        }
+
+        private async Task AggregateRequests(string clientId, string asset, OffchainTransferType type)
+        {
+            var list = (await _offchainRequestRepository.GetRequestsForClient(clientId)).Where(x => x.AssetId == asset && x.TransferType == type).ToList();
+
+            var masterRequest = list.FirstOrDefault(x =>
+                (x.StartProcessing == null || (DateTime.UtcNow - x.StartProcessing.Value).TotalMinutes > 5) && x.ServerLock == null);
+
+            if (masterRequest == null)
+                return;
+
+            await _offchainRequestRepository.DeleteRequest(masterRequest.RequestId);
+
+            LogToFile(masterRequest.ToJson());
+
+            var masterTransfer = await _offchainTransferRepository.GetTransfer(masterRequest.TransferId);
+
+            int count = 0;
+            while (count < 50)
+            {
+                list = (await _offchainRequestRepository.GetRequestsForClient(clientId))
+                    .Where(x => (x.StartProcessing == null || (DateTime.UtcNow - x.StartProcessing.Value).TotalMinutes > 5) && x.ServerLock == null)
+                    .Where(x => x.AssetId == asset && x.RequestId != masterRequest.RequestId && x.TransferType == type).ToList();
+                if (list.Count < 1)
+                    break;
+
+                var current = list.FirstOrDefault();
+
+                await _offchainRequestRepository.DeleteRequest(current.RequestId);
+
+                LogToFile(current.ToJson());
+
+                var currentTransfer = await _offchainTransferRepository.GetTransfer(current.TransferId);
+
+                await _offchainTransferRepository.SetTransferIsChild(currentTransfer.Id, masterTransfer.Id);
+
+                await _offchainTransferRepository.AddChildTransfer(masterTransfer.Id, currentTransfer);
+
+                count++;
+            }
+
+            await _offchainRequestRepository.CreateRequest(masterTransfer.Id, masterTransfer.ClientId,
+                masterTransfer.AssetId, masterRequest.Type, masterTransfer.Type);
+        }
+
+        private void LogToFile(string msg)
+        {
+            const string fileName = "AggregateRequests.txt";
+
+            File.AppendAllLines(fileName, new[] { msg });
         }
 
         private async Task AddRequest(string client, string asset, decimal amount,
