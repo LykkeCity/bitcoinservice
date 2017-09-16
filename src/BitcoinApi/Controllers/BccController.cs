@@ -44,11 +44,13 @@ namespace BitcoinApi.Controllers
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<PrivateBccTransferResponse> GetPrivateTransfer([FromQuery]string sourceAddress, [FromQuery]string destinationAddress, [FromQuery]decimal fee)
         {
+            var result = await _bccTransactionService.CreatePrivateTransfer(OpenAssetsHelper.GetBitcoinAddressFormBase58Date(sourceAddress),
+                OpenAssetsHelper.GetBitcoinAddressFormBase58Date(destinationAddress), fee);
             return new PrivateBccTransferResponse
             {
-                Transaction = await _bccTransactionService.CreatePrivateTransfer(OpenAssetsHelper.GetBitcoinAddressFormBase58Date(sourceAddress),
-                                                                                 OpenAssetsHelper.GetBitcoinAddressFormBase58Date(destinationAddress), fee)
-            };
+                Transaction = result.TransactionHex,
+                Outputs = result.Outputs
+            }; 
         }
     }
 }
