@@ -41,20 +41,9 @@ namespace BitcoinApi.Controllers
         {
             var asset = await GetAsset(model.Asset);
             var tr = await _offchain.CreateUnsignedChannel(model.ClientPubKey, model.HubAmount, asset
-                , model.RequiredOperation, model.TransferId);
+                , model.RequiredOperation, model.TransferId, model.ClientAmount);
             return new OffchainApiResponse(tr);
-        }
-
-
-        [HttpPost("createcashin")]
-        [ProducesResponseType(typeof(OffchainApiResponse), 200)]
-        [ProducesResponseType(typeof(ApiException), 400)]
-        public async Task<OffchainApiResponse> CreateCashin([FromBody]CreateCashinModel model)
-        {
-            var asset = await GetAsset(model.Asset);
-            var tr = await _offchain.CreateCashin(model.ClientPubKey, model.Amount, asset, model.CashinAddress, model.TransferId);
-            return new OffchainApiResponse(tr);
-        }
+        }      
 
 
         [HttpPost("createhubcommitment")]

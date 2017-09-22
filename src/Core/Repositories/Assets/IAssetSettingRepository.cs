@@ -18,6 +18,7 @@ namespace Core.Repositories.Assets
         int MaxOutputsCount { get; set; }
         string ChangeWallet { get; set; }
         int PrivateIncrement { get; set; }
+        decimal? MaxBalance { get; set; }
 
         IAssetSetting Clone(string newId);
     }
