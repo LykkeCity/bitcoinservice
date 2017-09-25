@@ -21,6 +21,7 @@ namespace AzureRepositories.Assets
         public int MaxOutputsCount { get; set; }
         public string ChangeWallet { get; set; }
         public int PrivateIncrement { get; set; }
+        public decimal? MaxBalance { get; set; }
 
         public IAssetSetting Clone(string newId)
         {

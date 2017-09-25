@@ -18,5 +18,6 @@ namespace BitcoinApi.Models.Offchain
         public bool RequiredOperation { get; set; }
 
         public Guid? TransferId { get; set; }
+        public decimal? ClientAmount { get; set; }
     }
 }
