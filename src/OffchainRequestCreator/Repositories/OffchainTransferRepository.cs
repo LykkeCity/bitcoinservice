@@ -21,6 +21,9 @@ namespace OffchainRequestCreator.Repositories
         public OffchainTransferType Type { get; set; }
         public bool ChannelClosing { get; set; }
         public bool Onchain { get; set; }
+        public bool IsChild { get; set; }
+        public string ParentTransferId { get; set; }
+        public string AdditionalDataJson { get; set; }
 
         public class ByCommon
         {
@@ -30,7 +33,7 @@ namespace OffchainRequestCreator.Repositories
             }
 
             public static OffchainTransferEntity Create(string id, string clientId, string assetId, decimal amount, OffchainTransferType type, string externalTransferId,
-                string orderId = null, bool channelClosing = false)
+                string orderId = null, bool channelClosing = false, bool onchain = false)
             {
                 return new OffchainTransferEntity
                 {
@@ -43,26 +46,8 @@ namespace OffchainRequestCreator.Repositories
                     CreatedDt = DateTime.UtcNow,
                     ExternalTransferId = externalTransferId,
                     Type = type,
-                    ChannelClosing = channelClosing
-                };
-            }
-        }
-
-        public class ByClient
-        {
-            public static OffchainTransferEntity Create(IOffchainTransfer commonTransfer)
-            {
-                return new OffchainTransferEntity
-                {
-                    PartitionKey = commonTransfer.ClientId,
-                    RowKey = commonTransfer.Id,
-                    AssetId = commonTransfer.AssetId,
-                    Amount = commonTransfer.Amount,
-                    ClientId = commonTransfer.ClientId,
-                    Type = commonTransfer.Type,
-                    OrderId = commonTransfer.OrderId,
-                    CreatedDt = commonTransfer.CreatedDt,
-                    ChannelClosing = commonTransfer.ChannelClosing
+                    ChannelClosing = channelClosing,
+                    Onchain = onchain
                 };
             }
         }
@@ -80,9 +65,8 @@ namespace OffchainRequestCreator.Repositories
         public async Task<IOffchainTransfer> CreateTransfer(string transactionId, string clientId, string assetId, decimal amount, OffchainTransferType type, string externalTransferId, string orderId, bool channelClosing = false)
         {
             var entity = OffchainTransferEntity.ByCommon.Create(transactionId, clientId, assetId, amount, type, externalTransferId, orderId, channelClosing);
-            var byClient = OffchainTransferEntity.ByClient.Create(entity);
 
-            await Task.WhenAll(_storage.InsertAsync(entity), _storage.InsertAsync(byClient));
+            await _storage.InsertAsync(entity);
 
             return entity;
         }
@@ -92,44 +76,50 @@ namespace OffchainRequestCreator.Repositories
             return await _storage.GetDataAsync(OffchainTransferEntity.ByCommon.GeneratePartitionKey(), id);
         }
 
-        public async Task<IEnumerable<IOffchainTransfer>> GetTransfersByOrder(string clientId, string orderId)
+        public async Task CompleteTransfer(string transferId, bool? onchain = null)
         {
-            var query = new TableQuery<OffchainTransferEntity>()
-                .Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, clientId))
-                .Where(TableQuery.GenerateFilterCondition("OrderId", QueryComparisons.Equal, orderId));
-
-            return await _storage.WhereAsync(query);
-        }
-
-        public async Task CompleteTransfer(string transferId)
-        {
-            var item = await _storage.ReplaceAsync(OffchainTransferEntity.ByCommon.GeneratePartitionKey(), transferId,
+            await _storage.ReplaceAsync(OffchainTransferEntity.ByCommon.GeneratePartitionKey(), transferId,
                 entity =>
                 {
                     entity.Completed = true;
+                    if (onchain != null)
+                        entity.Onchain = onchain.Value;
                     return entity;
                 });
-
-            await _storage.DeleteAsync(item.ClientId, transferId);
         }
 
-        public async Task UpdateExternalTransferAndClosing(string transferId, string externalTransferId, bool closing = false)
+        public async Task UpdateTransfer(string transferId, string externalTransferId, bool closing = false, bool? onchain = null)
         {
-            var item = await _storage.ReplaceAsync(OffchainTransferEntity.ByCommon.GeneratePartitionKey(), transferId,
-                entity =>
-                {
-                    entity.ExternalTransferId = externalTransferId;
-                    entity.ChannelClosing = closing;
-                    return entity;
-                });
+            await _storage.ReplaceAsync(OffchainTransferEntity.ByCommon.GeneratePartitionKey(), transferId,
+                 entity =>
+                 {
+                     entity.ExternalTransferId = externalTransferId;
+                     entity.ChannelClosing = closing;
+                     if (onchain != null)
+                         entity.Onchain = onchain.Value;
+                     return entity;
+                 });
+        }
 
-            await _storage.ReplaceAsync(item.ClientId, transferId,
-                entity =>
-                {
-                    entity.ExternalTransferId = externalTransferId;
-                    entity.ChannelClosing = closing;
-                    return entity;
-                });
+        public async Task<IEnumerable<IOffchainTransfer>> GetTransfersByDate(OffchainTransferType type, DateTimeOffset @from, DateTimeOffset to)
+        {
+            var filter1 = TableQuery.CombineFilters(
+                TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal,
+                    OffchainTransferEntity.ByCommon.GeneratePartitionKey()),
+                TableOperators.And,
+                TableQuery.GenerateFilterConditionForInt("Type", QueryComparisons.Equal, (int)type)
+            );
+
+            var filter2 = TableQuery.CombineFilters(
+                TableQuery.GenerateFilterConditionForDate("CreatedDt", QueryComparisons.GreaterThanOrEqual, from),
+                TableOperators.And,
+                TableQuery.GenerateFilterConditionForDate("CreatedDt", QueryComparisons.LessThanOrEqual, to)
+            );
+
+            var query = new TableQuery<OffchainTransferEntity>().Where(
+                TableQuery.CombineFilters(filter1, TableOperators.And, filter2));
+
+            return await _storage.WhereAsync(query);
         }
 
         public async Task<IEnumerable<IOffchainTransfer>> GetTransfers(DateTime from, DateTime to)
@@ -149,6 +139,33 @@ namespace OffchainRequestCreator.Repositories
                 TableOperators.And, date2);
 
             return await _storage.WhereAsync(new TableQuery<OffchainTransferEntity>().Where(finalFilter));
+        }
+
+        public async Task AddChildTransfer(string transferId, IOffchainTransfer child)
+        {
+            await _storage.MergeAsync(OffchainTransferEntity.ByCommon.GeneratePartitionKey(), transferId,
+                entity =>
+                {
+                    var data = entity.GetAdditionalData();
+                    data.ChildTransfers.Add(child.Id);
+                    entity.SetAdditionalData(data);
+
+                    entity.Amount += child.Amount;
+
+                    return entity;
+                });
+        }
+
+        public async Task SetTransferIsChild(string transferId, string parentId)
+        {
+            await _storage.MergeAsync(OffchainTransferEntity.ByCommon.GeneratePartitionKey(), transferId,
+                entity =>
+                {
+                    entity.IsChild = true;
+                    entity.ParentTransferId = parentId;
+
+                    return entity;
+                });
         }
     }
 }

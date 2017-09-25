@@ -29,7 +29,7 @@ namespace LkeServices.Transactions
     {
         Task Transfer(BitcoinAddress from, BitcoinAddress to, decimal amount);
         Task<BccSplitResult> CreateSplitTransaction(string multisig, BitcoinAddress clientDest, BitcoinAddress hubDest);
-        Task<string> CreatePrivateTransfer(BitcoinAddress from, BitcoinAddress to, decimal fee);
+        Task<BccTransaction> CreatePrivateTransfer(BitcoinAddress @from, BitcoinAddress to, decimal fee);
         Task<string> Broadcast(string transaction, Guid? trId);
     }
 
@@ -44,7 +44,7 @@ namespace LkeServices.Transactions
         private readonly ITransactionBuildHelper _transactionBuildHelper;
         private readonly ILog _log;
         private readonly IRpcBitcoinClient _rpcBitcoinClient;
-        private readonly IMultisigService _multisigService;        
+        private readonly IMultisigService _multisigService;
         private readonly IOffchainChannelRepository _offchainChannelRepository;
         private readonly ICommitmentRepository _commitmentRepository;
         private readonly ISignatureApiProvider _signatureApi;
@@ -52,7 +52,7 @@ namespace LkeServices.Transactions
         public BccTransactionService(IBccOutputService bccOutputService, [KeyFilter(Constants.BccKey)] ISpentOutputRepository spentOutputRepository,
             [KeyFilter(Constants.BccKey)] RpcConnectionParams connectionParams, ITransactionBuildHelper transactionBuildHelper,
             Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
-            ILog log, [KeyFilter(Constants.BccKey)] IRpcBitcoinClient rpcBitcoinClient, IMultisigService multisigService,            
+            ILog log, [KeyFilter(Constants.BccKey)] IRpcBitcoinClient rpcBitcoinClient, IMultisigService multisigService,
             IOffchainChannelRepository offchainChannelRepository,
             ICommitmentRepository commitmentRepository
             )
@@ -63,7 +63,7 @@ namespace LkeServices.Transactions
             _transactionBuildHelper = transactionBuildHelper;
             _log = log;
             _rpcBitcoinClient = rpcBitcoinClient;
-            _multisigService = multisigService;            
+            _multisigService = multisigService;
             _offchainChannelRepository = offchainChannelRepository;
             _commitmentRepository = commitmentRepository;
             _signatureApi = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
@@ -162,9 +162,23 @@ namespace LkeServices.Transactions
 
             var signed = await _signatureApi.SignBccTransaction(tr.ToHex());
 
+            var bccOutputs = tr.Inputs.Select(o =>
+            {
+                var txOut = outputs.First(c => c.Outpoint == o.PrevOut).TxOut;
+                return new BccOutput
+                {
+                    Satoshis = txOut.Value.Satoshi,
+                    Script = txOut.ScriptPubKey.ToHex()
+                };
+            }).ToList();
+
             return new BccSplitResult
             {
-                Transaction = signed,
+                Transaction = new BccTransaction
+                {
+                    TransactionHex = signed,
+                    Outputs = bccOutputs.ToJson().ToLower()
+                },
                 ClientAmount = clientAmount.ToDecimal(MoneyUnit.BTC),
                 HubAmount = hubAmount.ToDecimal(MoneyUnit.BTC)
             };
@@ -184,7 +198,7 @@ namespace LkeServices.Transactions
             return Money.Zero;
         }
 
-        public async Task<string> CreatePrivateTransfer(BitcoinAddress from, BitcoinAddress to, decimal fee)
+        public async Task<BccTransaction> CreatePrivateTransfer(BitcoinAddress from, BitcoinAddress to, decimal fee)
         {
             var outputs = (await _bccOutputService.GetUnspentOutputs(from.ToString())).OfType<Coin>().ToList();
             if (!outputs.Any())
@@ -200,7 +214,22 @@ namespace LkeServices.Transactions
             builder.SendFees(feeAmount);
             builder.Send(to, totalBalance - feeAmount);
             var tr = builder.BuildTransaction(true);
-            return tr.ToHex();
+
+            var bccOutputs = tr.Inputs.Select(o =>
+            {
+                var txOut = outputs.First(c => c.Outpoint == o.PrevOut).TxOut;
+                return new BccOutput
+                {
+                    Satoshis = txOut.Value.Satoshi,
+                    Script = txOut.ScriptPubKey.ToHex()
+                };
+            }).ToList();
+
+            return new BccTransaction
+            {
+                TransactionHex = tr.ToHex(),
+                Outputs = bccOutputs.ToJson().ToLower()
+            };
         }
 
 
@@ -209,4 +238,6 @@ namespace LkeServices.Transactions
             await _spentOutputRepository.InsertSpentOutputs(transactionId, transaction.Inputs.Select(o => new Output(o.PrevOut)));
         }
     }
+
+
 }
