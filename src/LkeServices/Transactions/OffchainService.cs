@@ -591,7 +591,7 @@ namespace LkeServices.Transactions
                             }
                         })
                     );
-                    _rabbitNotificationService.OpenChannel(channel.ChannelId.ToString(), hash, asset.Id,
+                    _rabbitNotificationService.OpenChannel(channel.ChannelId.ToString(), hash, asset.BlockChainAssetId,
                         address.MultisigAddress, new PubKey(address.ClientPubKey).ToString(_connectionParams.Network),
                         new PubKey(address.ExchangePubKey).ToString(_connectionParams.Network));
                 }
