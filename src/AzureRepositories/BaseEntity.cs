@@ -15,16 +15,20 @@ namespace AzureRepositories
         {
             base.ReadEntity(properties, operationContext);
 
-            foreach (var p in GetType().GetProperties().Where(x => x.PropertyType == typeof(decimal) && properties.ContainsKey(x.Name)))
-                p.SetValue(this, Convert.ToDecimal(properties[p.Name].StringValue, CultureInfo.InvariantCulture));
+            foreach (var p in GetType().GetProperties().Where(x =>
+                (x.PropertyType == typeof(decimal) || x.PropertyType == typeof(decimal?)) && properties.ContainsKey(x.Name)))
+            {
+                var value = properties[p.Name].StringValue;
+                p.SetValue(this, value != null ? Convert.ToDecimal(value, CultureInfo.InvariantCulture) : (decimal?)null);
+            }
         }
 
         public override IDictionary<string, EntityProperty> WriteEntity(OperationContext operationContext)
         {
             var properties = base.WriteEntity(operationContext);
 
-            foreach (var p in GetType().GetProperties().Where(x => x.PropertyType == typeof(decimal)))
-                properties.Add(p.Name, new EntityProperty(p.GetValue(this).ToString()));
+            foreach (var p in GetType().GetProperties().Where(x => x.PropertyType == typeof(decimal) || x.PropertyType == typeof(decimal?)))
+                properties.Add(p.Name, new EntityProperty(p.GetValue(this)?.ToString()));
 
             return properties;
         }

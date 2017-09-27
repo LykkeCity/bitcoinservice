@@ -38,7 +38,8 @@ namespace AzureRepositories.Assets
                 MinOutputsCount = MinOutputsCount,
                 MaxOutputsCount = MaxOutputsCount,
                 ChangeWallet = ChangeWallet,
-                PrivateIncrement = PrivateIncrement
+                PrivateIncrement = PrivateIncrement,
+                MaxBalance = MaxBalance
             };
         }
 
@@ -64,7 +65,8 @@ namespace AzureRepositories.Assets
                     MinOutputsCount = setting.MinOutputsCount,
                     MaxOutputsCount = setting.MaxOutputsCount,
                     ChangeWallet = setting.ChangeWallet,
-                    PrivateIncrement = setting.PrivateIncrement
+                    PrivateIncrement = setting.PrivateIncrement,
+                    MaxBalance = setting.MaxBalance
                 };
             }
         }
