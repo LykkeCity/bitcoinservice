@@ -52,7 +52,7 @@ namespace BitcoinApi.Controllers
         public async Task<OffchainApiResponse> CreateHubCommitment([FromBody] CreateHubCommitmentModel model)
         {
             var asset = await GetAsset(model.Asset);
-            var tr = await _offchain.CreateHubCommitment(model.ClientPubKey, asset, model.Amount, model.SignedByClientChannel);
+            var tr = await _offchain.CreateHubCommitment(model.ClientPubKey, asset, model.SignedByClientChannel);
             return new OffchainApiResponse(tr);
         }
 

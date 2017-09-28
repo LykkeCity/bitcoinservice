@@ -7,9 +7,7 @@ namespace BitcoinApi.Models.Offchain
 {
     public class CreateChannelModel
     {
-        public string ClientPubKey { get; set; }
-
-        public string HotWalletAddress { get; set; }
+        public string ClientPubKey { get; set; }        
         
         public decimal HubAmount { get; set; }
 
@@ -18,6 +16,6 @@ namespace BitcoinApi.Models.Offchain
         public bool RequiredOperation { get; set; }
 
         public Guid? TransferId { get; set; }
-        public decimal? ClientAmount { get; set; }
+        public decimal ClientAmount { get; set; }
     }
 }

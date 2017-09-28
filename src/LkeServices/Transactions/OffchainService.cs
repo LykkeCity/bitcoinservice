@@ -36,9 +36,9 @@ namespace LkeServices.Transactions
     {
         Task<OffchainResponse> CreateTransfer(string clientPubKey, decimal amount, IAsset asset, string clientPrevPrivateKey, bool requiredTransfer, Guid? transferId);
 
-        Task<OffchainResponse> CreateUnsignedChannel(string clientPubKey, decimal hubAmount, IAsset asset, bool requiredTransfer, Guid? transferId, decimal? clientAmount);
+        Task<OffchainResponse> CreateUnsignedChannel(string clientPubKey, decimal hubAmount, IAsset asset, bool requiredTransfer, Guid? transferId, decimal clientAmount);
 
-        Task<OffchainResponse> CreateHubCommitment(string clientPubKey, IAsset asset, decimal amount, string signedByClientChannel);
+        Task<OffchainResponse> CreateHubCommitment(string clientPubKey, IAsset asset, string signedByClientChannel);
 
         Task<OffchainFinalizeResponse> Finalize(string clientPubKey, IAsset asset, string clientRevokePubKey, string signedByClientHubCommitment, Guid transferId, Guid? notifyTxId = null);
 
@@ -223,14 +223,13 @@ namespace LkeServices.Transactions
 
                 var assetSetting = await GetAssetSetting(asset.Id);
 
-
                 if (amount < 0 && channel.ClientAmount < Math.Abs(amount))
                     throw new BackendException("Client amount in channel is low than required", ErrorCode.NotEnoughtClientFunds);
 
                 if (amount > 0 && channel.HubAmount < amount)
                     throw new BackendException("Hub amount in channel is low than required", ErrorCode.ShouldOpenNewChannel);
 
-                if (amount < 0 && channel.HubAmount - amount > assetSetting.MaxBalance)
+                if (channel.HubAmount - amount > assetSetting.MaxBalance)
                     throw new BackendException("Should open new channel", ErrorCode.ShouldOpenNewChannel);
 
                 if (string.IsNullOrWhiteSpace(clientPrevPrivateKey))
@@ -289,7 +288,7 @@ namespace LkeServices.Transactions
             }
         }
 
-        public async Task<OffchainResponse> CreateUnsignedChannel(string clientPubKey, decimal hubAmount, IAsset asset, bool requiredTransfer, Guid? transferId, decimal? clientAmount)
+        public async Task<OffchainResponse> CreateUnsignedChannel(string clientPubKey, decimal hubAmount, IAsset asset, bool requiredTransfer, Guid? transferId, decimal clientAmount)
         {
             return await Retry.Try(async () =>
             {
@@ -339,8 +338,11 @@ namespace LkeServices.Transactions
                             hubChannelAmount += currentChannel.HubAmount;
                         }
 
-                        if (clientChannelAmount < clientAmount.GetValueOrDefault())
+                        if (clientChannelAmount < clientAmount)
                             throw new BackendException("Client amount in channel is low than required", ErrorCode.NotEnoughtClientFunds);
+
+                        if (hubChannelAmount < hubAmount)
+                            throw new BackendException("Hub amount in channel is low than required", ErrorCode.ShouldOpenNewChannel);
 
                         monitor.Step("Add fee");
                         await _transactionBuildHelper.AddFee(builder, context);
@@ -348,7 +350,10 @@ namespace LkeServices.Transactions
 
                         _transactionBuildHelper.AggregateOutputs(tr);
 
-                        tr = ConstructAutoHubCashout(tr, hubChannelAmount, multisig, clientAmount, asset, assetSetting);
+                        tr = ConstructAutoHubCashout(tr, ref hubChannelAmount, multisig, hubAmount, clientAmount, asset, assetSetting);
+
+                        clientChannelAmount = clientChannelAmount - clientAmount + hubAmount;
+                        hubChannelAmount = hubChannelAmount + clientAmount - hubAmount;
 
                         var hex = tr.ToHex();
                         monitor.Step("Create transfer");
@@ -379,19 +384,25 @@ namespace LkeServices.Transactions
             }, exception => (exception as BackendException)?.Code == ErrorCode.TransactionConcurrentInputsProblem, 5, _logger);
         }
 
-        private Transaction ConstructAutoHubCashout(Transaction tr, decimal hubChannelAmount, BitcoinScriptAddress multisig, decimal? clientAmount, IAsset asset, IAssetSetting assetSetting)
-        {
-            var transferFromClientAmount = clientAmount.GetValueOrDefault();
+        private Transaction ConstructAutoHubCashout(Transaction tr, ref decimal hubChannelAmount, BitcoinScriptAddress multisig, decimal transferFromhubAmount, decimal transferFromClientAmount, IAsset asset, IAssetSetting assetSetting)
+        {            
             var cashoutAddr = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(!string.IsNullOrEmpty(assetSetting.ChangeWallet)
                     ? assetSetting.ChangeWallet
                     : assetSetting.HotWallet);
-
-            if (assetSetting.MaxBalance.HasValue && transferFromClientAmount > 0 && hubChannelAmount + transferFromClientAmount > assetSetting.MaxBalance)
+            var newHubChannelAmount = hubChannelAmount - transferFromhubAmount + transferFromClientAmount;
+            if (assetSetting.MaxBalance.HasValue && newHubChannelAmount > assetSetting.MaxBalance)
             {
                 if (OpenAssetsHelper.IsBitcoin(assetSetting.Asset))
                 {
-                    tr.Outputs.First(o => o.ScriptPubKey == multisig.ScriptPubKey).Value -= Money.FromUnit(transferFromClientAmount + hubChannelAmount, MoneyUnit.BTC);
-                    tr.Outputs.Add(new TxOut(Money.FromUnit(transferFromClientAmount + hubChannelAmount, MoneyUnit.BTC), cashoutAddr));
+                    var dust = new TxOut(Money.Zero, multisig.ScriptPubKey).GetDustThreshold(new StandardTransactionPolicy().MinRelayTxFee);
+                    var multisigOutput = tr.Outputs.First(o => o.ScriptPubKey == multisig.ScriptPubKey);
+
+                    var btcAmount = Money.FromUnit(newHubChannelAmount, MoneyUnit.BTC);
+                    if (multisigOutput.Value - btcAmount < dust)                    
+                        newHubChannelAmount -= (dust - (multisigOutput.Value - btcAmount)).ToDecimal(MoneyUnit.BTC);                    
+
+                    multisigOutput.Value -= Money.FromUnit(newHubChannelAmount, MoneyUnit.BTC);
+                    tr.Outputs.Add(new TxOut(Money.FromUnit(newHubChannelAmount, MoneyUnit.BTC), cashoutAddr));
                 }
                 else
                 {
@@ -405,7 +416,7 @@ namespace LkeServices.Transactions
                     while (quantities.Count < tr.Outputs.Count - 1)
                         quantities.Add(0);
                     var multisigIndex = (int)tr.Outputs.AsIndexedOutputs().First(o => o.TxOut.ScriptPubKey == multisig.ScriptPubKey).N;
-                    var transferAmount = (ulong)new AssetMoney(assetId, transferFromClientAmount + hubChannelAmount, asset.MultiplierPower).Quantity;
+                    var transferAmount = (ulong)new AssetMoney(assetId, newHubChannelAmount, asset.MultiplierPower).Quantity;
 
                     quantities[multisigIndex - 1] -= transferAmount;
                     quantities.Add(transferAmount);
@@ -414,6 +425,7 @@ namespace LkeServices.Transactions
                     tr.Outputs.Add(new TxOut(dust, cashoutAddr));
                     tr.Outputs[0].ScriptPubKey = marker.GetScript();
                 }
+                hubChannelAmount = hubChannelAmount - newHubChannelAmount;
             }
             return tr;
         }
@@ -429,7 +441,7 @@ namespace LkeServices.Transactions
 
 
 
-        public async Task<OffchainResponse> CreateHubCommitment(string clientPubKey, IAsset asset, decimal amount, string signedByClientChannel)
+        public async Task<OffchainResponse> CreateHubCommitment(string clientPubKey, IAsset asset, string signedByClientChannel)
         {
             using (var monitor = _perfomanceMonitorFactory.Create("CreateHubCommitment"))
             {
@@ -446,14 +458,6 @@ namespace LkeServices.Transactions
 
                 if (channel.IsBroadcasted)
                     throw new BackendException("Channel was broadcasted", ErrorCode.ChannelWasBroadcasted);
-
-                if (amount < 0 && channel.ClientAmount < Math.Abs(amount))
-                    throw new BackendException("Client amount in channel is low than required",
-                        ErrorCode.NotEnoughtClientFunds);
-
-                if (amount > 0 && channel.HubAmount < amount)
-                    throw new BackendException("Hub amount in channel is low than required",
-                        ErrorCode.ShouldOpenNewChannel);
 
                 monitor.Step("Check signature");
                 if (!TransactionComparer.CompareTransactions(channel.InitialTransaction, signedByClientChannel))
@@ -476,16 +480,8 @@ namespace LkeServices.Transactions
 
                 var hubRevokeKey = new Key();
 
-                var newHubAmount = channel.HubAmount - amount;
-                var newClientAmount = channel.ClientAmount + amount;
-
-                if (amount < 0)
-                {
-                    var assetSettings = await GetAssetSetting(asset.Id);
-                    //hub amount was sent to change wallet in channel transaction
-                    if (assetSettings.MaxBalance.HasValue && newHubAmount > assetSettings.MaxBalance)
-                        newHubAmount = 0;
-                }
+                var newHubAmount = channel.HubAmount;
+                var newClientAmount = channel.ClientAmount;
 
                 var commitmentResult = CreateCommitmentTransaction(address, new PubKey(address.ExchangePubKey),
                     new PubKey(clientPubKey).GetAddress(_connectionParams.Network), hubRevokeKey.PubKey,
@@ -644,7 +640,8 @@ namespace LkeServices.Transactions
                 : OpenAssetsHelper.GetBitcoinAddressFormBase58Date(assetSetting.HotWallet);
 
             var isBtc = OpenAssetsHelper.IsBitcoin(asset.Id);
-            var cashoutFromHub = !asset.IssueAllowed && channel.HubAmount > assetSetting.Dust;
+            var cashoutFromHub = !asset.IssueAllowed && channel.HubAmount > assetSetting.Dust ||
+                                 assetSetting.MaxBalance.HasValue && channel.HubAmount > assetSetting.MaxBalance.Value;
 
             var btcDust = new TxOut(Money.Zero, multisig.ScriptPubKey).GetDustThreshold(new StandardTransactionPolicy().MinRelayTxFee).ToDecimal(MoneyUnit.BTC);
 
@@ -1456,7 +1453,7 @@ namespace LkeServices.Transactions
         public async Task<IAssetSetting> GetAssetSetting(string asset)
         {
             var setting = await _assetSettingCache.GetItemAsync(asset) ??
-                          await _assetSettingCache.GetItemAsync(Constants.DefaultAssetSetting);
+                          await _assetSettingCache.GetItemAsync(Constants.DefaultAssetSetting);            
             if (setting == null)
                 throw new BackendException($"Asset setting is not found for {asset}", ErrorCode.AssetSettingNotFound);
             return setting;
