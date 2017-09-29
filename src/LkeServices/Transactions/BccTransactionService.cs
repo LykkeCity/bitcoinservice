@@ -157,6 +157,7 @@ namespace LkeServices.Transactions
             if (totalBalance < fee)
                 throw new BackendException($"Multisig {multisig} balance is less than fee", ErrorCode.NotEnoughBitcoinAvailable);
 
+            var initialClientAmount = clientAmount;
             clientAmount = SendFees(clientDest, clientAmount, fee, totalBalance, tr);
             hubAmount = SendFees(hubDest, hubAmount, fee, totalBalance, tr);
 
@@ -180,7 +181,8 @@ namespace LkeServices.Transactions
                     Outputs = bccOutputs.ToJson().ToLower()
                 },
                 ClientAmount = clientAmount.ToDecimal(MoneyUnit.BTC),
-                HubAmount = hubAmount.ToDecimal(MoneyUnit.BTC)
+                HubAmount = hubAmount.ToDecimal(MoneyUnit.BTC),
+                ClientFeeAmount = (initialClientAmount - clientAmount).ToDecimal(MoneyUnit.BTC)
             };
         }
 
