@@ -23,7 +23,7 @@ namespace BitcoinApi.Models.Offchain
     {
         public bool ChannelClosed { get; set; }
 
-        public CashoutOffchainApiResponse(CashoutOffchainResponse response) : base(response)
+        public CashoutOffchainApiResponse(OffchainResponse response) : base(response)
         {
             ChannelClosed = response.ChannelClosed;
         }

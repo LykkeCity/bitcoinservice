@@ -37,12 +37,12 @@ namespace BitcoinApi.Controllers
         [HttpPost("createchannel")]
         [ProducesResponseType(typeof(OffchainApiResponse), 200)]
         [ProducesResponseType(typeof(ApiException), 400)]
-        public async Task<OffchainApiResponse> CreateUnsignedChannel([FromBody]CreateChannelModel model)
+        public async Task<CashoutOffchainApiResponse> CreateUnsignedChannel([FromBody]CreateChannelModel model)
         {
             var asset = await GetAsset(model.Asset);
             var tr = await _offchain.CreateUnsignedChannel(model.ClientPubKey, model.HubAmount, asset
                 , model.RequiredOperation, model.TransferId, model.ClientAmount);
-            return new OffchainApiResponse(tr);
+            return new CashoutOffchainApiResponse(tr);
         }      
 
 

@@ -10,18 +10,15 @@ namespace LkeServices.Transactions
         public Guid TransferId { get; set; }
 
         public string TransactionHex { get; set; }
+
+        public bool ChannelClosed { get; set; }
     }
 
 
     public class OffchainFinalizeResponse : OffchainResponse
     {
         public string Hash { get; set; }
-    }
-
-    public class CashoutOffchainResponse : OffchainResponse
-    {
-        public bool ChannelClosed { get; set; }
-    }
+    }    
 
     public class OffchainBalance
     {

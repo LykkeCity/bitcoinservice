@@ -42,9 +42,9 @@ namespace LkeServices.Transactions
 
         Task<OffchainFinalizeResponse> Finalize(string clientPubKey, IAsset asset, string clientRevokePubKey, string signedByClientHubCommitment, Guid transferId, Guid? notifyTxId = null);
 
-        Task<CashoutOffchainResponse> CreateCashout(string clientPubKey, string cashoutAddress, decimal amount, IAsset asset);
+        Task<OffchainResponse> CreateCashout(string clientPubKey, string cashoutAddress, decimal amount, IAsset asset);
 
-        Task<CashoutOffchainResponse> CreateCashout(string clientPubKey, IAsset asset);
+        Task<OffchainResponse> CreateCashout(string clientPubKey, IAsset asset);
 
         Task<decimal> GetClientBalance(string multisig, IAsset asset);
 
@@ -354,29 +354,43 @@ namespace LkeServices.Transactions
 
                         clientChannelAmount = clientChannelAmount - clientAmount + hubAmount;
                         hubChannelAmount = hubChannelAmount + clientAmount - hubAmount;
-
                         var hex = tr.ToHex();
-                        monitor.Step("Create transfer");
-                        var transfer = await _offchainTransferRepository.CreateTransfer(multisig.ToString(), asset.Id, false);
-                        transferId = transfer.TransferId;
-                        monitor.Step("Create channel");
-                        var channel = await _offchainChannelRepository.CreateChannel(multisig.ToString(), asset.Id, hex, clientChannelAmount, hubChannelAmount);
 
-                        monitor.Step("Save spent outputs");
-                        await _spentOutputService.SaveSpentOutputs(channel.ChannelId, tr);
-                        monitor.Step("Save new outputs");
-                        await SaveNewOutputs(tr, context, channel.ChannelId);
-
-                        if (requiredTransfer)
+                        if (clientChannelAmount + hubChannelAmount > 0)
                         {
-                            monitor.Step("Require transfer");
-                            await _offchainTransferRepository.RequirеTransfer(address.MultisigAddress, asset.Id, transfer.TransferId);
+                            monitor.Step("Create transfer");
+                            var transfer = await _offchainTransferRepository.CreateTransfer(multisig.ToString(), asset.Id, false);
+                            transferId = transfer.TransferId;
+                            monitor.Step("Create channel");
+                            var channel = await _offchainChannelRepository.CreateChannel(multisig.ToString(), asset.Id, hex, clientChannelAmount,
+                                hubChannelAmount);
+
+                            monitor.Step("Save spent outputs");
+                            await _spentOutputService.SaveSpentOutputs(channel.ChannelId, tr);
+                            monitor.Step("Save new outputs");
+                            await SaveNewOutputs(tr, context, channel.ChannelId);
+
+                            if (requiredTransfer)
+                            {
+                                monitor.Step("Require transfer");
+                                await _offchainTransferRepository.RequirеTransfer(address.MultisigAddress, asset.Id, transfer.TransferId);
+                            }
+
+                            return new OffchainResponse
+                            {
+                                TransactionHex = hex,
+                                TransferId = transfer.TransferId
+                            };
                         }
+                        var closing = await _closingChannelRepository.CreateClosingChannel(address.MultisigAddress, asset.Id, currentChannel?.ChannelId ?? Guid.Empty, hex);
+
+                        await SaveNewOutputs(tr, context, closing.ClosingChannelId);
 
                         return new OffchainResponse
                         {
                             TransactionHex = hex,
-                            TransferId = transfer.TransferId
+                            TransferId = closing.ClosingChannelId,
+                            ChannelClosed = true
                         };
                         // ReSharper restore AccessToDisposedClosure
                     });
@@ -385,7 +399,7 @@ namespace LkeServices.Transactions
         }
 
         private Transaction ConstructAutoHubCashout(Transaction tr, ref decimal hubChannelAmount, BitcoinScriptAddress multisig, decimal transferFromhubAmount, decimal transferFromClientAmount, IAsset asset, IAssetSetting assetSetting)
-        {            
+        {
             var cashoutAddr = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(!string.IsNullOrEmpty(assetSetting.ChangeWallet)
                     ? assetSetting.ChangeWallet
                     : assetSetting.HotWallet);
@@ -398,8 +412,8 @@ namespace LkeServices.Transactions
                     var multisigOutput = tr.Outputs.First(o => o.ScriptPubKey == multisig.ScriptPubKey);
 
                     var btcAmount = Money.FromUnit(newHubChannelAmount, MoneyUnit.BTC);
-                    if (multisigOutput.Value - btcAmount < dust)                    
-                        newHubChannelAmount -= (dust - (multisigOutput.Value - btcAmount)).ToDecimal(MoneyUnit.BTC);                    
+                    if (multisigOutput.Value - btcAmount < dust)
+                        newHubChannelAmount -= (dust - (multisigOutput.Value - btcAmount)).ToDecimal(MoneyUnit.BTC);
 
                     multisigOutput.Value -= Money.FromUnit(newHubChannelAmount, MoneyUnit.BTC);
                     tr.Outputs.Add(new TxOut(Money.FromUnit(newHubChannelAmount, MoneyUnit.BTC), cashoutAddr));
@@ -609,7 +623,7 @@ namespace LkeServices.Transactions
             }
         }
 
-        public async Task<CashoutOffchainResponse> CreateCashout(string clientPubKey, string cashoutAddr, decimal amount, IAsset asset)
+        public async Task<OffchainResponse> CreateCashout(string clientPubKey, string cashoutAddr, decimal amount, IAsset asset)
         {
             var address = await _multisigService.GetMultisig(clientPubKey);
 
@@ -709,7 +723,7 @@ namespace LkeServices.Transactions
 
                     await _spentOutputService.SaveSpentOutputs(newChannel.ChannelId, tr);
                     await SaveNewOutputs(tr, context, newChannel.ChannelId);
-                    return new CashoutOffchainResponse
+                    return new OffchainResponse
                     {
                         TransactionHex = hex,
                         TransferId = transfer.TransferId
@@ -719,7 +733,7 @@ namespace LkeServices.Transactions
 
                 await SaveNewOutputs(tr, context, closing.ClosingChannelId);
 
-                return new CashoutOffchainResponse
+                return new OffchainResponse
                 {
                     TransactionHex = hex,
                     TransferId = closing.ClosingChannelId,
@@ -728,7 +742,7 @@ namespace LkeServices.Transactions
             });
         }
 
-        public async Task<CashoutOffchainResponse> CreateCashout(string clientPubKey, IAsset asset)
+        public async Task<OffchainResponse> CreateCashout(string clientPubKey, IAsset asset)
         {
             var address = await _multisigService.GetMultisig(clientPubKey);
 
@@ -817,7 +831,7 @@ namespace LkeServices.Transactions
 
                     await _spentOutputService.SaveSpentOutputs(newChannel.ChannelId, tr);
                     await SaveNewOutputs(tr, context, newChannel.ChannelId);
-                    return new CashoutOffchainResponse
+                    return new OffchainResponse
                     {
                         TransactionHex = hex,
                         TransferId = transfer.TransferId
@@ -827,7 +841,7 @@ namespace LkeServices.Transactions
 
                 await SaveNewOutputs(tr, context, closing.ClosingChannelId);
 
-                return new CashoutOffchainResponse
+                return new OffchainResponse
                 {
                     TransactionHex = hex,
                     TransferId = closing.ClosingChannelId,
@@ -842,7 +856,7 @@ namespace LkeServices.Transactions
                        .Select(o => new BroadcastedOutput(o, transactionId, _connectionParams.Network)));
         }
 
-        private async Task<CashoutOffchainResponse> CreateCashoutWithoutChannel(BitcoinScriptAddress multisig, BitcoinAddress cashoutAddress, decimal amount, IAsset asset)
+        private async Task<OffchainResponse> CreateCashoutWithoutChannel(BitcoinScriptAddress multisig, BitcoinAddress cashoutAddress, decimal amount, IAsset asset)
         {
             if (amount == 0)
                 throw new BackendException("Amount can't be equals to zero", ErrorCode.BadInputParameter);
@@ -885,7 +899,7 @@ namespace LkeServices.Transactions
                 var closing = await _closingChannelRepository.CreateClosingChannel(multisig.ToString(), asset.Id, Guid.Empty, hex);
                 await SaveNewOutputs(tr, context, closing.ClosingChannelId);
 
-                return new CashoutOffchainResponse
+                return new OffchainResponse
                 {
                     TransactionHex = hex,
                     TransferId = closing.ClosingChannelId,
@@ -906,10 +920,9 @@ namespace LkeServices.Transactions
 
             var channel = await _offchainChannelRepository.GetChannel(address.MultisigAddress, asset.Id);
 
+            var closing = await _closingChannelRepository.GetClosingChannel(address.MultisigAddress, asset.Id);
             if (channel != null && !channel.IsBroadcasted)
                 throw new BackendException("There is another pending channel setup", ErrorCode.AnotherChannelSetupExists);
-
-            var closing = await _closingChannelRepository.GetClosingChannel(address.MultisigAddress, asset.Id);
 
             if (closing == null)
                 throw new BackendException("Closing channel is not found", ErrorCode.ClosingChannelNotFound);
@@ -1453,7 +1466,7 @@ namespace LkeServices.Transactions
         public async Task<IAssetSetting> GetAssetSetting(string asset)
         {
             var setting = await _assetSettingCache.GetItemAsync(asset) ??
-                          await _assetSettingCache.GetItemAsync(Constants.DefaultAssetSetting);            
+                          await _assetSettingCache.GetItemAsync(Constants.DefaultAssetSetting);
             if (setting == null)
                 throw new BackendException($"Asset setting is not found for {asset}", ErrorCode.AssetSettingNotFound);
             return setting;
