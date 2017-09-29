@@ -15,12 +15,15 @@ namespace BitcoinApi.Models.Bcc
 
         public decimal HubAmount { get; set; }
 
+        public decimal ClientFeeAmount { get; set; }
+
         public SplitTransactionResponse(BccSplitResult splitResult)
         {
             Transaction = splitResult.Transaction.TransactionHex;
             Outputs = splitResult.Transaction.Outputs;
             ClientAmount = splitResult.ClientAmount;
             HubAmount = splitResult.HubAmount;
+            ClientFeeAmount = splitResult.ClientFeeAmount;
         }
     }
 }
