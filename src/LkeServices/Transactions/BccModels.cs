@@ -11,6 +11,8 @@ namespace LkeServices.Transactions
         public decimal ClientAmount { get; set; }
 
         public decimal HubAmount { get; set; }
+
+        public decimal ClientFeeAmount { get; set; }
     }
 
     public class BccTransaction
