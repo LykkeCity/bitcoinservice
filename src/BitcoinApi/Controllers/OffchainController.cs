@@ -35,7 +35,7 @@ namespace BitcoinApi.Controllers
         }
 
         [HttpPost("createchannel")]
-        [ProducesResponseType(typeof(OffchainApiResponse), 200)]
+        [ProducesResponseType(typeof(CashoutOffchainApiResponse), 200)]
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<CashoutOffchainApiResponse> CreateUnsignedChannel([FromBody]CreateChannelModel model)
         {
