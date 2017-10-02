@@ -100,10 +100,25 @@ namespace LkeServices
                 return new RpcConnectionParams(settings.Bcc);
             }).Keyed<RpcConnectionParams>(Constants.BccKey).SingleInstance();
 
+
+            ioc.Register<Func<QBitNinjaClient>>(x =>
+            {
+                var resolver = x.Resolve<IComponentContext>();
+                return () =>
+                {
+                    var settings = resolver.Resolve<BaseSettings>();
+                    var connectionParams = resolver.Resolve<RpcConnectionParams>();
+                    if (settings.Bcc.UseBccNinja)
+                        return new QBitNinjaClient(settings.Bcc.QBitNinjaBaseUrl, connectionParams.Network);
+                    return new QBitNinjaClient(settings.QBitNinjaBaseUrl, connectionParams.Network);
+                };
+            }).Keyed<Func<QBitNinjaClient>>(Constants.BccKey).SingleInstance();
+            
+
             ioc.RegisterType<BccQBitNinjaApiCaller>().As<IBccQbBitNinjaApiCaller>().WithAttributeFiltering();
 
             ioc.RegisterType<BccOutputService>().As<IBccOutputService>().WithAttributeFiltering();
-            
+
             ioc.RegisterType<RpcBccClient>().Keyed<IRpcBitcoinClient>(Constants.BccKey).WithAttributeFiltering();
 
             ioc.RegisterType<BccTransactionService>().As<IBccTransactionService>().WithAttributeFiltering();
