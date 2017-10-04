@@ -30,6 +30,7 @@ namespace Core
         public const string ProcessingBlockSetting = "ProcessingBlockSetting";
         public const string CurrentPrivateIncrementSetting = "PrivateIncrement";
         public const string MaxOffchainTxCount = "MaxOffchainTxCount";
+        public const string BccBlockSetting = "FirstBccBlock";
 
 
         public const string DefaultAssetSetting = "Default";
