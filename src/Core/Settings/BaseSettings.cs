@@ -99,5 +99,7 @@ namespace Core.Settings
         public string RPCUsername { get; set; }
         public string RPCPassword { get; set; }
         public string RPCServerIpAddress { get; set; }
+        public bool UseBccNinja { get; set; }
+        public string QBitNinjaBaseUrl { get; set; }
     }
 }
