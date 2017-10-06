@@ -23,7 +23,7 @@ namespace LkeServices.Transactions
 {
     public interface ILykkeTransactionBuilderService
     {
-        Task<CreateTransactionResponse> GetTransferTransaction(BitcoinAddress source, BitcoinAddress destination, decimal amount, IAsset assetId, Guid transactionId, bool shouldReserveFee = false);
+        Task<CreateTransactionResponse> GetTransferTransaction(BitcoinAddress source, BitcoinAddress destination, decimal amount, IAsset assetId, Guid transactionId, bool shouldReserveFee = false, bool sentDust = false);
 
         Task<CreateTransactionResponse> GetSwapTransaction(BitcoinAddress address1, decimal amount1, IAsset asset1,
             BitcoinAddress address2, decimal amount2, IAsset asset2, Guid transactionId);
@@ -88,7 +88,7 @@ namespace LkeServices.Transactions
         }
 
         public Task<CreateTransactionResponse> GetTransferTransaction(BitcoinAddress sourceAddress,
-            BitcoinAddress destAddress, decimal amount, IAsset asset, Guid transactionId, bool shouldReserveFee = false)
+            BitcoinAddress destAddress, decimal amount, IAsset asset, Guid transactionId, bool shouldReserveFee = false, bool sentDust = false)
         {
             return Retry.Try(async () =>
             {
@@ -98,7 +98,7 @@ namespace LkeServices.Transactions
                 {
                     var builder = new TransactionBuilder();
 
-                    await TransferOneDirection(builder, context, sourceAddress, amount, asset, destAddress, !shouldReserveFee);
+                    await TransferOneDirection(builder, context, sourceAddress, amount, asset, destAddress, !shouldReserveFee, sentDust);
 
                     await _transactionBuildHelper.AddFee(builder, context);
 
@@ -369,13 +369,17 @@ namespace LkeServices.Transactions
 
 
         private async Task TransferOneDirection(TransactionBuilder builder, TransactionBuildContext context,
-            BitcoinAddress @from, decimal amount, IAsset asset, BitcoinAddress to, bool addDust = true)
+            BitcoinAddress @from, decimal amount, IAsset asset, BitcoinAddress to, bool addDust = true, bool sendDust = false)
         {
             var fromStr = from.ToString();
 
             if (OpenAssetsHelper.IsBitcoin(asset.Id))
             {
                 var coins = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(fromStr)).ToList();
+                var balance = coins.Cast<Coin>().Select(o => o.Amount).DefaultIfEmpty().Sum(o => o?.ToDecimal(MoneyUnit.BTC) ?? 0);
+                if (sendDust && balance > amount &&
+                    balance - amount < new TxOut(Money.Zero, from).GetDustThreshold(builder.StandardTransactionPolicy.MinRelayTxFee).ToDecimal(MoneyUnit.BTC))
+                    amount = balance;
                 await _transactionBuildHelper.SendWithChange(builder, context, coins, to, new Money(amount, MoneyUnit.BTC),
                     from, addDust);
             }
