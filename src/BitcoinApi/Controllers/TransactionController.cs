@@ -82,7 +82,7 @@ namespace BitcoinApi.Controllers
 
             var transactionId = await _builder.AddTransactionId(model.TransactionId, model.ToJson());
 
-            var createTransactionResponse = await _builder.GetTransferTransaction(sourceAddress, destAddress, model.Amount, asset, transactionId, true);
+            var createTransactionResponse = await _builder.GetTransferTransaction(sourceAddress, destAddress, model.Amount, asset, transactionId, true, true);
 
             await _transactionBlobStorage.AddOrReplaceTransaction(transactionId, TransactionBlobType.Initial, createTransactionResponse.Transaction);
 
