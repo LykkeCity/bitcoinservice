@@ -2,6 +2,7 @@
 using System.Net.Http;
 using Autofac;
 using Autofac.Features.AttributeFilters;
+using Common.Log;
 using Core;
 using Core.Bcc;
 using Core.Bitcoin;
@@ -65,16 +66,18 @@ namespace LkeServices
                 {
                     var resolver = x.Resolve<IComponentContext>();
                     var settings = resolver.Resolve<BaseSettings>();
+                    var log = resolver.Resolve<ILog>();
                     return new RabbitMqPublisher(settings.RabbitMq.ExplorerNotificationConnection.ConnectionString,
-                                                 settings.RabbitMq.ExplorerNotificationConnection.Exchange);
+                                                 settings.RabbitMq.ExplorerNotificationConnection.Exchange, log);
                 }).Named<IRabbitMqPublisher>(Constants.RabbitMqExplorerNotification).SingleInstance().AutoActivate();
 
             ioc.Register(x =>
             {
                 var resolver = x.Resolve<IComponentContext>();
                 var settings = resolver.Resolve<BaseSettings>();
+                var log = resolver.Resolve<ILog>();
                 return new RabbitMqPublisher(settings.RabbitMq.MultisigNotificationConnection.ConnectionString,
-                    settings.RabbitMq.MultisigNotificationConnection.Exchange);
+                    settings.RabbitMq.MultisigNotificationConnection.Exchange, log);
             }).Named<IRabbitMqPublisher>(Constants.RabbitMqMultisigNotification).SingleInstance().AutoActivate();
 
 
@@ -113,7 +116,7 @@ namespace LkeServices
                     return new QBitNinjaClient(settings.QBitNinjaBaseUrl, connectionParams.Network);
                 };
             }).Keyed<Func<QBitNinjaClient>>(Constants.BccKey).SingleInstance();
-            
+
 
             ioc.RegisterType<BccQBitNinjaApiCaller>().As<IBccQbBitNinjaApiCaller>().WithAttributeFiltering();
 
