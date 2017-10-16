@@ -608,10 +608,12 @@ namespace LkeServices.Transactions
                         address.MultisigAddress, new PubKey(address.ClientPubKey).ToString(_connectionParams.Network),
                         new PubKey(address.ExchangePubKey).ToString(_connectionParams.Network));
                 }
-                monitor.Step("Complete transfer");
+                monitor.Step("Update amounts and complete transfer");
 
-                await _offchainTransferRepository.CompleteTransfer(address.MultisigAddress, asset.Id, transfer.TransferId);
-
+                await Task.WhenAll(
+                    _offchainChannelRepository.UpdateAmounts(address.MultisigAddress, asset.Id, hubCommitment.ClientAmount, hubCommitment.HubAmount),
+                    _offchainTransferRepository.CompleteTransfer(address.MultisigAddress, asset.Id, transfer.TransferId)
+                );
                 _rabbitNotificationService.Transfer(channel.ChannelId.ToString(), (notifyTxId ?? transfer.TransferId).ToString(), hubCommitment.ClientAmount, hubCommitment.HubAmount, DateTime.UtcNow);
 
                 return new OffchainFinalizeResponse()
