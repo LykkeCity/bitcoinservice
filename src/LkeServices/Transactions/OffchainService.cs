@@ -601,17 +601,16 @@ namespace LkeServices.Transactions
                             }
                         })
                     );
-                    _rabbitNotificationService.OpenChannel(channel.ChannelId.ToString(), hash, asset.BlockChainAssetId,
+                    if(channel.PrevChannelTransactionId.HasValue)
+                        _rabbitNotificationService.CloseChannel(channel.PrevChannelTransactionId.ToString(), hash);
+
+                    _rabbitNotificationService.OpenChannel(channel.ChannelId.ToString(), channel.PrevChannelTransactionId?.ToString(), hash, asset.BlockChainAssetId,
                         address.MultisigAddress, new PubKey(address.ClientPubKey).ToString(_connectionParams.Network),
                         new PubKey(address.ExchangePubKey).ToString(_connectionParams.Network));
                 }
-                monitor.Step("Update amounts and complete transfer");
+                monitor.Step("Complete transfer");
 
-                await Task.WhenAll(
-                    _offchainChannelRepository.UpdateAmounts(address.MultisigAddress, asset.Id, hubCommitment.ClientAmount, hubCommitment.HubAmount),
-                    _offchainTransferRepository.CompleteTransfer(address.MultisigAddress, asset.Id, transfer.TransferId)
-                );
-
+                await _offchainTransferRepository.CompleteTransfer(address.MultisigAddress, asset.Id, transfer.TransferId);
 
                 _rabbitNotificationService.Transfer(channel.ChannelId.ToString(), (notifyTxId ?? transfer.TransferId).ToString(), hubCommitment.ClientAmount, hubCommitment.HubAmount, DateTime.UtcNow);
 
