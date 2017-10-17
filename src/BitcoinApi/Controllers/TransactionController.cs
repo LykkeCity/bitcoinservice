@@ -68,11 +68,11 @@ namespace BitcoinApi.Controllers
             if (model.Amount <= 0)
                 throw new BackendException("Amount can't be less or equal to zero", ErrorCode.BadInputParameter);
 
-            var sourceAddress = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(model.SourceAddress);
+            var sourceAddress = OpenAssetsHelper.ParseAddress(model.SourceAddress);
             if (sourceAddress == null)
                 throw new BackendException("Invalid source address provided", ErrorCode.InvalidAddress);
 
-            var destAddress = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(model.DestinationAddress);
+            var destAddress = OpenAssetsHelper.ParseAddress(model.DestinationAddress);
             if (destAddress == null)
                 throw new BackendException("Invalid destination address provided", ErrorCode.InvalidAddress);
 
@@ -136,7 +136,7 @@ namespace BitcoinApi.Controllers
             foreach (var source in model.Sources)
                 await ValidateAddress(source.Address);
 
-            var destAddress = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(model.Destination);
+            var destAddress = OpenAssetsHelper.ParseAddress(model.Destination);
             if (destAddress == null)
                 throw new BackendException("Invalid destination address provided", ErrorCode.InvalidAddress);
 
@@ -166,7 +166,7 @@ namespace BitcoinApi.Controllers
 
         private async Task ValidateAddress(string address, bool checkOffchain = true)
         {
-            var bitcoinAddres = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(address);
+            var bitcoinAddres = OpenAssetsHelper.ParseAddress(address);
             if (bitcoinAddres == null)
                 throw new BackendException($"Invalid Address provided: {address}", ErrorCode.InvalidAddress);
             if (checkOffchain && await _offchainService.HasChannel(address))

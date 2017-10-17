@@ -8,6 +8,6 @@ namespace Core.Outputs
     {
         Task SaveSpentOutputs(Guid transactionId, Transaction transaction);
 
-        Task RemoveSpenOutputs(Transaction transaction);
+        Task RemoveSpentOutputs(Transaction transaction);
     }
 }

@@ -26,9 +26,9 @@ namespace LkeServices.Providers
             return await _signatureApi.GeneratePubKey(tag);
         }
 
-        public async Task<string> SignTransaction(string transaction, SigHash hashType = SigHash.All, string[] additionalSecrets = null)
+        public async Task<string> SignTransaction(string transaction, SigHash hashType = SigHash.All, string[] additionalSecrets = null, string[] prevTransactions = null)
         {
-            return (await _signatureApi.SignTransaction(new TransactionSignRequest(transaction, (byte)hashType, additionalSecrets))).SignedTransaction;
+            return (await _signatureApi.SignTransaction(new TransactionSignRequest(transaction, (byte)hashType, additionalSecrets, prevTransactions))).SignedTransaction;
         }
 
         public async Task<string> SignBccTransaction(string transaction, SigHash hashType = SigHash.All, string[] additionalSecrets = null)

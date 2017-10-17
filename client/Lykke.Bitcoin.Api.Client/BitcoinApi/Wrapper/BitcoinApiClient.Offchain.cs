@@ -68,9 +68,16 @@ namespace Lykke.Bitcoin.Api.Client.BitcoinApi
 
         public async Task<OffchainClosingResponse> HubCashout(HubCashoutData data)
         {
-            var request = new CreateCashoutFromHubModel(data.ClientPubKey, data.Hotwallet, data.AssetId);
-
+            var request = new CreateCashoutModel(data.ClientPubKey, data.AssetId);
             var response = await _apiClient.ApiOffchainCashouthubPostAsync(request);
+
+            return PrepareOffchainClosingResult(response);
+        }
+
+        public async Task<OffchainClosingResponse> FullCashout(HubCashoutData data)
+        {
+            var request = new CreateCashoutModel(data.ClientPubKey, data.AssetId);
+            var response = await _apiClient.ApiOffchainFullcashoutPostAsync(request);
 
             return PrepareOffchainClosingResult(response);
         }

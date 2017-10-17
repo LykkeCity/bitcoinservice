@@ -26,6 +26,7 @@ namespace Lykke.Bitcoin.Api.Client.BitcoinApi
         Task<OffchainClosingResponse> Cashout(CashoutData data);
         Task<OffchainBaseResponse> CloseChannel(CloseChannelData data);
         Task<OffchainClosingResponse> HubCashout(HubCashoutData data);
+        Task<OffchainClosingResponse> FullCashout(HubCashoutData data);
         Task<OffchainBalancesResponse> Balances(string multisig);
         Task<OffchainAssetBalancesResponse> ChannelsInfo(string asset, DateTime? date);
         Task<OffchainBaseResponse> BroadcastCommitment(BroadcastCommitmentData data);
@@ -59,6 +60,7 @@ namespace Lykke.Bitcoin.Api.Client.BitcoinApi
         //wallet
         Task<AllWalletsResponse> GetAllWallets();
         Task<Wallet> GetWallet(string clientPubKey);
+        Task<SegwitWallet> GetSegwitWallet(string clientPubKey);
         Task<LykkePayWallet> GenerateLykkePayWallet();
     }
 }

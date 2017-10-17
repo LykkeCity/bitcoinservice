@@ -26,8 +26,8 @@ namespace BitcoinApi.Controllers
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<SplitTransactionResponse> GetSplitTransaction([FromQuery]string multisig, [FromQuery]string clientDestination, [FromQuery]string hubDestination)
         {
-            var result = await _bccTransactionService.CreateSplitTransaction(multisig, OpenAssetsHelper.GetBitcoinAddressFormBase58Date(clientDestination),
-                OpenAssetsHelper.GetBitcoinAddressFormBase58Date(hubDestination));
+            var result = await _bccTransactionService.CreateSplitTransaction(multisig, OpenAssetsHelper.ParseAddress(clientDestination),
+                OpenAssetsHelper.ParseAddress(hubDestination));
             return new SplitTransactionResponse(result);
         }
 
@@ -44,8 +44,8 @@ namespace BitcoinApi.Controllers
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<PrivateBccTransferResponse> GetPrivateTransfer([FromQuery]string sourceAddress, [FromQuery]string destinationAddress, [FromQuery]decimal fee)
         {
-            var result = await _bccTransactionService.CreatePrivateTransfer(OpenAssetsHelper.GetBitcoinAddressFormBase58Date(sourceAddress),
-                OpenAssetsHelper.GetBitcoinAddressFormBase58Date(destinationAddress), fee);
+            var result = await _bccTransactionService.CreatePrivateTransfer(OpenAssetsHelper.ParseAddress(sourceAddress),
+                OpenAssetsHelper.ParseAddress(destinationAddress), fee);
             return new PrivateBccTransferResponse
             {
                 Transaction = result.TransactionHex,

@@ -38,6 +38,20 @@ namespace Lykke.Bitcoin.Api.Client.BitcoinApi
             });
         }
 
+        public async Task<SegwitWallet> GetSegwitWallet(string clientPubKey)
+        {
+            var response = await _apiClient.ApiWalletSegwitByClientPubKeyGetAsync(clientPubKey);
+            return PrepareResult(response, o =>
+            {
+                if (o is SegwitWalletResult model)
+                    return new SegwitWallet
+                    {
+                        Address = model.SegwitAddress
+                    };
+                return null;
+            });
+        }
+
         public async Task<LykkePayWallet> GenerateLykkePayWallet()
         {
             var response = await _apiClient.ApiWalletLykkepayGeneratePostAsync();

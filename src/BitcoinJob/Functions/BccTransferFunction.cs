@@ -23,8 +23,8 @@ namespace BitcoinJob.Functions
         [QueueTrigger(Constants.BccTransferQueue, 100)]
         public Task OnMessage(BccTransferCommand command)
         {
-            return _bccTransactionService.Transfer(OpenAssetsHelper.GetBitcoinAddressFormBase58Date(command.SourceAddress),
-                OpenAssetsHelper.GetBitcoinAddressFormBase58Date(command.DestinationAddress), command.Amount);
+            return _bccTransactionService.Transfer(OpenAssetsHelper.ParseAddress(command.SourceAddress),
+                OpenAssetsHelper.ParseAddress(command.DestinationAddress), command.Amount);
         }
     }
 }

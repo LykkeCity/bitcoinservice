@@ -34,7 +34,7 @@ namespace Core.Providers
     {        
         Task<string> GeneratePubKey(string tag = null);
         Task<PubKeyResponse> GenerateWallet(string tag = null);
-        Task<string> SignTransaction(string transaction, SigHash hashType = SigHash.All, string[] additionalSecrets = null);
+        Task<string> SignTransaction(string transaction, SigHash hashType = SigHash.All, string[] additionalSecrets = null, string[] prevTransactions = null);
         Task<string> SignBccTransaction(string transaction, SigHash hashType = SigHash.All, string[] additionalSecrets = null);
         Task<string> GetNextAddress(string address);
         Task AddKey(string privateKey);
@@ -42,11 +42,12 @@ namespace Core.Providers
 
     public class TransactionSignRequest
     {
-        public TransactionSignRequest(string transaction, byte hashType = (byte) SigHash.All, string[] additionalSecrets = null)
+        public TransactionSignRequest(string transaction, byte hashType = (byte) SigHash.All, string[] additionalSecrets = null, string[] prevTransactions = null)
         {
             Transaction = transaction;
             HashType = hashType;
             AdditionalSecrets = additionalSecrets;
+            PrevTransactions = prevTransactions;
         }
 
         public string Transaction { get; set; }
@@ -54,6 +55,8 @@ namespace Core.Providers
         public byte HashType { get; set; }
 
         public string[] AdditionalSecrets { get; set; }
+
+        public string[] PrevTransactions { get; set; }
     }
 
     public class AddKeyRequest
@@ -71,6 +74,10 @@ namespace Core.Providers
         public string PubKey { get; set; }
 
         public string Address { get; set; }
+
+        public string NativeSegwitAddress { get; set; }
+
+        public string SegwitOverP2ShAddress { get; set; }
     }
 
 

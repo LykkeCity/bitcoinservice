@@ -120,7 +120,7 @@ namespace BitcoinJob.Functions
             {
                 var asset = await _assetRepostory.GetItemAsync(assetId);
                 var setting = await GetAssetSetting(assetId);
-                var hotWallet = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(setting.HotWallet);
+                var hotWallet = OpenAssetsHelper.ParseAddress(setting.HotWallet);
 
                 var assetIdObj = new BitcoinAssetId(asset.BlockChainAssetId).AssetId;
 
@@ -166,7 +166,7 @@ namespace BitcoinJob.Functions
             return Retry.Try(async () =>
             {
                 var setting = await GetAssetSetting("BTC");
-                var hotWallet = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(setting.HotWallet);
+                var hotWallet = OpenAssetsHelper.ParseAddress(setting.HotWallet);
 
                 var outputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(setting.HotWallet, 0, false)).Cast<Coin>().ToList();
 
@@ -284,7 +284,7 @@ namespace BitcoinJob.Functions
                     if (setting.HotWallet != setting.ChangeWallet)
                         continue;
 
-                    var hotWallet = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(setting.HotWallet);
+                    var hotWallet = OpenAssetsHelper.ParseAddress(setting.HotWallet);
                     var assetId = new BitcoinAssetId(asset.BlockChainAssetId).AssetId;
 
                     var coins = await _bitcoinOutputsService.GetColoredUnspentOutputs(setting.HotWallet, assetId);
@@ -380,7 +380,7 @@ namespace BitcoinJob.Functions
             }
             catch (Exception)
             {
-                await _spentOutputService.RemoveSpenOutputs(buildedTransaction);
+                await _spentOutputService.RemoveSpentOutputs(buildedTransaction);
                 throw;
             }
         }

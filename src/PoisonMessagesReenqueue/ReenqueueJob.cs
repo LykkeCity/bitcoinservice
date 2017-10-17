@@ -21,11 +21,14 @@ namespace PoisonMessagesReenqueue
 
         public async Task Start()
         {
-            while (await _fromQueue.Count() > 0)
+            int? cnt = 0;
+            int i = 0;
+            while ((cnt = await _fromQueue.Count()) > 0)
             {
                 var msg = await _fromQueue.GetRawMessageAsync();
                 await _toQueue.PutRawMessageAsync(msg.AsString);
                 await _fromQueue.FinishRawMessageAsync(msg);
+                Console.WriteLine($"Processed {++i} from {cnt}");
             }
         }
     }

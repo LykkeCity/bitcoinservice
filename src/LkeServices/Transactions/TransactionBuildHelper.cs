@@ -18,7 +18,7 @@ namespace LkeServices.Transactions
 {
     public interface ITransactionBuildHelper
     {
-        Task AddFee(TransactionBuilder builder, TransactionBuildContext context, decimal? feeMultiplier = null);
+        Task<Money> AddFee(TransactionBuilder builder, TransactionBuildContext context, decimal? feeMultiplier = null);
         Task<decimal> SendWithChange(TransactionBuilder builder, TransactionBuildContext context, List<ICoin> coins, IDestination destination, Money amount, IDestination changeDestination, bool addDust = true);
         void SendAssetWithChange(TransactionBuilder builder, TransactionBuildContext context, List<ColoredCoin> coins, IDestination destination, AssetMoney amount, IDestination changeDestination);
         void AddFakeInput(TransactionBuilder builder, Money fakeAmount);
@@ -47,7 +47,7 @@ namespace LkeServices.Transactions
             _extraAmountRepository = extraAmountRepository;
         }
 
-        public async Task AddFee(TransactionBuilder builder, TransactionBuildContext context, decimal? feeMultiplier = null)
+        public async Task<Money> AddFee(TransactionBuilder builder, TransactionBuildContext context, decimal? feeMultiplier = null)
         {
             builder.SetChange(BitcoinAddress.Create(_baseSettings.ChangeAddress, _connectionParams.Network), ChangeType.Uncolored);
 
@@ -83,6 +83,7 @@ namespace LkeServices.Transactions
             } while (totalFeeSent + dustAmount > sentAmount);
 
             builder.Send(BitcoinAddress.Create(_baseSettings.ChangeAddress, _connectionParams.Network), sentAmount - dustAmount - totalFeeSent);
+            return totalFeeSent + dustAmount;
         }
 
         public async Task<decimal> SendWithChange(TransactionBuilder builder, TransactionBuildContext context, List<ICoin> coins, IDestination destination, Money amount, IDestination changeDestination, bool addDust = true)

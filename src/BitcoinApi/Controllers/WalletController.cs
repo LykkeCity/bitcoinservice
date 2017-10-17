@@ -6,8 +6,8 @@ using BitcoinApi.Models;
 using Core;
 using Core.Bitcoin;
 using Core.Providers;
-using LkeServices.Multisig;
 using LkeServices.Providers;
+using LkeServices.Wallet;
 using Microsoft.AspNetCore.Mvc;
 using NBitcoin;
 
@@ -16,12 +16,12 @@ namespace BitcoinApi.Controllers
     [Route("api/[controller]")]
     public class WalletController : Controller
     {
-        private readonly IMultisigService _multisigService;
+        private readonly IWalletService _walletService;
         private readonly ISignatureApiProvider _signatureProvider;
 
-        public WalletController(IMultisigService multisigService, Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory)
+        public WalletController(IWalletService walletService, Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory)
         {
-            _multisigService = multisigService;
+            _walletService = walletService;
             _signatureProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
         }
 
@@ -38,7 +38,7 @@ namespace BitcoinApi.Controllers
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<GetWalletResult> GetWallet(string clientPubKey)
         {
-            var address = await _multisigService.GetOrCreateMultisig(clientPubKey);
+            var address = await _walletService.GetOrCreateMultisig(clientPubKey);
 
             var coloredMultisigAddress = BitcoinAddress.Create(address.MultisigAddress).ToColoredAddress().ToString();
 
@@ -46,6 +46,18 @@ namespace BitcoinApi.Controllers
             {
                 MultiSigAddress = address.MultisigAddress,
                 ColoredMultiSigAddress = coloredMultisigAddress
+            };
+        }
+
+        [HttpGet("segwit/{clientPubKey}")]
+        [ProducesResponseType(typeof(SegwitWalletResult), 200)]
+        [ProducesResponseType(typeof(ApiException), 400)]
+        public async Task<SegwitWalletResult> GetSegwitWallet(string clientPubKey)
+        {
+            var address = await _walletService.GetOrCreateSegwitPrivateWallet(clientPubKey);
+            return new SegwitWalletResult
+            {
+                SegwitAddress = address.Address
             };
         }
 
@@ -58,7 +70,7 @@ namespace BitcoinApi.Controllers
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<GetAllWalletsResult> GetAllWallets()
         {
-            var data = await _multisigService.GetAllMultisigs();
+            var data = await _walletService.GetAllMultisigs();
 
             return new GetAllWalletsResult
             {

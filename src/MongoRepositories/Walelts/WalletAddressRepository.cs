@@ -14,7 +14,6 @@ namespace MongoRepositories.Walelts
         public string RedeemScript { get; set; }
 
 
-
         public static WalletAddressEntity Create(string multisig, string clientPubKey, string exchangePubKey, string redeemScript)
         {
             return new WalletAddressEntity
@@ -49,8 +48,8 @@ namespace MongoRepositories.Walelts
 
         public async Task<string> GetRedeemScript(string multisigAdress)
         {
-            var data = await _storage.GetDataAsync(multisigAdress);
-            return data.RedeemScript;
+            var data = (await _storage.GetDataAsync(o=>o.MultisigAddress == multisigAdress)).FirstOrDefault();
+            return data?.RedeemScript;
         }
 
         public async Task<IWalletAddress> GetByClientPubKey(string clientPubKey)

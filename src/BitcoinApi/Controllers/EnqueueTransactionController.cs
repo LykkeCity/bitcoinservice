@@ -223,7 +223,7 @@ namespace BitcoinApi.Controllers
 
         private async Task ValidateAddress(string address, bool checkOffchain = true)
         {
-            var bitcoinAddres = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(address);
+            var bitcoinAddres = OpenAssetsHelper.ParseAddress(address);
             if (bitcoinAddres == null)
                 throw new BackendException($"Invalid Address provided: {address}", ErrorCode.InvalidAddress);
             if (checkOffchain && await _offchainService.HasChannel(address))

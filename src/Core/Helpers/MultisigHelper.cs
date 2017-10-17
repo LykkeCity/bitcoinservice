@@ -17,7 +17,7 @@ namespace Core.Helpers
 
         public static Script GenerateMultisigRedeemScript(string pubKey1, string pubKey2)
         {
-            return PayToMultiSigTemplate.Instance.GenerateScriptPubKey(2, new PubKey(pubKey1), new PubKey(pubKey2));            
+            return PayToMultiSigTemplate.Instance.GenerateScriptPubKey(2, new PubKey(pubKey1).Compress(), new PubKey(pubKey2).Compress());            
         }
 
 

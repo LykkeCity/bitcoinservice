@@ -1,5 +1,4 @@
 ﻿using System;
-using AzureRepositories.Walelts;
 using AzureStorage.Queue;
 using AzureStorage.Tables;
 using Core.Repositories.Wallets;

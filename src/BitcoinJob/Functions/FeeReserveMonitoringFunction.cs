@@ -59,7 +59,7 @@ namespace BitcoinJob.Functions
 
                 var tr = new Transaction(transaction);
 
-                await _spentOutputService.RemoveSpenOutputs(tr);                
+                await _spentOutputService.RemoveSpentOutputs(tr);                
 
                 var queue = _pregeneratedOutputsQueueFactory.CreateFeeQueue();
 

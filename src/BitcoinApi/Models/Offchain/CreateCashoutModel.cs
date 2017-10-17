@@ -4,11 +4,9 @@ using System.Text;
 
 namespace BitcoinApi.Models.Offchain
 {
-    public class CreateCashoutFromHubModel
+    public class CreateCashoutModel
     {
-        public string ClientPubKey { get; set; }
-        
-        public string HotWalletAddress { get; set; }
+        public string ClientPubKey { get; set; }                
 
         public string Asset { get; set; }        
     }

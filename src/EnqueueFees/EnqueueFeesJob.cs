@@ -78,18 +78,23 @@ namespace EnqueueFees
                 try
                 {
                     coin = await queue.DequeueCoin();
-
-                    set.Add(coin.Outpoint);
+                }
+                catch (Exception)
+                {
                 }
                 finally
                 {
-                    await queue.EnqueueOutputs(coin);
+                    if (coin != null && !set.Contains(coin.Outpoint))
+                    {
+                        set.Add(coin.Outpoint);
+                        await queue.EnqueueOutputs(coin);
+                    }
                 }
             }
 
             Console.WriteLine($"Coins collected");
 
-            var coins = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(address)).OfType<Coin>().ToArray();
+            var coins = (await _bitcoinOutputsService.GetOnlyNinjaOutputs(address, 1, int.MaxValue)).OfType<Coin>().ToArray();
 
             Console.WriteLine($"Received {coins.Length} outputs from qbitninja");
 

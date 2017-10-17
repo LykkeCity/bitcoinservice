@@ -29,7 +29,7 @@ namespace LkeServices.Outputs
             await Task.WhenAll(tasks);
         }
 
-        public Task RemoveSpenOutputs(Transaction transaction)
+        public Task RemoveSpentOutputs(Transaction transaction)
         {
             return _spentOutputRepository.RemoveSpentOutputs(transaction.Inputs.Select(o => new Output(o.PrevOut)));
         }

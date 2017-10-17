@@ -23,7 +23,7 @@ namespace LkeServices.Signature
         {
             _bitcoinTransactionService = bitcoinTransactionService;
             _rpcParams = rpcParams;
-        }
+        }      
 
         public async Task<bool> Verify(string trHex, string pubKey, SigHash hashType = SigHash.All)
         {
@@ -32,7 +32,8 @@ namespace LkeServices.Signature
             for (var i = 0; i < tr.Inputs.Count; i++)
             {
                 var input = tr.Inputs[i];
-                var redeemScript = PayToScriptHashTemplate.Instance.ExtractScriptSigParameters(input.ScriptSig)?.RedeemScript;
+                var redeemScript = PayToScriptHashTemplate.Instance.ExtractScriptSigParameters(input.ScriptSig)?.RedeemScript ??
+                                   PayToScriptHashTemplate.Instance.ExtractScriptSigParameters(input.WitScript)?.RedeemScript;                                  
                 if (redeemScript != null)
                 {
                     if (PayToMultiSigTemplate.Instance.CheckScriptPubKey(redeemScript))
@@ -77,9 +78,10 @@ namespace LkeServices.Signature
             var tr = new Transaction(trHex);
             foreach (var trInput in tr.Inputs)
             {
-                if (trInput.ScriptSig == null)
+                if (trInput.ScriptSig == null && trInput.WitScript == null)
                     return false;
-                var multiSigParams = PayToScriptHashTemplate.Instance.ExtractScriptSigParameters(trInput.ScriptSig);
+                var multiSigParams = PayToScriptHashTemplate.Instance.ExtractScriptSigParameters(trInput.ScriptSig) ??
+                                     PayToScriptHashTemplate.Instance.ExtractScriptSigParameters(trInput.WitScript);
                 if (multiSigParams != null)
                 {
                     foreach (var push in multiSigParams.Pushes.Skip(1))
