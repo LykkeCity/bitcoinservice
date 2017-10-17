@@ -25,6 +25,7 @@ namespace Core
         public const string ReturnBroadcatedOutputsQueue = "return-broadcasted-outputs";
 
         public const string SpendCommitmentOutputQueue = "spend-commitment-queue";
+        public const string PaidFeesTasksQueue = "paid-fees-tasks";
 
 
         public const string ProcessingBlockSetting = "ProcessingBlockSetting";
@@ -45,5 +46,6 @@ namespace Core
         public static readonly DateTime PrevBccBlockTime = new DateTime(2017, 08, 01, 13, 16, 14, DateTimeKind.Utc);
 
         public const string BccTransferQueue = "bcc-transfer";
+        
     }
 }

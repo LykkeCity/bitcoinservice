@@ -10,6 +10,7 @@ using AzureRepositories.FeeRate;
 using AzureRepositories.Monitoring;
 using AzureRepositories.Notifiers;
 using AzureRepositories.Offchain;
+using AzureRepositories.PaidFees;
 using AzureRepositories.RevokeKeys;
 using AzureRepositories.Settings;
 using AzureRepositories.TransactionMonitoring;
@@ -34,6 +35,7 @@ using Core.Repositories.ExtraAmounts;
 using Core.Repositories.FeeRate;
 using Core.Repositories.Monitoring;
 using Core.Repositories.Offchain;
+using Core.Repositories.PaidFees;
 using Core.Repositories.RevokeKeys;
 using Core.Repositories.Settings;
 using Core.Repositories.TransactionOutputs;
@@ -128,6 +130,7 @@ namespace AzureRepositories
             ioc.RegisterType<FeeReserveMonitoringWriter>().As<IFeeReserveMonitoringWriter>().SingleInstance();
             ioc.RegisterType<ReturnBroadcastedOutputsMessageWriter>().As<IReturnBroadcastedOutputsMessageWriter>().SingleInstance();
             ioc.RegisterType<SpendCommitmentMonitoringWriter>().As<ISpendCommitmentMonitoringWriter>().SingleInstance();
+            ioc.RegisterType<PaidFeesTaskWriter>().As<IPaidFeesTaskWriter>().SingleInstance();
         }
     }
 }

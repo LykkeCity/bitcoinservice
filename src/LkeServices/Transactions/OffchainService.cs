@@ -20,6 +20,7 @@ using Core.Performance;
 using Core.Providers;
 using Core.RabbitNotification;
 using Core.Repositories.Offchain;
+using Core.Repositories.PaidFees;
 using Core.Repositories.RevokeKeys;
 using Core.Repositories.TransactionOutputs;
 using Core.Repositories.Wallets;
@@ -111,6 +112,7 @@ namespace LkeServices.Transactions
         private readonly ICommitmentBroadcastRepository _commitmentBroadcastRepository;
         private readonly ISpendCommitmentMonitoringWriter _spendCommitmentMonitoringWriter;
         private readonly IClosingChannelRepository _closingChannelRepository;
+        private readonly IPaidFeesTaskWriter _paidFeesTaskWriter;
 
         public OffchainService(
             ITransactionBuildHelper transactionBuildHelper,
@@ -137,7 +139,8 @@ namespace LkeServices.Transactions
             IRabbitNotificationService rabbitNotificationService,
             ICommitmentBroadcastRepository commitmentBroadcastRepository,
             ISpendCommitmentMonitoringWriter spendCommitmentMonitoringWriter,
-            IClosingChannelRepository closingChannelRepository)
+            IClosingChannelRepository closingChannelRepository,
+            IPaidFeesTaskWriter paidFeesTaskWriter)
         {
             _transactionBuildHelper = transactionBuildHelper;
             _connectionParams = connectionParams;
@@ -164,6 +167,7 @@ namespace LkeServices.Transactions
             _commitmentBroadcastRepository = commitmentBroadcastRepository;
             _spendCommitmentMonitoringWriter = spendCommitmentMonitoringWriter;
             _closingChannelRepository = closingChannelRepository;
+            _paidFeesTaskWriter = paidFeesTaskWriter;
         }
 
         private async Task CheckTransferFinalization(string multisig, string assetId, Guid? transferId, bool channelSetup, IPerformanceMonitor monitor = null)
@@ -599,7 +603,8 @@ namespace LkeServices.Transactions
                             {
                                 await _commitmentRepository.CloseCommitmentsOfChannel(address.MultisigAddress, asset.Id, channel.PrevChannelTransactionId.Value);
                             }
-                        })
+                        }),
+                        _paidFeesTaskWriter.AddTask(hash, DateTime.UtcNow, asset.Id, address.MultisigAddress)
                     );
                     _rabbitNotificationService.OpenChannel(channel.ChannelId.ToString(), hash, asset.BlockChainAssetId,
                         address.MultisigAddress, new PubKey(address.ClientPubKey).ToString(_connectionParams.Network),
@@ -952,6 +957,7 @@ namespace LkeServices.Transactions
             var hash = tr.GetHash().ToString();
             _rabbitNotificationService.CloseChannel(closing.ChannelId.ToString(), hash);
 
+            await _paidFeesTaskWriter.AddTask(hash, DateTime.UtcNow, asset.Id, address.MultisigAddress);
             return hash;
         }
 
@@ -996,7 +1002,10 @@ namespace LkeServices.Transactions
 
                     await _spentOutputService.SaveSpentOutputs(id, signedTr);
 
-                    return signedTr.GetHash().ToString();
+                    var hash = signedTr.GetHash().ToString();
+                    await _paidFeesTaskWriter.AddTask(hash, DateTime.UtcNow, commitment.AssetId, commitment.Multisig);
+
+                    return hash;
                 });
         }
 
@@ -1038,8 +1047,10 @@ namespace LkeServices.Transactions
                 await _broadcastService.BroadcastTransaction(id, signedTr);
 
                 await _spentOutputService.SaveSpentOutputs(id, signedTr);
+                var hash = signedTr.GetHash().ToString();
+                await _paidFeesTaskWriter.AddTask(hash, DateTime.UtcNow, commitment.AssetId, commitment.Multisig);
 
-                return signedTr.GetHash().ToString();
+                return hash;
             });
         }
 
@@ -1088,6 +1099,8 @@ namespace LkeServices.Transactions
 
                 await _commitmentBroadcastRepository.InsertCommitmentBroadcast(commitment.CommitmentId, hash,
                     CommitmentBroadcastType.Valid, commitment.ClientAmount, commitment.HubAmount, commitment.ClientAmount, commitment.HubAmount, null);
+
+                await _paidFeesTaskWriter.AddTask(hash, DateTime.UtcNow, asset.Id, commitment.Multisig);
 
                 await CloseChannel(commitment);
 

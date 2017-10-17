@@ -15,6 +15,7 @@ using Core.Repositories.ExtraAmounts;
 using Core.Repositories.FeeRate;
 using Core.Repositories.Monitoring;
 using Core.Repositories.Offchain;
+using Core.Repositories.PaidFees;
 using Core.Repositories.RevokeKeys;
 using Core.Repositories.Settings;
 using Core.Repositories.TransactionOutputs;
@@ -29,6 +30,7 @@ using MongoRepositories.ExtraAmounts;
 using MongoRepositories.FeeRate;
 using MongoRepositories.Mongo;
 using MongoRepositories.Offchain;
+using MongoRepositories.PaidFees;
 using MongoRepositories.RevokeKeys;
 using MongoRepositories.Settings;
 using MongoRepositories.TransactionOutputs;
@@ -92,6 +94,9 @@ namespace MongoRepositories
 
             ioc.RegisterInstance(new SpentOutputRepository(new MongoStorage<OutputEntity>(mongoClient, "BccSpentOutputs")))
                 .Keyed<ISpentOutputRepository>(Constants.BccKey);
+
+            ioc.RegisterInstance(new PaidFeesRepository(new MongoStorage<PaidFeesEntity>(mongoClient, "PaidFees")))
+                .As<IPaidFeesRepository>();
         }        
     }
 }
