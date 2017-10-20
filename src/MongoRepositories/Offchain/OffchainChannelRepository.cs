@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
 using Core.Repositories.Offchain;
@@ -214,6 +215,12 @@ namespace MongoRepositories.Offchain
         public async Task<IEnumerable<IOffchainChannel>> GetAllChannels(string asset)
         {
             return await _table.GetDataAsync(o => o.Asset == asset);
+        }
+
+        public async Task<IEnumerable<IOffchainChannel>> GetAllChannelsByDate(string asset, DateTime date)
+        {
+            return await _table.GetDataAsync(o => o.Asset == asset && o.CreateDt <= date && o.IsBroadcasted &&
+                                                  (o.Actual || o.BsonCreateDt > date));
         }
 
         public async Task<IEnumerable<IOffchainChannel>> GetChannelsOfMultisig(string multisig)

@@ -55,6 +55,7 @@ namespace Core.Repositories.Offchain
         Task<bool> HasChannel(string multisig);
         Task<IEnumerable<IOffchainChannel>> GetChannels(string asset);
         Task<IEnumerable<IOffchainChannel>> GetAllChannels(string asset);
+        Task<IEnumerable<IOffchainChannel>> GetAllChannelsByDate(string asset, DateTime date);
         Task<IEnumerable<IOffchainChannel>> GetChannelsOfMultisig(string multisig);
     }
 }

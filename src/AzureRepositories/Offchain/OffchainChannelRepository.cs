@@ -224,6 +224,11 @@ namespace AzureRepositories.Offchain
             throw new NotImplementedException();
         }
 
+        public Task<IEnumerable<IOffchainChannel>> GetAllChannelsByDate(string asset, DateTime date)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<IEnumerable<IOffchainChannel>> GetChannelsOfMultisig(string multisig)
         {
             throw new NotImplementedException();
