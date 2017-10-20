@@ -1216,6 +1216,19 @@ namespace LkeServices.Transactions
                             HubAmount = commitment.HubAmount,
                             UpdateDt = commitment.CreateDt
                         });
+                    else
+                    {
+                        if (!channel.IsBroadcasted && channel.PrevChannelTransactionId.HasValue)
+                            channel = await _offchainChannelRepository.GetChannel(channel.PrevChannelTransactionId.Value);
+                        if (channel != null)
+                            result.Balances.Add(new MultisigBalanceInfo
+                            {
+                                Multisig = channel.Multisig,
+                                ClientAmount = channel.ClientAmount,
+                                HubAmount = channel.HubAmount,
+                                UpdateDt = channel.UpdateDt ?? channel.CreateDt
+                            });
+                    }
                 }
             }
 

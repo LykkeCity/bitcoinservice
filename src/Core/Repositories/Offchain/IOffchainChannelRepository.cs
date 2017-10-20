@@ -29,6 +29,8 @@ namespace Core.Repositories.Offchain
 
         DateTime CreateDt { get; }
 
+        DateTime? UpdateDt { get; }
+
         Guid? PrevChannelTransactionId { get; set; }
 
         bool Actual { get; set; }
@@ -40,6 +42,7 @@ namespace Core.Repositories.Offchain
         Task<IOffchainChannel> CreateChannel(string multisig, string asset, string initialTr, decimal clientAmount, decimal hubAmount);
 
         Task<IOffchainChannel> GetChannel(string multisig, string asset);
+        Task<IOffchainChannel> GetChannel(Guid channelId);
         Task<IOffchainChannel> GetLastChannel(string multisig, string asset);
 
         Task<IEnumerable<Offchain.IOffchainChannel>> GetChannels(string multisig, string asett);
