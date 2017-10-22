@@ -73,7 +73,7 @@ namespace LkeServices.Transactions
 
         Task<string> GetCommitment(Guid commitmentId);
 
-        Task<AssetBalanceInfo> GetAssetBalanceInfo(IAsset asset);
+        Task<AssetBalanceInfo> GetAssetBalanceInfo(IAsset asset, DateTime? date);
 
         Task<IAssetSetting> GetAssetSetting(string asset);
 
@@ -1203,19 +1203,49 @@ namespace LkeServices.Transactions
             return commitment?.SignedTransaction != null ? commitment.SignedTransaction : commitment?.InitialTransaction;
         }
 
-        public async Task<AssetBalanceInfo> GetAssetBalanceInfo(IAsset asset)
+        public async Task<AssetBalanceInfo> GetAssetBalanceInfo(IAsset asset, DateTime? date)
         {
-            var channels = await _offchainChannelRepository.GetChannels(asset.Id);
+            date = date.GetValueOrDefault(DateTime.UtcNow);
+            var channels = await _offchainChannelRepository.GetAllChannelsByDate(asset.Id, date.Value);
 
-            return new AssetBalanceInfo
+            var result = new AssetBalanceInfo
             {
-                Balances = channels.Select(o => new MultisigBalanceInfo
-                {
-                    Multisig = o.Multisig,
-                    HubAmount = o.HubAmount,
-                    ClientAmount = o.ClientAmount
-                }).ToList()
+                Balances = new List<MultisigBalanceInfo>()
             };
+
+            foreach (var channelGroup in channels.GroupBy(o => o.Multisig))
+            {
+                var channel = channelGroup.OrderByDescending(o => o.CreateDt).FirstOrDefault();
+                if (channel != null)
+                {
+                    var commitments = await _commitmentRepository.GetCommitments(channel.ChannelId);
+                    var commitment = commitments.Where(o => o.Type == CommitmentType.Client && o.CreateDt < date)
+                        .OrderByDescending(o => o.CreateDt).FirstOrDefault();
+                    if (commitment != null)
+                        result.Balances.Add(new MultisigBalanceInfo
+                        {
+                            Multisig = channel.Multisig,
+                            ClientAmount = commitment.ClientAmount,
+                            HubAmount = commitment.HubAmount,
+                            UpdateDt = commitment.CreateDt
+                        });
+                    else
+                    {
+                        if (!channel.IsBroadcasted && channel.PrevChannelTransactionId.HasValue)
+                            channel = await _offchainChannelRepository.GetChannel(channel.PrevChannelTransactionId.Value);
+                        if (channel != null)
+                            result.Balances.Add(new MultisigBalanceInfo
+                            {
+                                Multisig = channel.Multisig,
+                                ClientAmount = channel.ClientAmount,
+                                HubAmount = channel.HubAmount,
+                                UpdateDt = channel.UpdateDt ?? channel.CreateDt
+                            });
+                    }
+                }
+            }
+
+            return result;
         }
 
         private async Task<decimal> SendToMultisig(BitcoinAddress @from, BitcoinAddress toMultisig, IAsset assetEntity, TransactionBuilder builder, TransactionBuildContext context, decimal amount, IDestination changeDestination, IPerformanceMonitor monitor)
