@@ -23,7 +23,7 @@ namespace Core.BitCoin.BitcoinApi
         Task<OffchainBaseResponse> CloseChannel(CloseChannelData data);
         Task<OffchainClosingResponse> HubCashout(HubCashoutData data);
         Task<OffchainBalancesResponse> Balances(string multisig);
-        Task<OffchainAssetBalancesResponse> ChannelsInfo(string asset);
+        Task<OffchainAssetBalancesResponse> ChannelsInfo(string asset, DateTime? date);
 
         //bcc
         Task<BccSplitTransactionResponse> BccSplitTransaction(string multisig, string clientDestination, string hubDestination);

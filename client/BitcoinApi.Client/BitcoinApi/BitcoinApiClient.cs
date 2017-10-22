@@ -144,9 +144,9 @@ namespace Bitcoin.Api.Client
             return PrepareOffchainClosingResult(response);
         }
 
-        public async Task<OffchainAssetBalancesResponse> ChannelsInfo(string asset)
+        public async Task<OffchainAssetBalancesResponse> ChannelsInfo(string asset, DateTime? date)
         {
-            var response = await _apiClient.ApiOffchainAssetBalancesGetAsync(asset);
+            var response = await _apiClient.ApiOffchainAssetBalancesGetAsync(asset, date);
 
             return PrepareResult(response, o =>
             {
@@ -157,7 +157,8 @@ namespace Bitcoin.Api.Client
                         {
                             Multisig = x.Multisig,
                             ClientAmount = x.ClientAmount ?? 0,
-                            HubAmount = x.HubAmount ?? 0
+                            HubAmount = x.HubAmount ?? 0,
+                            UpdateDt = x.UpdateDt.GetValueOrDefault()
                         })
                     };
                 return null;

@@ -99,5 +99,6 @@ namespace Core.BitCoin.BitcoinApi.Models
         public decimal HubAmount { get; set; }
         public string Hash { get; set; }
         public bool Actual { get; set; }
+        public DateTime UpdateDt { get; set; }
     }
 }
