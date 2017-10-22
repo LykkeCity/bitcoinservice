@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using Bitcoin.Api.Client.BitcoinApi.Models;
 
-namespace Core.BitCoin.BitcoinApi.Models
+namespace Bitcoin.Api.Client.BitcoinApi.Models
 {
     public class OffchainTransferData
     {

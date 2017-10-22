@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Core.BitCoin.BitcoinApi.Models;
 
 namespace Bitcoin.Api.Client.BitcoinApi.Models
 {

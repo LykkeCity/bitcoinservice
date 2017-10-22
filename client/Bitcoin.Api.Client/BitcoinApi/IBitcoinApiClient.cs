@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Core.BitCoin.BitcoinApi.Models;
+using Bitcoin.Api.Client.BitcoinApi.Models;
 
-namespace Core.BitCoin.BitcoinApi
+namespace Bitcoin.Api.Client.BitcoinApi
 {
     public interface IBitcoinApiClient
     {

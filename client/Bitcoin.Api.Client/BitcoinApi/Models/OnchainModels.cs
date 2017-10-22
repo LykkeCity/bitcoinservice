@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Threading.Tasks;
-using Bitcoin.Api.Client.BitcoinApi.Models;
 
-namespace Core.BitCoin.BitcoinApi.Models
+namespace Bitcoin.Api.Client.BitcoinApi.Models
 {
     public class IssueData
     {

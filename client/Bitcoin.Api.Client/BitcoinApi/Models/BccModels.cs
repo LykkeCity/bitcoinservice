@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Bitcoin.Api.Client.BitcoinApi.Models;
-
-namespace Core.BitCoin.BitcoinApi.Models
+﻿namespace Bitcoin.Api.Client.BitcoinApi.Models
 {    
 
     public class BccSplitTransactionResponse : Response

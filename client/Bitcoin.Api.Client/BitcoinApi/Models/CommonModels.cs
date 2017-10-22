@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Core.BitCoin.BitcoinApi.Models
+﻿namespace Bitcoin.Api.Client.BitcoinApi.Models
 {
     public class ErrorResponse
     {
