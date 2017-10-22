@@ -53,11 +53,12 @@ namespace Bitcoin.Api.Client.BitcoinApi.Models
     public class TransactionRepsonse
     {
         public Guid? TransactionId { get; set; }
+        public string Transaction { get; set; }
+        public string Hash { get; set; }
     }
 
     public class OnchainResponse : Response
     {
         public TransactionRepsonse Transaction { get; set; }
-      
     }
 }
