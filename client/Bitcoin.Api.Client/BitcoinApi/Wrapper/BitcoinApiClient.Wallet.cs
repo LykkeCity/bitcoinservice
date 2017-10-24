@@ -40,5 +40,23 @@ namespace Bitcoin.Api.Client.BitcoinApi
                 return null;
             });
         }
+
+        public async Task<LykkePayWallet> GenerateLykkePayWallet()
+        {
+            var response = await _apiClient.ApiWalletLykkepayGeneratePostAsync();
+            return PrepareResult(response, o =>
+            {
+                if (o is GenerateWalletResponse model)
+                {
+                    return new LykkePayWallet
+                    {
+                        Address = model.Address,
+                        PubKey = model.PubKey,
+                        Tag = model.Tag
+                    };
+                }
+                return null;
+            });
+        }
     }
 }

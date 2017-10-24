@@ -16,4 +16,13 @@ namespace Bitcoin.Api.Client.BitcoinApi.Models
         public string ColoredMultisig { get; set; }
     }
 
+    public class LykkePayWallet : Response
+    {
+        public string Address { get; set; }
+
+        public string PubKey { get; set; }
+
+        public string Tag { get; set; }
+    }
+
 }

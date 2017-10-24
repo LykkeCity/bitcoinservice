@@ -16,9 +16,14 @@ namespace LkeServices.Providers
             _signatureApi = signatureApi;
         }
 
-        public async Task<string> GeneratePubKey()
+        public async Task<string> GeneratePubKey(string tag = null)
         {
-            return (await _signatureApi.GeneratePubKey()).PubKey;
+            return (await _signatureApi.GeneratePubKey(tag)).PubKey;
+        }
+
+        public async Task<PubKeyResponse> GenerateWallet(string tag = null)
+        {
+            return await _signatureApi.GeneratePubKey(tag);
         }
 
         public async Task<string> SignTransaction(string transaction, SigHash hashType = SigHash.All, string[] additionalSecrets = null)

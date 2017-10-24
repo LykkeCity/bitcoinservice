@@ -58,5 +58,6 @@ namespace Bitcoin.Api.Client.BitcoinApi
         //wallet
         Task<AllWalletsResponse> GetAllWallets();
         Task<Wallet> GetWallet(string clientPubKey);
+        Task<LykkePayWallet> GenerateLykkePayWallet();
     }
 }
