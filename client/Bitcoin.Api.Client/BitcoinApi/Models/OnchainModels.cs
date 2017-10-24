@@ -50,7 +50,7 @@ namespace Bitcoin.Api.Client.BitcoinApi.Models
         public Guid TransactionId { get; set; }
     }
 
-    public class TransactionRepsonse
+    public class TransactionResponse
     {
         public Guid? TransactionId { get; set; }
         public string Transaction { get; set; }
@@ -59,6 +59,6 @@ namespace Bitcoin.Api.Client.BitcoinApi.Models
 
     public class OnchainResponse : Response
     {
-        public TransactionRepsonse Transaction { get; set; }
+        public TransactionResponse Transaction { get; set; }
     }
 }

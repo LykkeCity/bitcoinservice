@@ -186,7 +186,7 @@ namespace BitcoinApi.Controllers
         }
 
         [HttpGet("commitment/broadcasts")]
-        [ProducesResponseType(typeof(AssetBalanceInfoResponse), 200)]
+        [ProducesResponseType(typeof(CommitmentBroadcastResponse), 200)]
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<CommitmentBroadcastResponse> GetCommitmentBroadcasts([FromQuery] int limit)
         {

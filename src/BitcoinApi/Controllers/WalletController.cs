@@ -29,6 +29,8 @@ namespace BitcoinApi.Controllers
         /// </remarks>
         /// <returns>Multisig address and colored (OpenAssets) representation</returns>
         [HttpGet("{clientPubKey}")]
+        [ProducesResponseType(typeof(GetWalletResult), 200)]
+        [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<GetWalletResult> GetWallet(string clientPubKey)
         {
             var address = await _multisigService.GetOrCreateMultisig(clientPubKey);
