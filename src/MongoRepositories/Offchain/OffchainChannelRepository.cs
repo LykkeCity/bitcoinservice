@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
 using Core.Repositories.Offchain;
@@ -27,6 +29,9 @@ namespace MongoRepositories.Offchain
         public bool IsBroadcasted { get; set; }
 
         public DateTime CreateDt { get; set; }
+
+        [BsonIgnore]
+        public DateTime? UpdateDt => BsonUpdateDt;
 
         [BsonRepresentation(BsonType.String)]
         public Guid? PrevChannelTransactionId { get; set; }
@@ -133,6 +138,11 @@ namespace MongoRepositories.Offchain
             return await _table.GetDataAsync(OffchainChannelEntity.CurrentChannel.GenerateId(multisig, asset));
         }
 
+        public async Task<IOffchainChannel> GetChannel(Guid channelId)
+        {
+            return (await _table.GetDataAsync(o => o.ChannelId == channelId)).FirstOrDefault();
+        }
+
         public async Task<IOffchainChannel> GetLastChannel(string multisig, string asset)
         {
             return await _table.GetTopRecordAsync(o => o.Multisig == multisig && o.Asset == asset, o => o.CreateDt, SortDirection.Descending);
@@ -214,6 +224,12 @@ namespace MongoRepositories.Offchain
         public async Task<IEnumerable<IOffchainChannel>> GetAllChannels(string asset)
         {
             return await _table.GetDataAsync(o => o.Asset == asset);
+        }
+
+        public async Task<IEnumerable<IOffchainChannel>> GetAllChannelsByDate(string asset, DateTime date)
+        {
+            return await _table.GetDataAsync(o => o.Asset == asset && o.CreateDt <= date &&
+                                                  (o.Actual || o.BsonCreateDt > date));
         }
 
         public async Task<IEnumerable<IOffchainChannel>> GetChannelsOfMultisig(string multisig)

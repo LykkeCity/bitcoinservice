@@ -1,10 +1,13 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using BitcoinApi.Filters;
 using BitcoinApi.Models;
+using Core;
 using Core.Bitcoin;
 using Core.Providers;
 using LkeServices.Multisig;
+using LkeServices.Providers;
 using Microsoft.AspNetCore.Mvc;
 using NBitcoin;
 
@@ -14,10 +17,12 @@ namespace BitcoinApi.Controllers
     public class WalletController : Controller
     {
         private readonly IMultisigService _multisigService;
+        private readonly ISignatureApiProvider _signatureProvider;
 
-        public WalletController(IMultisigService multisigService)
+        public WalletController(IMultisigService multisigService, Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory)
         {
             _multisigService = multisigService;
+            _signatureProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
         }
 
         /// <summary>
@@ -29,6 +34,8 @@ namespace BitcoinApi.Controllers
         /// </remarks>
         /// <returns>Multisig address and colored (OpenAssets) representation</returns>
         [HttpGet("{clientPubKey}")]
+        [ProducesResponseType(typeof(GetWalletResult), 200)]
+        [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<GetWalletResult> GetWallet(string clientPubKey)
         {
             var address = await _multisigService.GetOrCreateMultisig(clientPubKey);
@@ -56,6 +63,20 @@ namespace BitcoinApi.Controllers
             return new GetAllWalletsResult
             {
                 Multisigs = data.Select(x => x.MultisigAddress)
+            };
+        }
+
+        [HttpPost("lykkepay/generate")]
+        [ProducesResponseType(typeof(GenerateWalletResponse), 200)]
+        [ProducesResponseType(typeof(ApiException), 400)]
+        public async Task<GenerateWalletResponse> GenerateLykkePayWallet()
+        {
+            var response = await _signatureProvider.GenerateWallet(Constants.LykkePayTag);
+            return new GenerateWalletResponse
+            {
+                Address = response.Address,
+                PubKey = response.PubKey,
+                Tag = Constants.LykkePayTag
             };
         }
     }

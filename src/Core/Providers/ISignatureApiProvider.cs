@@ -11,7 +11,7 @@ namespace Core.Providers
     public interface ISignatureApi
     {
         [Get("/api/bitcoin/key")]
-        Task<PubKeyResponse> GeneratePubKey();
+        Task<PubKeyResponse> GeneratePubKey([Query]string tag = null);
 
         [Post("/api/bitcoin/sign")]
         Task<TransactionResponse> SignTransaction([Body] TransactionSignRequest request);
@@ -32,8 +32,8 @@ namespace Core.Providers
 
     public interface ISignatureApiProvider
     {        
-        Task<string> GeneratePubKey();
-        
+        Task<string> GeneratePubKey(string tag = null);
+        Task<PubKeyResponse> GenerateWallet(string tag = null);
         Task<string> SignTransaction(string transaction, SigHash hashType = SigHash.All, string[] additionalSecrets = null);
         Task<string> SignBccTransaction(string transaction, SigHash hashType = SigHash.All, string[] additionalSecrets = null);
         Task<string> GetNextAddress(string address);
