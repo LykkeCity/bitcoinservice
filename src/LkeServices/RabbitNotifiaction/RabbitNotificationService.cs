@@ -15,10 +15,10 @@ namespace LkeServices.RabbitNotifiaction
         }
 
 
-        public void OpenChannel(string channelId, string transactionId, string assetId, string hubAddress, string clientAddress1, string clientAddress2)
+        public void OpenChannel(string channelId, string prevChannelId, string transactionId, string assetId, string hubAddress, string clientAddress1, string clientAddress2)
         {
             var publisher = _rabbitMqPublisherFactory(Constants.RabbitMqExplorerNotification);
-            var data = BaseNotificationContract.Create(ChannelOpenedNotificationContract.OperationKey, ChannelOpenedNotificationContract.Create(channelId, transactionId, assetId, hubAddress, clientAddress1, clientAddress2));            
+            var data = BaseNotificationContract.Create(ChannelOpenedNotificationContract.OperationKey, ChannelOpenedNotificationContract.Create(channelId, prevChannelId, transactionId, assetId, hubAddress, clientAddress1, clientAddress2));            
             publisher.Publish(data.ToJson());
         }
 

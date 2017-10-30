@@ -29,18 +29,21 @@ namespace LkeServices.RabbitNotifiaction
         public const string OperationKey = "ChannelOpened";
 
         public string ChannelId { get; set; }
-
+        public string PrevChannelId { get; set; }
+        public DateTime DateTime { get; set; }
         public string OpenTransactionId { get; set; }
         public string AssetId { get; set; }
         public string HubAddress { get; set; }
         public string ClientAddress1 { get; set; }
         public string ClientAddress2 { get; set; }
 
-        public static ChannelOpenedNotificationContract Create(string channelId, string transactionId, string assetId, string hubAddress, string clientAddress1, string clientAddress2)
+        public static ChannelOpenedNotificationContract Create(string channelId, string prevChannelId, string transactionId, string assetId, string hubAddress, string clientAddress1, string clientAddress2)
         {
             return new ChannelOpenedNotificationContract
             {
                 ChannelId = channelId,
+                PrevChannelId = prevChannelId,
+                DateTime = DateTime.UtcNow,
                 OpenTransactionId = transactionId,
                 AssetId = assetId,
                 ClientAddress1 = clientAddress1,
@@ -56,13 +59,16 @@ namespace LkeServices.RabbitNotifiaction
 
         public string ChannelId { get; set; }
         public string CloseTransactionId { get; set; }
+        public DateTime DateTime { get; set; }
+
 
         public static ChannelClosedNotificationContract Create(string channelId, string closeTransactionId)
         {
             return new ChannelClosedNotificationContract
             {
                 ChannelId = channelId,
-                CloseTransactionId = closeTransactionId
+                CloseTransactionId = closeTransactionId,
+                DateTime = DateTime.UtcNow
             };
         }
     }
