@@ -44,7 +44,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExportBccBalances", "src\Ex
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Client", "Client", "{236D2F5D-C115-49AA-9C6F-3B4F043A8041}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bitcoin.Api.Client", "client\Bitcoin.Api.Client\Bitcoin.Api.Client.csproj", "{8B396309-73E6-4A1F-B7DF-E1E190673FCA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lykke.Bitcoin.Api.Client", "client\Bitcoin.Api.Client\Lykke.Bitcoin.Api.Client.csproj", "{8B396309-73E6-4A1F-B7DF-E1E190673FCA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

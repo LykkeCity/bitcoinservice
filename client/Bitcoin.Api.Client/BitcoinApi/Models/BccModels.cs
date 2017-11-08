@@ -1,4 +1,4 @@
-﻿namespace Bitcoin.Api.Client.BitcoinApi.Models
+﻿namespace Lykke.Bitcoin.Api.Client.BitcoinApi.Models
 {    
 
     public class BccSplitTransactionResponse : Response

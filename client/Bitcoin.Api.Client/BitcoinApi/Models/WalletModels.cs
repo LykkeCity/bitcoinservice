@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 
-namespace Bitcoin.Api.Client.BitcoinApi.Models
+namespace Lykke.Bitcoin.Api.Client.BitcoinApi.Models
 {
     public class AllWalletsResponse : Response
     {

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Bitcoin.Api.Client.BitcoinApi.Models
+﻿namespace Lykke.Bitcoin.Api.Client.BitcoinApi.Models
 {
     public class Response
     {

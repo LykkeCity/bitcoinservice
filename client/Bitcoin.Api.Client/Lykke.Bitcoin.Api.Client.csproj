@@ -13,6 +13,8 @@
     <Company>Lykke</Company>
     <Copyright>@2017 - Lykke</Copyright>
     <Version>1.0.1</Version>
+    <AssemblyName>Lykke.Bitcoin.Api.Client</AssemblyName>
+    <RootNamespace>Lykke.Bitcoin.Api.Client</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

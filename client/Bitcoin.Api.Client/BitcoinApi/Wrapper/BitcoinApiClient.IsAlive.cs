@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using Bitcoin.Api.Client.BitcoinApi.Models;
+﻿using System.Threading.Tasks;
 using Microsoft.Rest;
 
 // ReSharper disable once CheckNamespace
-namespace Bitcoin.Api.Client.BitcoinApi
+namespace Lykke.Bitcoin.Api.Client.BitcoinApi
 {
     public partial class BitcoinApiClient
     {
