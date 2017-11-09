@@ -22,6 +22,7 @@ using Core.RabbitNotification;
 using Core.Repositories.Offchain;
 using Core.Repositories.PaidFees;
 using Core.Repositories.RevokeKeys;
+using Core.Repositories.Settings;
 using Core.Repositories.TransactionOutputs;
 using Core.Repositories.Wallets;
 using Core.ScriptTemplates;
@@ -112,6 +113,7 @@ namespace LkeServices.Transactions
         private readonly ICommitmentBroadcastRepository _commitmentBroadcastRepository;
         private readonly ISpendCommitmentMonitoringWriter _spendCommitmentMonitoringWriter;
         private readonly IClosingChannelRepository _closingChannelRepository;
+        private readonly ISettingsRepository _settingsRepository;
         private readonly IPaidFeesTaskWriter _paidFeesTaskWriter;
 
         public OffchainService(
@@ -140,6 +142,7 @@ namespace LkeServices.Transactions
             ICommitmentBroadcastRepository commitmentBroadcastRepository,
             ISpendCommitmentMonitoringWriter spendCommitmentMonitoringWriter,
             IClosingChannelRepository closingChannelRepository,
+            ISettingsRepository settingsRepository,
             IPaidFeesTaskWriter paidFeesTaskWriter)
         {
             _transactionBuildHelper = transactionBuildHelper;
@@ -167,6 +170,7 @@ namespace LkeServices.Transactions
             _commitmentBroadcastRepository = commitmentBroadcastRepository;
             _spendCommitmentMonitoringWriter = spendCommitmentMonitoringWriter;
             _closingChannelRepository = closingChannelRepository;
+            _settingsRepository = settingsRepository;
             _paidFeesTaskWriter = paidFeesTaskWriter;
         }
 
@@ -976,7 +980,10 @@ namespace LkeServices.Transactions
                         builder.Send(destinationAddress, spendingCoin.Amount);
                     else
                         builder.SendAsset(destinationAddress, ((ColoredCoin)spendingCoin).Amount);
-                    await _transactionBuildHelper.AddFee(builder, context);
+
+                    var feeMultiplier = await _settingsRepository.Get<decimal?>(Constants.CommitmentFeesMultiplierSetting);
+
+                    await _transactionBuildHelper.AddFee(builder, context, feeMultiplier);
 
                     var tr = builder.BuildTransaction(false);
 
@@ -1025,12 +1032,14 @@ namespace LkeServices.Transactions
                     builder.Send(destinationAddress, spendingCoin.Amount);
                 else
                     builder.SendAsset(destinationAddress, ((ColoredCoin)spendingCoin).Amount);
-                await _transactionBuildHelper.AddFee(builder, context);
+
+                var feeMultiplier = await _settingsRepository.Get<decimal?>(Constants.CommitmentFeesMultiplierSetting);
+
+                await _transactionBuildHelper.AddFee(builder, context, feeMultiplier);
 
                 var tr = builder.BuildTransaction(false);
                 tr.Inputs.First(o => o.PrevOut == spendingCoin.Outpoint).Sequence = new Sequence(OneDayDelay);
-                tr.Version = 2;
-
+                tr.Version = 2;                
                 var redeem = commitment.LockedScript.ToScript();
                 var scriptParams = new OffchainScriptParams
                 {

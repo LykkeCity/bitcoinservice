@@ -18,7 +18,7 @@ namespace LkeServices.Transactions
 {
     public interface ITransactionBuildHelper
     {
-        Task AddFee(TransactionBuilder builder, TransactionBuildContext context);
+        Task AddFee(TransactionBuilder builder, TransactionBuildContext context, decimal? feeMultiplier = null);
         Task<decimal> SendWithChange(TransactionBuilder builder, TransactionBuildContext context, List<ICoin> coins, IDestination destination, Money amount, IDestination changeDestination, bool addDust = true);
         void SendAssetWithChange(TransactionBuilder builder, TransactionBuildContext context, List<ColoredCoin> coins, IDestination destination, AssetMoney amount, IDestination changeDestination);
         void AddFakeInput(TransactionBuilder builder, Money fakeAmount);
@@ -47,7 +47,7 @@ namespace LkeServices.Transactions
             _extraAmountRepository = extraAmountRepository;
         }
 
-        public async Task AddFee(TransactionBuilder builder, TransactionBuildContext context)
+        public async Task AddFee(TransactionBuilder builder, TransactionBuildContext context, decimal? feeMultiplier = null)
         {
             builder.SetChange(BitcoinAddress.Create(_baseSettings.ChangeAddress, _connectionParams.Network), ChangeType.Uncolored);
 
@@ -56,7 +56,7 @@ namespace LkeServices.Transactions
             var dustAmount = Money.Zero;
             try
             {
-                var precalculatedFee = await _feeProvider.CalcFeeForTransaction(builder);
+                var precalculatedFee = await _feeProvider.CalcFeeForTransaction(builder, feeMultiplier);
                 builder.SendFees(precalculatedFee);
                 totalFeeSent = precalculatedFee;
             }
@@ -76,7 +76,7 @@ namespace LkeServices.Transactions
                 if (sentAmount < dustAmount + totalFeeSent)
                     continue;
 
-                var newEstimate = await _feeProvider.CalcFeeForTransaction(builder);
+                var newEstimate = await _feeProvider.CalcFeeForTransaction(builder, feeMultiplier);
 
                 builder.SendFees(newEstimate - totalFeeSent);
                 totalFeeSent = newEstimate;
