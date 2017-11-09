@@ -40,7 +40,8 @@ namespace MongoRepositories.Settings
             var setting = await _table.GetDataAsync(key);
             if (setting == null)
                 return defaultValue;
-            return (T)Convert.ChangeType(setting.Value, typeof(T));
+            var destType  = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
+            return (T)Convert.ChangeType(setting.Value, destType);
         }       
 
         public Task Set<T>(string key, T value)

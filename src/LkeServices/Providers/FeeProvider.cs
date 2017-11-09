@@ -21,9 +21,9 @@ namespace LkeServices.Providers
             _baseSettings = baseSettings;
         }
 
-        public async Task<Money> CalcFeeForTransaction(TransactionBuilder builder)
+        public async Task<Money> CalcFeeForTransaction(TransactionBuilder builder, decimal? feeMultiplier = null)
         {
-            return builder.EstimateFees(builder.BuildTransaction(false), await GetFeeRate());
+            return builder.EstimateFees(builder.BuildTransaction(false), await GetFeeRate(feeMultiplier));
         }
 
         public async Task<Money> CalcFeeForTransaction(Transaction tr, int feeRate = 0)
@@ -35,12 +35,12 @@ namespace LkeServices.Providers
             return new FeeRate(new Money(feeRate * 1000, MoneyUnit.Satoshi)).GetFee(size);
         }
 
-        public async Task<FeeRate> GetFeeRate()
+        public async Task<FeeRate> GetFeeRate(decimal? feeMultiplier = null)
         {
             var feePerByte = await _repository.GetFeePerByte();
 
             // need fee per KB
-            return new FeeRate(new Money(feePerByte * 1000 * _baseSettings.FeeRateMultiplier, MoneyUnit.Satoshi));
+            return new FeeRate(new Money(feePerByte * 1000 * feeMultiplier.GetValueOrDefault(_baseSettings.FeeRateMultiplier), MoneyUnit.Satoshi));
         }
 
         public async Task<Money> CalcFee(int size)
