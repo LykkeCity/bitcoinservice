@@ -57,8 +57,8 @@ namespace LkeServices.Transactions
         Task<string> SpendCommitmemtByMultisig(ICommitment commitment, ICoin spendingCoin, string destination);
         Task<string> SpendCommitmemtByPubkey(ICommitment commitment, ICoin spendingCoin, string destination);
 
-        Task<string> BroadcastCommitment(string clientPubKey, IAsset asset, string transaction);
-        Task<string> BroadcastCommitment(string multisig, IAsset asset);
+        Task<string> BroadcastCommitment(string clientPubKey, IAsset asset, string transaction, bool useFees);
+        Task<string> BroadcastCommitment(string multisig, IAsset asset, bool useFees);
 
         Task CloseChannel(ICommitment commitment);
 
@@ -610,7 +610,7 @@ namespace LkeServices.Transactions
                         }),
                         _paidFeesTaskWriter.AddTask(hash, DateTime.UtcNow, asset.Id, address.MultisigAddress)
                     );
-                    if(channel.PrevChannelTransactionId.HasValue)
+                    if (channel.PrevChannelTransactionId.HasValue)
                         _rabbitNotificationService.CloseChannel(channel.PrevChannelTransactionId.ToString(), hash);
 
                     _rabbitNotificationService.OpenChannel(channel.ChannelId.ToString(), channel.PrevChannelTransactionId?.ToString(), hash, asset.BlockChainAssetId,
@@ -1039,7 +1039,7 @@ namespace LkeServices.Transactions
 
                 var tr = builder.BuildTransaction(false);
                 tr.Inputs.First(o => o.PrevOut == spendingCoin.Outpoint).Sequence = new Sequence(OneDayDelay);
-                tr.Version = 2;                
+                tr.Version = 2;
                 var redeem = commitment.LockedScript.ToScript();
                 var scriptParams = new OffchainScriptParams
                 {
@@ -1066,7 +1066,7 @@ namespace LkeServices.Transactions
 
 
 
-        public async Task<string> BroadcastCommitment(string clientPubKey, IAsset asset, string transactionHex)
+        public async Task<string> BroadcastCommitment(string clientPubKey, IAsset asset, string transactionHex, bool useFees)
         {
             var address = await _multisigService.GetMultisig(clientPubKey);
 
@@ -1095,7 +1095,8 @@ namespace LkeServices.Transactions
             return await context.Build(async () =>
             {
                 var transaction = new Transaction(transactionHex);
-                await _transactionBuildHelper.AddFeeWithoutChange(transaction, context, 1);
+                if (useFees)
+                    await _transactionBuildHelper.AddFeeWithoutChange(transaction, context, 1);
 
                 var signed = await _signatureApiProvider.SignTransaction(transaction.ToHex());
                 var signedTr = new Transaction(signed);
@@ -1118,7 +1119,7 @@ namespace LkeServices.Transactions
             });
         }
 
-        public async Task<string> BroadcastCommitment(string multisig, IAsset asset)
+        public async Task<string> BroadcastCommitment(string multisig, IAsset asset, bool useFees)
         {
             var address = await _multisigService.GetMultisigByAddr(multisig);
 
@@ -1126,7 +1127,7 @@ namespace LkeServices.Transactions
                 throw new BackendException($"Multisig is not registered", ErrorCode.BadInputParameter);
 
             var lastCommitment = await _commitmentRepository.GetLastCommitment(address.MultisigAddress, asset.Id, CommitmentType.Hub);
-            return await BroadcastCommitment(address.ClientPubKey, asset, lastCommitment.SignedTransaction);
+            return await BroadcastCommitment(address.ClientPubKey, asset, lastCommitment.SignedTransaction, useFees);
         }
 
         public async Task CloseChannel(ICommitment commitment)

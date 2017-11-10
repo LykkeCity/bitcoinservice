@@ -73,7 +73,7 @@ namespace BitcoinApi.Controllers
         public async Task<TransactionHashResponse> BroadcastCommitment([FromBody]BroadcastCommitmentModel model)
         {
             var asset = await GetAsset(model.Asset);
-            return new TransactionHashResponse(await _offchain.BroadcastCommitment(model.ClientPubKey, asset, model.Transaction));
+            return new TransactionHashResponse(await _offchain.BroadcastCommitment(model.ClientPubKey, asset, model.Transaction, true));
         }
 
         [HttpPost("commitment/broadcast")]
@@ -82,7 +82,7 @@ namespace BitcoinApi.Controllers
         public async Task<TransactionHashResponse> BroadcastLastCommitment([FromBody]BroadcastLastCommitmentModel model)
         {
             var asset = await GetAsset(model.Asset);
-            return new TransactionHashResponse(await _offchain.BroadcastCommitment(model.Multisig, asset));
+            return new TransactionHashResponse(await _offchain.BroadcastCommitment(model.Multisig, asset, true));
         }
 
         [HttpPost("cashout")]
