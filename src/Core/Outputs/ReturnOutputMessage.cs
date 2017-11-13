@@ -4,10 +4,10 @@ using System.Text;
 
 namespace Core.Outputs
 {
-    public class ReturnBroadcastedOutputMessage
+    public class ReturnOutputMessage
     {
         public string TransactionHex { get; set; }
 
-        public string Address { get; set; }
+        public List<string> Addresses { get; set; }
     }
 }
