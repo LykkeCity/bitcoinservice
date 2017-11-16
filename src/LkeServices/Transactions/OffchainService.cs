@@ -62,7 +62,7 @@ namespace LkeServices.Transactions
 
         Task CloseChannel(ICommitment commitment);
 
-        Task CloseChannel(IOffchainChannel channel);
+        Task RemoveChannel(IOffchainChannel channel);
 
         Task RemoveChannel(string multisig, IAsset asset);
 
@@ -115,6 +115,7 @@ namespace LkeServices.Transactions
         private readonly IClosingChannelRepository _closingChannelRepository;
         private readonly ISettingsRepository _settingsRepository;
         private readonly IPaidFeesTaskWriter _paidFeesTaskWriter;
+        private readonly ICommitmentClosingTaskWriter _commitmentClosingTaskWriter;
 
         public OffchainService(
             ITransactionBuildHelper transactionBuildHelper,
@@ -143,7 +144,8 @@ namespace LkeServices.Transactions
             ISpendCommitmentMonitoringWriter spendCommitmentMonitoringWriter,
             IClosingChannelRepository closingChannelRepository,
             ISettingsRepository settingsRepository,
-            IPaidFeesTaskWriter paidFeesTaskWriter)
+            IPaidFeesTaskWriter paidFeesTaskWriter,
+            ICommitmentClosingTaskWriter commitmentClosingTaskWriter)
         {
             _transactionBuildHelper = transactionBuildHelper;
             _connectionParams = connectionParams;
@@ -172,6 +174,7 @@ namespace LkeServices.Transactions
             _closingChannelRepository = closingChannelRepository;
             _settingsRepository = settingsRepository;
             _paidFeesTaskWriter = paidFeesTaskWriter;
+            _commitmentClosingTaskWriter = commitmentClosingTaskWriter;
         }
 
         private async Task CheckTransferFinalization(string multisig, string assetId, Guid? transferId, bool channelSetup, IPerformanceMonitor monitor = null)
@@ -605,7 +608,7 @@ namespace LkeServices.Transactions
                         {
                             if (channel.PrevChannelTransactionId.HasValue)
                             {
-                                await _commitmentRepository.CloseCommitmentsOfChannel(address.MultisigAddress, asset.Id, channel.PrevChannelTransactionId.Value);
+                                await _commitmentClosingTaskWriter.Add(channel.PrevChannelTransactionId.Value);                                
                             }
                         }),
                         _paidFeesTaskWriter.AddTask(hash, DateTime.UtcNow, asset.Id, address.MultisigAddress)
@@ -949,11 +952,7 @@ namespace LkeServices.Transactions
 
             await _broadcastService.BroadcastTransaction(closing.ClosingChannelId, tr, notifyTxId: notifyTxId);
 
-            if (channel != null)
-            {
-                await _offchainChannelRepository.CloseChannel(address.MultisigAddress, asset.Id, channel.ChannelId);
-                await _commitmentRepository.CloseCommitmentsOfChannel(address.MultisigAddress, asset.Id, channel.ChannelId);
-            }
+            await RemoveChannel(channel);            
 
             await _closingChannelRepository.CompleteClosingChannel(address.MultisigAddress, asset.Id, closing.ClosingChannelId);
 
@@ -1133,22 +1132,22 @@ namespace LkeServices.Transactions
         {
             await _spentOutputService.SaveSpentOutputs(commitment.CommitmentId, new Transaction(commitment.InitialTransaction));
             await _offchainChannelRepository.CloseChannel(commitment.Multisig, commitment.AssetId, commitment.ChannelId);
-            await _commitmentRepository.CloseCommitmentsOfChannel(commitment.Multisig, commitment.AssetId, commitment.ChannelId);
+            await _commitmentClosingTaskWriter.Add(commitment.ChannelId);
         }
 
-        public async Task CloseChannel(IOffchainChannel channel)
+        public async Task RemoveChannel(IOffchainChannel channel)
         {
             if (channel != null)
             {
                 await _offchainChannelRepository.CloseChannel(channel.Multisig, channel.Asset, channel.ChannelId);
-                await _commitmentRepository.CloseCommitmentsOfChannel(channel.Multisig, channel.Asset, channel.ChannelId);
+                await _commitmentClosingTaskWriter.Add(channel.ChannelId);
             }
         }
 
         public async Task RemoveChannel(string multisig, IAsset asset)
         {
             var channel = await _offchainChannelRepository.GetChannel(multisig, asset.Id);
-            await CloseChannel(channel);
+            await RemoveChannel(channel);
             var transfer = await _offchainTransferRepository.GetLastTransfer(multisig, asset.Id);
             if (transfer != null)
                 await _offchainTransferRepository.CloseTransfer(multisig, asset.Id, transfer.TransferId);

@@ -172,21 +172,9 @@ namespace AzureRepositories.Offchain
             return await _table.GetDataAsync(partition);
         }
 
-        public async Task CloseCommitmentsOfChannel(string multisig, string asset, Guid channelId)
+        public async Task CloseCommitmentsOfChannel(Guid channelId)
         {
-            var partition = CommitmentEntity.ByRecord.GeneratePartition(multisig, asset);
-            var commitments = await _table.GetDataAsync(partition, o => o.ChannelId == channelId);
-
-            var tasks = new List<Task>();
-
-            foreach (var commitment in commitments)
-            {
-                tasks.Add(_table.InsertAsync(CommitmentEntity.Archive.Create(commitment)));
-                tasks.Add(_table.DeleteAsync(CommitmentEntity.ByMonitoring.GeneratePartitionKey(), commitment.CommitmentId.ToString()));
-                tasks.Add(_table.DeleteAsync(commitment));
-            }
-
-            await Task.WhenAll(tasks);
+            throw new NotImplementedException();
         }
 
         public async Task<ICommitment> GetCommitment(string multisig, string asset, string transactionHex)

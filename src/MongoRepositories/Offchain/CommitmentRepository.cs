@@ -108,22 +108,18 @@ namespace MongoRepositories.Offchain
             return await _table.GetDataAsync(o => o.Actual);
         }
 
-        public async Task CloseCommitmentsOfChannel(string multisig, string asset, Guid channelId)
+        public async Task CloseCommitmentsOfChannel(Guid channelId)
         {
             var commitments = await _table.GetDataAsync(o => o.ChannelId == channelId && o.Actual);
 
-            var tasks = new List<Task>();
-
             foreach (var commitment in commitments)
-            {
-                tasks.Add(_table.ReplaceAsync(commitment.CommitmentId.ToString(), entity =>
-               {
-                   entity.Actual = false;
-                   return entity;
-               }));
+            {                
+                await _table.ReplaceAsync(commitment.CommitmentId.ToString(), entity =>
+                {
+                    entity.Actual = false;
+                    return entity;
+                });
             }
-
-            await Task.WhenAll(tasks);
         }
 
         public async Task<ICommitment> GetCommitment(string multisig, string asset, string transactionHex)
