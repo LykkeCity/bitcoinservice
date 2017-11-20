@@ -41,6 +41,7 @@ namespace Lykke.Bitcoin.Api.Client.BitcoinApi
         Task<BccSplitTransactionResponse> BccSplitTransaction(string multisig, string clientDestination, string hubDestination);
         Task<BccTransactionResponse> BccPrivateTransferTransaction(string sourceAddress, string destinationAddress, decimal fee);
         Task<BccTransactionHashResponse> BccBroadcast(string transaction);
+        Task<Models.BccBalanceResponse> BccBalance(string address);
 
         //isAlive
         Task<HttpOperationResponse> IsAlive();

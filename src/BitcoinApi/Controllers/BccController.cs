@@ -52,5 +52,16 @@ namespace BitcoinApi.Controllers
                 Outputs = result.Outputs
             }; 
         }
+        [HttpGet("balance")]
+        [ProducesResponseType(typeof(BccBalanceResponse), 200)]
+        [ProducesResponseType(typeof(ApiException), 400)]
+        public async Task<BccBalanceResponse> GetBccBalance([FromQuery] string address)
+        {
+            var balance = await _bccTransactionService.GetAddressBalance(address);
+            return new BccBalanceResponse
+            {
+                Balance = balance
+            };
+        }
     }
 }
