@@ -36,7 +36,8 @@ namespace Lykke.Bitcoin.Api.Client.BitcoinApi
                 if (response is PrivateBccTransferResponse model)
                     return new BccTransactionResponse
                     {
-                        Transaction = model.Transaction
+                        Transaction = model.Transaction,
+                        Outputs = model.Outputs
                     };
                 return null;
             });

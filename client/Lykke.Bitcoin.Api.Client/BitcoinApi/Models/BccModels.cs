@@ -22,6 +22,8 @@
     public class BccTransactionResponse : Response
     {
         public string Transaction { get; set; }
+
+        public string Outputs { get; set; }
     }
 
     public class BccBalanceResponse : Response
