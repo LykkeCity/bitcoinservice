@@ -43,7 +43,7 @@ namespace BitcoinJob.Functions
 
             foreach (var address in message.Addresses)
             {
-                var unspentOutputs = (await _bitcoinOutputsService.GetOnlyNinjaOutputs(address, 0, 0)).ToList();
+                var unspentOutputs = (await _bitcoinOutputsService.GetOnlyNinjaOutputs(address, 0)).ToList();
                 foreach (var input in transaction.Inputs)
                 {
                     var coin = unspentOutputs.FirstOrDefault(o => o.Outpoint == input.PrevOut);
