@@ -33,6 +33,7 @@ namespace Core
         public const string MaxOffchainTxCount = "MaxOffchainTxCount";
         public const string BccBlockSetting = "FirstBccBlock";
         public const string CommitmentFeesMultiplierSetting = "CommitmentFeesMultiplier";
+        public const string MaxFeeRateSetting = "MaxFeeRate";
 
         public const string DefaultAssetSetting = "Default";
 
