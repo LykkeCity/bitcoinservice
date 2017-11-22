@@ -23,4 +23,9 @@
     {
         public string Transaction { get; set; }
     }
+
+    public class BccBalanceResponse : Response
+    {
+        public decimal Balance { get; set; }
+    }
 }

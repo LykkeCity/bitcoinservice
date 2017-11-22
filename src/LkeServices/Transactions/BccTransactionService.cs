@@ -31,6 +31,7 @@ namespace LkeServices.Transactions
         Task<BccSplitResult> CreateSplitTransaction(string multisig, BitcoinAddress clientDest, BitcoinAddress hubDest);
         Task<BccTransaction> CreatePrivateTransfer(BitcoinAddress @from, BitcoinAddress to, decimal fee);
         Task<string> Broadcast(string transaction, Guid? trId);
+        Task<decimal> GetAddressBalance(string address);
     }
 
 
@@ -108,6 +109,12 @@ namespace LkeServices.Transactions
             await _log.WriteInfoAsync(nameof(BccTransactionService), nameof(Broadcast), null,
                 $"Broadcast BCC transaction {tr.GetHash()}");
             return tr.GetHash().ToString();
+        }
+
+        public async Task<decimal> GetAddressBalance(string address)
+        {
+            var outputs = (await _bccOutputService.GetUnspentOutputs(address)).OfType<Coin>().ToList();
+            return outputs.Select(o => o.Amount.ToDecimal(MoneyUnit.BTC)).DefaultIfEmpty().Sum();
         }
 
         public async Task<BccSplitResult> CreateSplitTransaction(string multisig, BitcoinAddress clientDest, BitcoinAddress hubDest)
