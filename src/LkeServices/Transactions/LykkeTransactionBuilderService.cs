@@ -300,7 +300,7 @@ namespace LkeServices.Transactions
                     await SaveNewOutputs(transactionId, buildedTransaction, context);
 
                     foreach (var offchainChannel in channels)
-                        await _offchainService.CloseChannel(offchainChannel);
+                        await _offchainService.RemoveChannel(offchainChannel);
 
                     return new CreateTransactionResponse(buildedTransaction.ToHex(), transactionId);
                 });

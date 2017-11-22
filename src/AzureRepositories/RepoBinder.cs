@@ -70,7 +70,7 @@ namespace AzureRepositories
             }).SingleInstance();
 
             ioc.RegisterType<EmailNotifier>().As<IEmailNotifier>();
-            ioc.RegisterType<SlackNotifier>().As<ISlackNotifier>().As<IPoisionQueueNotifier>();
+            ioc.RegisterType<SlackNotifier>().As<ISlackNotifier>().As<IPoisionQueueNotifier>();            
         }
 
         private static void BindRepo(this ContainerBuilder ioc, BaseSettings settings, ILog log)
@@ -131,6 +131,7 @@ namespace AzureRepositories
             ioc.RegisterType<ReturnBroadcastedOutputsMessageWriter>().As<IReturnBroadcastedOutputsMessageWriter>().SingleInstance();
             ioc.RegisterType<SpendCommitmentMonitoringWriter>().As<ISpendCommitmentMonitoringWriter>().SingleInstance();
             ioc.RegisterType<PaidFeesTaskWriter>().As<IPaidFeesTaskWriter>().SingleInstance();
+            ioc.RegisterType<CommitmentClosingTaskWriter>().As<ICommitmentClosingTaskWriter>().SingleInstance();
         }
     }
 }

@@ -26,6 +26,7 @@ namespace Core
 
         public const string SpendCommitmentOutputQueue = "spend-commitment-queue";
         public const string PaidFeesTasksQueue = "paid-fees-tasks";
+        public const string CommitmentClosingTaskQueue = "commitment-closing-tasks";
 
 
         public const string ProcessingBlockSetting = "ProcessingBlockSetting";

@@ -41,7 +41,7 @@ namespace Core.Repositories.Offchain
         
         Task<IEnumerable<ICommitment>> GetMonitoringCommitments();
 
-        Task CloseCommitmentsOfChannel(string multisig, string asset, Guid channelId);
+        Task CloseCommitmentsOfChannel(Guid channelId);
         Task<ICommitment> GetCommitment(string multisig, string asset, string transactionHex);
         Task RemoveCommitmentsOfChannel(string multisig, string asset, Guid channelId);
         Task<IEnumerable<ICommitment>> GetCommitments(Guid channelId);
