@@ -5,8 +5,8 @@ using System.Threading.Tasks;
 
 namespace Core.Outputs
 {
-    public interface IReturnBroadcastedOutputsMessageWriter
+    public interface IReturnOutputsMessageWriter
     {
-        Task AddToReturn(string transactionHex, string address);
+        Task AddToReturn(string transactionHex, List<string> address);
     }
 }

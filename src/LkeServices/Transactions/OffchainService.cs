@@ -108,7 +108,7 @@ namespace LkeServices.Transactions
         private readonly BaseSettings _settings;
         private readonly ILog _logger;
         private readonly IAssetSettingRepository _assetSettingRepository;
-        private readonly IReturnBroadcastedOutputsMessageWriter _returnBroadcastedOutputsMessageWriter;
+        private readonly IReturnOutputsMessageWriter _returnOutputsMessageWriter;
         private readonly IRabbitNotificationService _rabbitNotificationService;
         private readonly ICommitmentBroadcastRepository _commitmentBroadcastRepository;
         private readonly ISpendCommitmentMonitoringWriter _spendCommitmentMonitoringWriter;
@@ -138,7 +138,7 @@ namespace LkeServices.Transactions
             BaseSettings settings,
             ILog logger,
             IAssetSettingRepository assetSettingRepository,
-            IReturnBroadcastedOutputsMessageWriter returnBroadcastedOutputsMessageWriter,
+            IReturnOutputsMessageWriter returnOutputsMessageWriter,
             IRabbitNotificationService rabbitNotificationService,
             ICommitmentBroadcastRepository commitmentBroadcastRepository,
             ISpendCommitmentMonitoringWriter spendCommitmentMonitoringWriter,
@@ -167,7 +167,7 @@ namespace LkeServices.Transactions
             _settings = settings;
             _logger = logger;
             _assetSettingRepository = assetSettingRepository;
-            _returnBroadcastedOutputsMessageWriter = returnBroadcastedOutputsMessageWriter;
+            _returnOutputsMessageWriter = returnOutputsMessageWriter;
             _rabbitNotificationService = rabbitNotificationService;
             _commitmentBroadcastRepository = commitmentBroadcastRepository;
             _spendCommitmentMonitoringWriter = spendCommitmentMonitoringWriter;
@@ -204,7 +204,7 @@ namespace LkeServices.Transactions
                 monitor?.Step("Remove spent outputs");
                 await _spentOutputService.RemoveSpenOutputs(new Transaction(channel.InitialTransaction));
                 monitor?.Step("Return broadcasted outputs");
-                await _returnBroadcastedOutputsMessageWriter.AddToReturn(channel.InitialTransaction, multisig);
+                await _returnOutputsMessageWriter.AddToReturn(channel.InitialTransaction, new List<string> { multisig, _settings.FeeAddress });
 
                 if (!channelSetup)
                     throw new BackendException("Should open new channel", ErrorCode.ShouldOpenNewChannel);
@@ -613,7 +613,7 @@ namespace LkeServices.Transactions
                         }),
                         _paidFeesTaskWriter.AddTask(hash, DateTime.UtcNow, asset.Id, address.MultisigAddress)
                     );
-                    if(channel.PrevChannelTransactionId.HasValue)
+                    if (channel.PrevChannelTransactionId.HasValue)
                         _rabbitNotificationService.CloseChannel(channel.PrevChannelTransactionId.ToString(), hash);
 
                     _rabbitNotificationService.OpenChannel(channel.ChannelId.ToString(), channel.PrevChannelTransactionId?.ToString(), hash, asset.BlockChainAssetId,
@@ -1038,7 +1038,7 @@ namespace LkeServices.Transactions
 
                 var tr = builder.BuildTransaction(false);
                 tr.Inputs.First(o => o.PrevOut == spendingCoin.Outpoint).Sequence = new Sequence(OneDayDelay);
-                tr.Version = 2;                
+                tr.Version = 2;
                 var redeem = commitment.LockedScript.ToScript();
                 var scriptParams = new OffchainScriptParams
                 {

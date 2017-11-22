@@ -12,6 +12,8 @@ namespace Core.Repositories.PaidFees
 
     public class PaidFeesTask
     {
+        public const int MaxTryCount = 20;
+
         public string TransactionHash { get; set; }
 
         public DateTime Date { get; set; }
@@ -19,5 +21,7 @@ namespace Core.Repositories.PaidFees
         public string Asset { get; set; }
 
         public string Multisig { get; set; }
+
+        public int TryCount { get; set; }
     }
 }

@@ -9,22 +9,22 @@ using Core.Outputs;
 
 namespace AzureRepositories.TransactionOutputs
 {
-    public class ReturnBroadcastedOutputsMessageWriter : IReturnBroadcastedOutputsMessageWriter
+    public class ReturnOutputsMessageWriter : IReturnOutputsMessageWriter
     {        
         private IQueueExt _queue;
 
-        public ReturnBroadcastedOutputsMessageWriter(Func<string,IQueueExt> queueFactory)
+        public ReturnOutputsMessageWriter(Func<string,IQueueExt> queueFactory)
         {
             _queue = queueFactory(Constants.ReturnBroadcatedOutputsQueue);
         }
 
-        public Task AddToReturn(string transactionHex, string address)
+        public Task AddToReturn(string transactionHex, List<string> address)
         {
             
-            return _queue.PutRawMessageAsync(new ReturnBroadcastedOutputMessage
+            return _queue.PutRawMessageAsync(new ReturnOutputMessage
             {
                 TransactionHex = transactionHex,
-                Address = address
+                Addresses = address
             }.ToJson());
         }
     }
