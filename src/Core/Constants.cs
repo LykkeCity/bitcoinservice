@@ -26,9 +26,9 @@ namespace Core
 
         public const string SpendCommitmentOutputQueue = "spend-commitment-queue";
         public const string PaidFeesTasksQueue = "paid-fees-tasks";
+        public const string BccTransferQueue = "bcc-transfer";
+        public const string CommitmentBroadcastQueue = "commitment-broadcasts";
         public const string CommitmentClosingTaskQueue = "commitment-closing-tasks";
-
-
         public const string ProcessingBlockSetting = "ProcessingBlockSetting";
         public const string CurrentPrivateIncrementSetting = "PrivateIncrement";
         public const string MaxOffchainTxCount = "MaxOffchainTxCount";
@@ -47,7 +47,7 @@ namespace Core
 
         public static readonly DateTime PrevBccBlockTime = new DateTime(2017, 08, 01, 13, 16, 14, DateTimeKind.Utc);
 
-        public const string BccTransferQueue = "bcc-transfer";
+        
 
         public const string LykkePayTag = "LykkePay";
     }
