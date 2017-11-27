@@ -26,7 +26,7 @@ namespace Bitcoin.Tests
     public class BitcoinTransactionTests
     {
         [TestMethod]
-        public async void GetInfoTest()
+        public void GetInfoTest()
         {
             var a = BitcoinAddress.Create("2NDAX5fg6Svo7TxtjoScQXy652kheU22u2K");
 
