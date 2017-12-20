@@ -51,7 +51,7 @@ namespace Lykke.Bitcoin.Api.Client.BitcoinApi
         //transaction
         Task<OnchainResponse> TransactionTransfer(Guid? transactionId, string sourceAddress, string destinationAddress, decimal amount, string asset);
         Task TransactionBroadcast(Guid transactionId, string transaction);
-        Task<OnchainResponse> TransactionMultipleTransfer(Guid? transactionId, string destination, string asset, int feeRate,
+        Task<OnchainResponse> TransactionMultipleTransfer(Guid? transactionId, string destination, string asset, int feeRate, decimal fixedFee,
             IEnumerable<ToOneAddress> sources);
         Task<OnchainResponse> TransactionGetById(Guid transactionId);
 
