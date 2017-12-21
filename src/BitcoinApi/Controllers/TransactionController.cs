@@ -115,6 +115,11 @@ namespace BitcoinApi.Controllers
             if (!TransactionComparer.CompareTransactions(initialTransaction, model.Transaction))
                 throw new BackendException("Signed transaction is not equals to initial transaction", ErrorCode.BadTransaction);
 
+            var transaction = new Transaction(model.Transaction);
+
+            if (transaction.Inputs.All(o => o.ScriptSig == null || o.ScriptSig.Length == 0))
+                throw new BackendException("Signed transaction is not signed by client", ErrorCode.BadTransaction);
+
             var fullSignedHex = await _signatureApiProvider.SignTransaction(model.Transaction);
 
             await _transactionBlobStorage.AddOrReplaceTransaction(model.TransactionId, TransactionBlobType.Signed, fullSignedHex);
