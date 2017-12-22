@@ -21,12 +21,14 @@ namespace LkeServices.Bitcoin
         private readonly IBroadcastedOutputRepository _broadcastedOutputRepository;
         private readonly ISpentOutputRepository _spentOutputRepository;
         private readonly IWalletAddressRepository _walletAddressRepository;
+        private readonly ISegwitPrivateWalletRepository _segwitPrivateWalletRepository;        
         private readonly IInternalSpentOutputRepository _internalSpentOutputRepository;
         private readonly RpcConnectionParams _connectionParams;
 
         public BitcoinOutputsService(IQBitNinjaApiCaller qBitNinjaApiCaller,
             IBroadcastedOutputRepository broadcastedOutputRepository,
             ISpentOutputRepository spentOutputRepository, IWalletAddressRepository walletAddressRepository,
+            ISegwitPrivateWalletRepository segwitPrivateWalletRepository,
             IInternalSpentOutputRepository internalSpentOutputRepository,
             RpcConnectionParams connectionParams)
         {
@@ -34,6 +36,7 @@ namespace LkeServices.Bitcoin
             _broadcastedOutputRepository = broadcastedOutputRepository;
             _spentOutputRepository = spentOutputRepository;
             _walletAddressRepository = walletAddressRepository;
+            _segwitPrivateWalletRepository = segwitPrivateWalletRepository;            
             _internalSpentOutputRepository = internalSpentOutputRepository;
             _connectionParams = connectionParams;
         }
@@ -71,7 +74,8 @@ namespace LkeServices.Bitcoin
             var address = BitcoinAddress.Create(walletAddress);
             if (address is BitcoinScriptAddress)
             {
-                var redeem = await _walletAddressRepository.GetRedeemScript(walletAddress);
+                var redeem = await _walletAddressRepository.GetRedeemScript(walletAddress) ??
+                             await _segwitPrivateWalletRepository.GetRedeemScript(walletAddress);
                 return coins.OfType<Coin>().Select(x => new ScriptCoin(x, new Script(redeem)))
                     .Concat(
                         coins.OfType<ColoredCoin>().Select(x => new ScriptCoin(x, new Script(redeem)).ToColoredCoin(x.Amount))

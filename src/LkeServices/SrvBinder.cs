@@ -14,7 +14,6 @@ using Core.RabbitNotification;
 using Core.Settings;
 using LkeServices.Bcc;
 using LkeServices.Bitcoin;
-using LkeServices.Multisig;
 using LkeServices.Outputs;
 using LkeServices.Performance;
 using LkeServices.Providers;
@@ -23,6 +22,7 @@ using LkeServices.QBitNinja;
 using LkeServices.RabbitNotifiaction;
 using LkeServices.Signature;
 using LkeServices.Transactions;
+using LkeServices.Wallet;
 using QBitNinja.Client;
 using RestClient = RestEase.RestClient;
 
@@ -52,7 +52,7 @@ namespace LkeServices
 
             ioc.RegisterType<LykkeTransactionBuilderService>().As<ILykkeTransactionBuilderService>();
             ioc.RegisterType<OffchainService>().As<IOffchainService>();
-            ioc.RegisterType<MultisigService>().As<IMultisigService>();
+            ioc.RegisterType<WalletService>().As<IWalletService>();
             ioc.RegisterType<TransactionBuildHelper>().As<ITransactionBuildHelper>();
             ioc.RegisterType<BitcoinTransactionService>().As<IBitcoinTransactionService>();
             ioc.RegisterType<OffchainService>().As<IOffchainService>();

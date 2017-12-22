@@ -60,8 +60,13 @@ namespace Lykke.Bitcoin.Api.Client.BitcoinApi.Models
 
     public class HubCashoutData
     {
-        public string ClientPubKey { get; set; }
-        public string Hotwallet { get; set; }
+        public string ClientPubKey { get; set; }        
+        public string AssetId { get; set; }
+    }
+
+    public class FullCashoutData
+    {
+        public string ClientPubKey { get; set; }        
         public string AssetId { get; set; }
     }
 

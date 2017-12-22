@@ -57,7 +57,7 @@ namespace BitcoinJob.Functions
                 return;
             }
             var commitment = await _commitmentRepository.GetCommitment(message.CommitmentId);
-            var lockedAddr = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(commitment.LockedAddress);
+            var lockedAddr = OpenAssetsHelper.ParseAddress(commitment.LockedAddress);
             var coin = tr.ReceivedCoins
                 .FirstOrDefault(o => o.TxOut.ScriptPubKey.GetDestinationAddress(_connectionParams.Network) == lockedAddr);
             if (coin == null)

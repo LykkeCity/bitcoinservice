@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Core.Bitcoin;
 using Core.Helpers;
@@ -8,31 +7,37 @@ using Core.Providers;
 using Core.RabbitNotification;
 using Core.Repositories.Wallets;
 using LkeServices.Providers;
+using NBitcoin;
 
-namespace LkeServices.Multisig
+namespace LkeServices.Wallet
 {
-    public interface IMultisigService
+    public interface IWalletService
     {
         Task<IWalletAddress> GetOrCreateMultisig(string clientPubKey);
         Task<IWalletAddress> GetMultisig(string clientPubKey);
         Task<IWalletAddress> GetMultisigByAddr(string multisig);
         Task<IEnumerable<IWalletAddress>> GetAllMultisigs();
+
+        Task<ISegwitPrivateWallet> GetOrCreateSegwitPrivateWallet(string clientPubKey);
     }
 
-    public class MultisigService : IMultisigService
+    public class WalletService : IWalletService
     {
         private readonly IWalletAddressRepository _walletAddressRepository;
         private readonly IRabbitNotificationService _notificationService;
+        private readonly ISegwitPrivateWalletRepository _segwitPrivateWalletRepository;
         private readonly ISignatureApiProvider _signatureApiProvider;
         private readonly RpcConnectionParams _connectionParams;
 
-        public MultisigService(IWalletAddressRepository walletAddressRepository,
+        public WalletService(IWalletAddressRepository walletAddressRepository,
             Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
             IRabbitNotificationService notificationService,
+            ISegwitPrivateWalletRepository segwitPrivateWalletRepository,
             RpcConnectionParams connectionParams)
         {
             _walletAddressRepository = walletAddressRepository;
             _notificationService = notificationService;
+            _segwitPrivateWalletRepository = segwitPrivateWalletRepository;
             _signatureApiProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
             _connectionParams = connectionParams;
         }
@@ -62,11 +67,24 @@ namespace LkeServices.Multisig
             return await _walletAddressRepository.GetAllAddresses();
         }
 
+        public async Task<ISegwitPrivateWallet> GetOrCreateSegwitPrivateWallet(string clientPubKey)
+        {
+            var segwitWallet = await _segwitPrivateWalletRepository.GetByClientPubKey(clientPubKey);
+            if (segwitWallet != null)
+                return segwitWallet;
+
+            var segwitPubKey = new PubKey(await _signatureApiProvider.GeneratePubKey());
+            var segwitAddress = segwitPubKey.WitHash.ScriptPubKey.Hash.GetAddress(_connectionParams.Network);
+
+            return await _segwitPrivateWalletRepository.AddSegwitPrivateWallet(clientPubKey, segwitAddress.ToString(), 
+                segwitPubKey.ToString(_connectionParams.Network), segwitPubKey.WitHash.ScriptPubKey.ToString());
+        }
+
         private async Task<IWalletAddress> CreateMultisig(string clientPubKey, string exchangePubKey)
         {
-            var scriptPubKey = MultisigHelper.GenerateMultisigRedeemScript(clientPubKey, exchangePubKey);
-            var address = await _walletAddressRepository.Create(scriptPubKey.GetScriptAddress(_connectionParams.Network).ToString(),
-                clientPubKey, exchangePubKey, scriptPubKey.ToString());
+            var redeemScript = MultisigHelper.GenerateMultisigRedeemScript(clientPubKey, exchangePubKey);
+
+            var address = await _walletAddressRepository.Create(redeemScript.GetScriptAddress(_connectionParams.Network).ToString(), clientPubKey, exchangePubKey, redeemScript.ToString());
             _notificationService.CreateMultisig(address.MultisigAddress, DateTime.UtcNow);
             return address;
         }

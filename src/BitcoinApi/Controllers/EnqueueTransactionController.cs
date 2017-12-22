@@ -23,17 +23,21 @@ namespace BitcoinApi.Controllers
     {
         private readonly ILykkeTransactionBuilderService _builder;
         private readonly IAssetRepository _assetRepository;
+        private readonly CachedDataDictionary<string, IAssetSetting> _assetSettingCache;
         private readonly OffchainService _offchainService;
         private readonly ITransactionQueueWriter _transactionQueueWriter;
         private readonly IRetryFailedTransactionService _retryFailedService;
 
         public EnqueueTransactionController(ILykkeTransactionBuilderService builder,
             IAssetRepository assetRepository,
+            IAssetSettingRepository assetSettingRepository,
+            CachedDataDictionary<string, IAssetSetting> assetSettingCache,
             OffchainService offchainService,
             ITransactionQueueWriter transactionQueueWriter, IRetryFailedTransactionService retryFailedService)
         {
             _builder = builder;
             _assetRepository = assetRepository;
+            _assetSettingCache = assetSettingCache;
             _offchainService = offchainService;
             _transactionQueueWriter = transactionQueueWriter;
             _retryFailedService = retryFailedService;
@@ -48,7 +52,7 @@ namespace BitcoinApi.Controllers
         [HttpPost("transfer")]
         [ProducesResponseType(typeof(TransactionIdResponse), 200)]
         [ProducesResponseType(typeof(ApiException), 400)]
-        public async Task<IActionResult> CreateCashout([FromBody]TransferRequest model)
+        public async Task<IActionResult> Transfer([FromBody]TransferRequest model)
         {
             if (model.Amount <= 0)
                 throw new BackendException("Amount can't be less or equal to zero", ErrorCode.BadInputParameter);
@@ -75,6 +79,48 @@ namespace BitcoinApi.Controllers
                 TransactionId = transactionId
             });
         }
+
+
+        /// <summary>
+        /// Add transfer transaction to queue for building
+        /// </summary>
+        /// <returns>Internal transaction id</returns>
+        [HttpPost("cashout")]
+        [ProducesResponseType(typeof(TransactionIdResponse), 200)]
+        [ProducesResponseType(typeof(ApiException), 400)]
+        public async Task<IActionResult> Cashout([FromBody]CashoutRequest model)
+        {
+            if (model.Amount <= 0)
+                throw new BackendException("Amount can't be less or equal to zero", ErrorCode.BadInputParameter);
+            
+            await ValidateAddress(model.DestinationAddress, false);
+
+            var asset = await _assetRepository.GetAssetById(model.Asset);
+            if (asset == null)
+                throw new BackendException("Provided asset is missing in database", ErrorCode.AssetNotFound);
+
+            var transactionId = await _builder.AddTransactionId(model.TransactionId, $"Cashout: {model.ToJson()}");
+
+            var assetSetting = await _assetSettingCache.GetItemAsync(asset.Id);
+
+            var hotWallet = !string.IsNullOrEmpty(assetSetting.ChangeWallet)
+                ? assetSetting.ChangeWallet
+                : assetSetting.HotWallet;
+
+            await _transactionQueueWriter.AddCommand(transactionId, TransactionCommandType.Transfer, new TransferCommand
+            {
+                Amount = model.Amount,
+                SourceAddress = hotWallet,
+                Asset = model.Asset,
+                DestinationAddress = model.DestinationAddress
+            }.ToJson());
+
+            return Ok(new TransactionIdResponse
+            {
+                TransactionId = transactionId
+            });
+        }
+
 
         /// <summary>
         /// Add transfer all transaction to queue for building
@@ -223,7 +269,7 @@ namespace BitcoinApi.Controllers
 
         private async Task ValidateAddress(string address, bool checkOffchain = true)
         {
-            var bitcoinAddres = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(address);
+            var bitcoinAddres = OpenAssetsHelper.ParseAddress(address);
             if (bitcoinAddres == null)
                 throw new BackendException($"Invalid Address provided: {address}", ErrorCode.InvalidAddress);
             if (checkOffchain && await _offchainService.HasChannel(address))

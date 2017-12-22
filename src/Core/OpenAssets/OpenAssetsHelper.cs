@@ -10,7 +10,7 @@ namespace Core.OpenAssets
 {
     public static class OpenAssetsHelper
     {
-        public static BitcoinAddress GetBitcoinAddressFormBase58Date(string base58Data)
+        public static BitcoinAddress ParseAddress(string base58Data)
         {
             BitcoinAddress address = null;
             try

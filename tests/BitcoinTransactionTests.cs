@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Common;
 using Core.Bitcoin;
+using Core.Helpers;
 using Core.OpenAssets;
 using Core.Providers;
 using Core.QBitNinja;
@@ -26,7 +27,7 @@ namespace Bitcoin.Tests
     public class BitcoinTransactionTests
     {
         [TestMethod]
-        public void GetInfoTest()
+        public async Task GetInfoTest()
         {
             var a = BitcoinAddress.Create("2NDAX5fg6Svo7TxtjoScQXy652kheU22u2K");
 
@@ -42,8 +43,8 @@ namespace Bitcoin.Tests
 
             var script = CreateScript(new PubKey("02483c13420c9eec1846a6878fc0b41f481d4e9a66fc8038d48543a50053a71608"), new PubKey("0491590ab4eb4b5227b82dbdb8fbf5dc850325b953a2990036e33a5f538ff17acd1d345ce3199b55a4ebc111addb1b824c4aeafc97ecffed280f1cd0fd009dd8d7"), new PubKey("0491590ab4eb4b5227b82dbdb8fbf5dc850325b953a2990036e33a5f538ff17acd1d345ce3199b55a4ebc111addb1b824c4aeafc97ecffed280f1cd0fd009dd8d7"));
 
-            var tr = new Transaction("0100000004e0f4c299bb4320e7fe717aa1bfd3d7cd7b38324aec8508635df84a855ad5c7cc01000000d900473044022046035ada5d424713320f7b52a5afbadc72d6e2f04369938562304b9e3e8d0f0d022021445f01f8b565ed1c80eb9b50e2972410fdbeb729519b59e172edee42a0654301473044022042ca1d97f65a3408b66fac290fee68a957ff65688832d7c14070dec7680190600220637a3ebbdea5d356309fa336a4687737284ace17d605f44a77e71571cf19fcba0147522103dfdabe62ec31fc5a5c8e3352ba91ba82e5beb2d60014a622bd369fffec1e7f0821031032adc70de9db8b1877f7a0ed91a66b798f49c7a7b4fd965fa9cf33504a38fa52aeffffffffd2425312089faa0ec27221124a79b45d9070c8135a3ea03320bf885d45013d1d020000006b483045022100f82d6c4f9e6adca12099f34cf9ea6804803a7f690eeb20d3d69bf7f982a335030220038b39849078dc81aa0a5dc9d064310d089de9bf45097e237ec805321fcf1484012103cca8f7f408b2541b1f2a941c58ed4437e99dd7995de82adede6f627e5131f217ffffffff9c281fbf9327084bbf87e893288cdaa917900092c7c8586f1da5e75af9ae5b0aab0100006b483045022100ece2db674c1812f27f891ce6ac9dab8b4cf294f3453a013d8b851c14cd7405df02202adb425f01fe74c940d98e0608716b0c275868df4ccca23dff6662b88aa079a2012102e1df9b80b04a6e641c7212da01dc0f16be35a20224587dfb82b1fcda87add8edffffffff9c281fbf9327084bbf87e893288cdaa917900092c7c8586f1da5e75af9ae5b0aac0100006a47304402207156c286662fa98c626bc26e94adc42cba56a0f1d81a5da7c69897f4dc70abd80220166083db8fcdfdec700dfb636bd5248f0e0f8cf45abac58481dfda81e973f462012102e1df9b80b04a6e641c7212da01dc0f16be35a20224587dfb82b1fcda87add8edffffffff040000000000000000146a124f4101000380cab5ee01b0aae5948b020000181500000000000017a914c7d1f7b4b12773d3d4436b789548762fded455da87aa0a0000000000001976a914437b0425a46c77365366931d914efe3dd84318fe88acc6200200000000001976a91475eac11f3cfda3e79c90469dac0ebaaaacde701488ac00000000");
-            var marker = tr.GetColoredMarker();            
+            var tr = new Transaction("0100000002b27d75295bbc11a7c99ccdf9ea871f7d8042afc8c8de941f537460363462e5056d01000000ffffffff3e5adda3f57aca38a3e555bcfeadfbe8e28c1eecfc17a028de4e1ba11c9d5ce0000000009300483045022100ccdf8728018753324a4f961d5e05a9b3a206ace65725f0c3d86ef68be91faf9b022014ad208c6bd5293a07f07e1c2004f59e1904a9f1f59a1902b2a3bd71deb7c92e0100475221039ae917fff146ea0196a5842cbf7d8c01b026463e6935481b8daff7a2fb5a0c1c2103f7358a6aa8f5f0ef36ca56be7e105701e30bfb46db8ee18cad379c91198106f052aeffffffff02df982c000000000017a91406a30d58e7d8fb28861b2781def3a6ef3c7763f387006c0100000000001976a91475eac11f3cfda3e79c90469dac0ebaaaacde701488ac00000000");
+            var marker = tr.GetColoredMarker();        
         }
 
         [TestMethod]
@@ -151,15 +152,17 @@ namespace Bitcoin.Tests
             var bitcoinClient = Config.Services.GetService<IRpcBitcoinClient>();
             var bitcoinOutService = Config.Services.GetService<IBitcoinOutputsService>();
             var assetRepo = Config.Services.GetService<IAssetRepository>();
-            var asset = await assetRepo.GetAssetById("USD");
+            
             var helper = Config.Services.GetService<ITransactionBuildHelper>();
 
-            var coin = (await bitcoinOutService.GetUnspentOutputs("2MuoR6cZxpYWEj2RVefs4xRzqy4VGzpBU5B"))
-                .OfType<ColoredCoin>().First();
+            var prevTx = new Transaction("0100000002347328a86bbd9d2a40e420e8d0a7da9986fd916b3ca02365c8d480936067a36cce0000008a47304402201eebb0365b67e534b72302987453d43833594965d7180c746dd5b1af27a7d6be02204496df6a47858fe9a3f6fd09dff90382e7c22a5a52c41300466bcfed808a1f39014104ff20028f41de7e2bac4f8e90884becad36c1390d2ab991a16fbcf745db478fd37cbf65c57a84e5a485bd5934c659f94aff35fe9fc50ebd2281ede40366190f57ffffffffab496631bf50d77e36303fb6156c3c73809c2023048e7e28b59c7272a8c509fc2f0000008b483045022100c6cb855117224ff9e7334ccf1030649c34a8e48eb7b6c7c4bf746d3ff67c1641022038257e6100c34c568f24d490a69b4591f93a56c433b6ad30102627a5a48ce0da01410496052ef8fb660bb338ba186dd2f52362c66b23f824295a6b74d0c60cf61a12e2b1f8b97512e09c20693f00dba9df3c644f245c120983d0582e4a88cb466ffa69ffffffff0300e1f5050000000017a914a9168848118a24ff8f848bac2eaaa248105b0307870084d717000000001976a91497a515ec03d9aada5e6f0d895f4aa10eb8f07e8d88ac800f0200000000001976a914ed75405f426601f5493117b5a22dc0082269e32288ac00000000");
+            var coin = new Coin(prevTx, 0);            
 
             var redeem = CreateScript(multisigFirstPartPk.PubKey, revokePk.PubKey, singlePk.PubKey);
+          
+            var addr = redeem.WitHash.ScriptPubKey.Hash.GetAddress(Network.TestNet);
 
-            var scriptCoin = new ScriptCoin(coin, redeem).ToColoredCoin(coin.Amount);
+            var scriptCoin = new ScriptCoin(coin, redeem);
 
             TransactionBuilder builder = new TransactionBuilder();
             TransactionBuildContext context = new TransactionBuildContext(Network.TestNet, null, null);
@@ -167,17 +170,16 @@ namespace Bitcoin.Tests
             //builder.AddKeys(pk);
             builder.AddCoins(scriptCoin);
 
-            builder.SendAsset(new BitcoinSecret("93586ks3uwSAgJ6q3He4CkuXeVg1N4syvszP514TitfcA9mXjVo").PubKey.GetAddress(Network.TestNet),
-                new AssetMoney(new BitcoinAssetId(asset.BlockChainAssetId), 100));
-            builder.SetChange(new BitcoinScriptAddress("2MuoR6cZxpYWEj2RVefs4xRzqy4VGzpBU5B", Network.TestNet));
-
-            await helper.AddFee(builder, context);
+            builder.Send(multisigFirstPartPk.PubKey.ScriptPubKey, "0.5");          
+            builder.SetChange(addr);
+            builder.SendFees("0.001");
+            
             var tr = builder.BuildTransaction(false);
 
 
             //tr.Inputs[0].Sequence = new Sequence(144);
             // tr.Version = 2;
-            var hash = Script.SignatureHash(redeem, tr, 0, SigHash.All);
+            var hash = Script.SignatureHash(redeem, tr, 0, SigHash.All, scriptCoin.Amount, HashVersion.Witness);
 
             var signature = singlePk.PrivateKey.Sign(hash, SigHash.All).Signature.ToDER().Concat(new byte[] { 0x01 }).ToArray();
 
@@ -188,11 +190,11 @@ namespace Bitcoin.Tests
             {
                 IsMultisig = true,
                 RedeemScript = redeem.ToBytes(),
-                Pushes = new[] { new byte[0], push1, push2 }
+                Pushes = new[] { new byte[0], new byte[0], new byte[0],  }
             };
 
-            tr.Inputs[0].ScriptSig = OffchainScriptCommitmentTemplate.GenerateScriptSig(scriptParams);
-
+            tr.Inputs[0].WitScript = OffchainScriptCommitmentTemplate.GenerateScriptSig(scriptParams);
+            tr.Inputs[0].ScriptSig = new Script(Op.GetPushOp(redeem.WitHash.ScriptPubKey.ToBytes(true)));
 
             ScriptError error;
             tr.Inputs.AsIndexedInputs().First().VerifyScript(scriptCoin.ScriptPubKey, out error);

@@ -49,6 +49,9 @@ namespace EnqueueFees
             collection.AddSingleton<IWalletAddressRepository>(
                 new WalletAddressRepository(new MongoStorage<WalletAddressEntity>(mongoClient, "Wallets")));
 
+            collection.AddSingleton<ISegwitPrivateWalletRepository>(
+                new SegwitPrivateWalletRepository(new MongoStorage<SegwitPrivateWalletEntity>(mongoClient, "SegwitWallets")));                
+
             collection.AddSingleton<IBroadcastedOutputRepository>(
                 new BroadcastedOutputRepository(new MongoStorage<BroadcastedOutputEntity>(mongoClient, "BroadcastedOutputs")));
 

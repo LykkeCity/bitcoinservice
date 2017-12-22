@@ -7,7 +7,7 @@ namespace Lykke.Bitcoin.Api.Client.BitcoinApi.Models
         public Guid? TransactionId { get; set; }
         public string Address { get; set; }
         public string AssetId { get; set; }
-        public double Amount { get; set; }
+        public decimal Amount { get; set; }
     }
 
     public class TransferData
@@ -16,7 +16,15 @@ namespace Lykke.Bitcoin.Api.Client.BitcoinApi.Models
         public string SourceAddress { get; set; }
         public string DestinationAddress { get; set; }
         public string AssetId { get; set; }
-        public double Amount { get; set; }
+        public decimal Amount { get; set; }
+    }
+
+    public class CashoutModel
+    {
+        public Guid? TransactionId { get; set; }        
+        public string DestinationAddress { get; set; }
+        public string AssetId { get; set; }
+        public decimal Amount { get; set; }
     }
 
     public class TransferAllData
@@ -31,7 +39,7 @@ namespace Lykke.Bitcoin.Api.Client.BitcoinApi.Models
         public Guid? TransactionId { get; set; }
         public string Address { get; set; }
         public string AssetId { get; set; }
-        public double Amount { get; set; }
+        public decimal Amount { get; set; }
     }
 
     public class SwapData
@@ -39,10 +47,10 @@ namespace Lykke.Bitcoin.Api.Client.BitcoinApi.Models
         public Guid? TransactionId { get; set; }
         public string Multisig1 { get; set; }
         public string AssetId1 { get; set; }
-        public double Amount1 { get; set; }
+        public decimal Amount1 { get; set; }
         public string Multisig2 { get; set; }
         public string AssetId2 { get; set; }
-        public double Amount2 { get; set; }
+        public decimal Amount2 { get; set; }
     }
 
     public class RetryData

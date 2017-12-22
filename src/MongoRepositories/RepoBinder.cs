@@ -97,6 +97,9 @@ namespace MongoRepositories
 
             ioc.RegisterInstance(new PaidFeesRepository(new MongoStorage<PaidFeesEntity>(mongoClient, "PaidFees")))
                 .As<IPaidFeesRepository>();
+
+            ioc.RegisterInstance(new SegwitPrivateWalletRepository(new MongoStorage<SegwitPrivateWalletEntity>(mongoClient, "SegwitWallets")))
+                .As<ISegwitPrivateWalletRepository>();
         }        
     }
 }

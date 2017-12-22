@@ -247,7 +247,7 @@ namespace LkeServices.Transactions
                     async Task<IDestination> GetChangeWallet(string asset)
                     {
                         var assetSetting = await _offchainService.GetAssetSetting(asset);
-                        return OpenAssetsHelper.GetBitcoinAddressFormBase58Date(!string.IsNullOrEmpty(assetSetting.ChangeWallet) ? assetSetting.ChangeWallet
+                        return OpenAssetsHelper.ParseAddress(!string.IsNullOrEmpty(assetSetting.ChangeWallet) ? assetSetting.ChangeWallet
                             : assetSetting.HotWallet);
                     };
 
@@ -321,7 +321,7 @@ namespace LkeServices.Transactions
 
                     foreach (var transferAddress in transferAddresses)
                     {
-                        var source = OpenAssetsHelper.GetBitcoinAddressFormBase58Date(transferAddress.Key);
+                        var source = OpenAssetsHelper.ParseAddress(transferAddress.Key);
                         await TransferOneDirection(builder, context, source, transferAddress.Value, asset, destination);
                     }
 

@@ -26,7 +26,7 @@ namespace AzureRepositories.TransactionOutputs
         {
             try
             {
-                var str = Serializer.ToString(coins,OpenAssetsHelper.GetBitcoinAddressFormBase58Date(address).Network);
+                var str = Serializer.ToString(coins,OpenAssetsHelper.ParseAddress(address).Network);
 
                 await _storage.SaveBlobAsync(BlobContainer, $"{address}_{DateTime.UtcNow:yyyy-MM-dd_HH-mm-ss.fff}.txt", Encoding.UTF8.GetBytes(str));
             }

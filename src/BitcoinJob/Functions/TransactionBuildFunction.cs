@@ -65,30 +65,30 @@ namespace BitcoinJob.Functions
                 {
                     case TransactionCommandType.Issue:
                         var issue = message.Command.DeserializeJson<IssueCommand>();
-                        transactionResponse = await _lykkeTransactionBuilderService.GetIssueTransaction(OpenAssetsHelper.GetBitcoinAddressFormBase58Date(issue.Address),
+                        transactionResponse = await _lykkeTransactionBuilderService.GetIssueTransaction(OpenAssetsHelper.ParseAddress(issue.Address),
                                                         issue.Amount, await _assetRepository.GetAssetById(issue.Asset), message.TransactionId);
                         break;
                     case TransactionCommandType.Transfer:
                         var transfer = message.Command.DeserializeJson<TransferCommand>();
                         transactionResponse = await _lykkeTransactionBuilderService.GetTransferTransaction(
-                                                        OpenAssetsHelper.GetBitcoinAddressFormBase58Date(transfer.SourceAddress),
-                                                        OpenAssetsHelper.GetBitcoinAddressFormBase58Date(transfer.DestinationAddress), transfer.Amount,
+                                                        OpenAssetsHelper.ParseAddress(transfer.SourceAddress),
+                                                        OpenAssetsHelper.ParseAddress(transfer.DestinationAddress), transfer.Amount,
                                                         await _assetRepository.GetAssetById(transfer.Asset), message.TransactionId);
                         break;
                     case TransactionCommandType.TransferAll:
                         var transferAll = message.Command.DeserializeJson<TransferAllCommand>();
                         transactionResponse = await _lykkeTransactionBuilderService.GetTransferAllTransaction(
-                                                        OpenAssetsHelper.GetBitcoinAddressFormBase58Date(transferAll.SourceAddress),
-                                                        OpenAssetsHelper.GetBitcoinAddressFormBase58Date(transferAll.DestinationAddress),
+                                                        OpenAssetsHelper.ParseAddress(transferAll.SourceAddress),
+                                                        OpenAssetsHelper.ParseAddress(transferAll.DestinationAddress),
                                                         message.TransactionId);
                         break;
                     case TransactionCommandType.Swap:
                         var swap = message.Command.DeserializeJson<SwapCommand>();
                         transactionResponse = await _lykkeTransactionBuilderService.GetSwapTransaction(
-                                                        OpenAssetsHelper.GetBitcoinAddressFormBase58Date(swap.MultisigCustomer1),
+                                                        OpenAssetsHelper.ParseAddress(swap.MultisigCustomer1),
                                                         swap.Amount1,
                                                         await _assetRepository.GetAssetById(swap.Asset1),
-                                                        OpenAssetsHelper.GetBitcoinAddressFormBase58Date(swap.MultisigCustomer2),
+                                                        OpenAssetsHelper.ParseAddress(swap.MultisigCustomer2),
                                                         swap.Amount2,
                                                         await _assetRepository.GetAssetById(swap.Asset2),
                                                         message.TransactionId);
@@ -96,7 +96,7 @@ namespace BitcoinJob.Functions
                     case TransactionCommandType.Destroy:
                         var destroy = message.Command.DeserializeJson<DestroyCommand>();
                         transactionResponse = await _lykkeTransactionBuilderService.GetDestroyTransaction(
-                                                        OpenAssetsHelper.GetBitcoinAddressFormBase58Date(destroy.Address),
+                                                        OpenAssetsHelper.ParseAddress(destroy.Address),
                                                         destroy.Amount,
                                                         await _assetRepository.GetAssetById(destroy.Asset),
                                                         message.TransactionId);

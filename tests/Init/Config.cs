@@ -25,7 +25,7 @@ namespace Bitcoin.Tests
         [AssemblyInitialize]
         public static void Initialize(TestContext context)
         {
-            var settings = GeneralSettingsReader.ReadGeneralSettingsLocal<BaseSettings>("../../../../settings/bitcoinsettings.json");
+            var settings = GeneralSettingsReader.ReadGeneralSettingsLocal<BaseSettings>("../../../../settings/bitcoinsettings_dev.json");
 
             var log = new LogToConsole();
 

@@ -17,8 +17,8 @@ using Core.Providers;
 using Core.Repositories.Assets;
 using Core.Repositories.Offchain;
 using Core.Repositories.TransactionOutputs;
-using LkeServices.Multisig;
 using LkeServices.Providers;
+using LkeServices.Wallet;
 using NBitcoin;
 using NBitcoin.Policy;
 using NBitcoin.Protocol;
@@ -45,7 +45,7 @@ namespace LkeServices.Transactions
         private readonly ITransactionBuildHelper _transactionBuildHelper;
         private readonly ILog _log;
         private readonly IRpcBitcoinClient _rpcBitcoinClient;
-        private readonly IMultisigService _multisigService;
+        private readonly IWalletService _walletService;
         private readonly IOffchainChannelRepository _offchainChannelRepository;
         private readonly ICommitmentRepository _commitmentRepository;
         private readonly ISignatureApiProvider _signatureApi;
@@ -53,7 +53,7 @@ namespace LkeServices.Transactions
         public BccTransactionService(IBccOutputService bccOutputService, [KeyFilter(Constants.BccKey)] ISpentOutputRepository spentOutputRepository,
             [KeyFilter(Constants.BccKey)] RpcConnectionParams connectionParams, ITransactionBuildHelper transactionBuildHelper,
             Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
-            ILog log, [KeyFilter(Constants.BccKey)] IRpcBitcoinClient rpcBitcoinClient, IMultisigService multisigService,
+            ILog log, [KeyFilter(Constants.BccKey)] IRpcBitcoinClient rpcBitcoinClient, IWalletService walletService,
             IOffchainChannelRepository offchainChannelRepository,
             ICommitmentRepository commitmentRepository
             )
@@ -64,7 +64,7 @@ namespace LkeServices.Transactions
             _transactionBuildHelper = transactionBuildHelper;
             _log = log;
             _rpcBitcoinClient = rpcBitcoinClient;
-            _multisigService = multisigService;
+            _walletService = walletService;
             _offchainChannelRepository = offchainChannelRepository;
             _commitmentRepository = commitmentRepository;
             _signatureApi = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
@@ -119,7 +119,7 @@ namespace LkeServices.Transactions
 
         public async Task<BccSplitResult> CreateSplitTransaction(string multisig, BitcoinAddress clientDest, BitcoinAddress hubDest)
         {
-            var wallet = await _multisigService.GetMultisigByAddr(multisig);
+            var wallet = await _walletService.GetMultisigByAddr(multisig);
             if (wallet == null)
                 throw new BackendException($"Multisig {multisig} is not registered", ErrorCode.BadInputParameter);
             var channels = await _offchainChannelRepository.GetChannels(multisig, "BTC");
