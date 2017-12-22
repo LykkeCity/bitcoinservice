@@ -1039,10 +1039,7 @@ namespace LkeServices.Transactions
 
             if (!TransactionComparer.CompareTransactions(closing.InitialTransaction, signedByClientTransaction))
                 throw new BackendException("Provided signed transaction is not equal initial transaction", ErrorCode.BadTransaction);
-
-            if (!await _signatureVerifier.Verify(signedByClientTransaction, clientPubKey))
-                throw new BackendException("Provided signed transaction is not signed by client",
-                    ErrorCode.BadTransaction);
+            
 
             var fullSigned = await _signatureApiProvider.SignTransaction(signedByClientTransaction);
 
