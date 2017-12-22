@@ -14,6 +14,8 @@ namespace BitcoinApi.Models
 
         public int FeeRate { get; set; }
 
+        public decimal FixedFee { get; set; }
+
         public IEnumerable<ToOneAddress> Sources { get; set; }
     }
 

@@ -47,7 +47,7 @@ namespace Lykke.Bitcoin.Api.Client.BitcoinApi
             });
         }
 
-        public async Task<OnchainResponse> TransactionMultipleTransfer(Guid? transactionId, string destination, string asset, int feeRate, IEnumerable<ToOneAddress> sources)
+        public async Task<OnchainResponse> TransactionMultipleTransfer(Guid? transactionId, string destination, string asset, int feeRate, decimal fixedFee, IEnumerable<ToOneAddress> sources)
         {
             var response = await _apiClient.ApiTransactionMultipletransferPostAsync(new MultipleTransferRequest
             {
@@ -55,6 +55,7 @@ namespace Lykke.Bitcoin.Api.Client.BitcoinApi
                 Asset = asset,
                 Destination = destination,
                 FeeRate = feeRate,
+                FixedFee = fixedFee,
                 Sources = sources.ToList()
             });
 

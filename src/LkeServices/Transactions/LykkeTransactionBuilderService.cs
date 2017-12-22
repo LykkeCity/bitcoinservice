@@ -34,7 +34,7 @@ namespace LkeServices.Transactions
 
         Task<CreateTransactionResponse> GetTransferAllTransaction(BitcoinAddress from, BitcoinAddress to, Guid transactionId);
 
-        Task<CreateTransactionResponse> GetMultipleTransferTransaction(BitcoinAddress destination, IAsset asset, Dictionary<string, decimal> transferAddresses, int feeRate, Guid transactionId);
+        Task<CreateTransactionResponse> GetMultipleTransferTransaction(BitcoinAddress destination, IAsset asset, Dictionary<string, decimal> transferAddresses, int feeRate, decimal fixedFee, Guid transactionId);
 
         Task<Guid> AddTransactionId(Guid? transactionId, string rawRequest);
 
@@ -307,7 +307,7 @@ namespace LkeServices.Transactions
             }, exception => (exception as BackendException)?.Code == ErrorCode.TransactionConcurrentInputsProblem, 3, _log);
         }
 
-        public Task<CreateTransactionResponse> GetMultipleTransferTransaction(BitcoinAddress destination, IAsset asset, Dictionary<string, decimal> transferAddresses, int feeRate, Guid transactionId)
+        public Task<CreateTransactionResponse> GetMultipleTransferTransaction(BitcoinAddress destination, IAsset asset, Dictionary<string, decimal> transferAddresses, int feeRate, decimal fixedFee, Guid transactionId)
         {
             return Retry.Try(async () =>
             {
@@ -345,7 +345,7 @@ namespace LkeServices.Transactions
 
                     _transactionBuildHelper.AggregateOutputs(buildedTransaction);
 
-                    var fee = await _transactionBuildHelper.CalcFee(buildedTransaction, feeRate);
+                    var fee = fixedFee > 0 ? Money.FromUnit(fixedFee, MoneyUnit.BTC) : await _transactionBuildHelper.CalcFee(buildedTransaction, feeRate);
 
                     foreach (var output in buildedTransaction.Outputs)
                     {

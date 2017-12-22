@@ -147,7 +147,7 @@ namespace BitcoinApi.Controllers
             var transactionId = await _builder.AddTransactionId(model.TransactionId, $"MultipleTransfer: {model.ToJson()}");
 
             var response = await _builder.GetMultipleTransferTransaction(destAddress, asset,
-                model.Sources.ToDictionary(x => x.Address, x => x.Amount), model.FeeRate, transactionId);
+                model.Sources.ToDictionary(x => x.Address, x => x.Amount), model.FeeRate, model.FixedFee, transactionId);
 
             var fullSignedHex = await _signatureApiProvider.SignTransaction(response.Transaction);
 
