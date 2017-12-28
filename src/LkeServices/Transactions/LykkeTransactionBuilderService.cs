@@ -430,7 +430,7 @@ namespace LkeServices.Transactions
                 var totalAmount = new Money(outputs.Sum(o => o.Amount));
 
                 var builder = new TransactionBuilder();
-               
+                builder.DustPrevention = false;
                 builder.AddCoins(outputs);
                 builder.Send(hotWallet, totalAmount);
                 builder.SubtractFees();
