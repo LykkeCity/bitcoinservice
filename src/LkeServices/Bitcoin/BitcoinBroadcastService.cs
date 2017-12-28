@@ -51,6 +51,32 @@ namespace LkeServices.Bitcoin
                 await _apiProvider.SendPreBroadcastNotification(new LykkeTransactionNotification(notifyTxId ?? transactionId, hash));
             }
 
+            await Broadcast(transactionId, tx, monitor, hash);
+        }
+
+
+
+        public async Task BroadcastTransaction(Guid transactionId, List<Guid> notificationIds, Transaction tx, IPerformanceMonitor monitor = null, bool useHandlers = true)
+        {
+            var hash = tx.GetHash().ToString();
+
+            if (_settings.UseLykkeApi && useHandlers)
+            {
+                monitor?.Step("Send prebroadcast multi notification");
+                await _apiProvider.SendPreBroadcastMultiNotification(new LykkeTransactionMultiNotification(notificationIds, hash));
+            }
+
+            await Broadcast(transactionId, tx, monitor, hash);
+
+            if (_settings.UseLykkeApi && useHandlers)
+            {
+                monitor?.Step("Send postbroadcast multi notification");
+                await _apiProvider.SendPostBroadcastMultiNotification(new LykkeTransactionMultiNotification(notificationIds, hash));
+            }
+        }
+
+        private async Task Broadcast(Guid transactionId, Transaction tx, IPerformanceMonitor monitor, string hash)
+        {
             monitor?.Step("Broadcast transaction");
             try
             {

@@ -2,6 +2,8 @@
 using Core;
 using Core.Repositories.ExtraAmounts;
 using Core.Repositories.FeeRate;
+using Core.Repositories.Monitoring;
+using Core.Repositories.MultipleCashouts;
 using Core.Repositories.Offchain;
 using Core.Repositories.PaidFees;
 using Core.Repositories.RevokeKeys;
@@ -14,6 +16,7 @@ using MongoDB.Driver;
 using MongoRepositories.ExtraAmounts;
 using MongoRepositories.FeeRate;
 using MongoRepositories.Mongo;
+using MongoRepositories.MultiCashouts;
 using MongoRepositories.Offchain;
 using MongoRepositories.PaidFees;
 using MongoRepositories.RevokeKeys;
@@ -85,6 +88,11 @@ namespace MongoRepositories
 
             ioc.RegisterInstance(new SegwitPrivateWalletRepository(new MongoStorage<SegwitPrivateWalletEntity>(mongoClient, "SegwitWallets")))
                 .As<ISegwitPrivateWalletRepository>();
+
+            ioc.RegisterInstance(new MultiCashoutRepository(new MongoStorage<MultiCashoutEntity>(mongoClient, "MultiCashouts")))
+                .As<IMultiCashoutRepository>();
+            ioc.RegisterInstance(new CashoutRequestRepository(new MongoStorage<CashoutRequestEntity>(mongoClient, "CashoutRequests")))
+                .As<ICashoutRequestRepository>();
         }        
     }
 }

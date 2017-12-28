@@ -173,7 +173,7 @@ namespace Core.OpenAssets
                     else
                     {
                         var allCoins = orderedCoins.ToArray();
-                        for (int _ = 0; _ < 1000; _++)
+                        for (int _ = 0; _ < 100; _++)
                         {
                             var selection = new List<ICoin>();
                             Utils.Shuffle(allCoins, rand);

@@ -1,15 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
+using Core;
 using Core.Bitcoin;
 using Core.Exceptions;
 using Core.OpenAssets;
 using Core.Outputs;
 using Core.Providers;
 using Core.Repositories.Assets;
+using Core.Repositories.MultipleCashouts;
 using Core.Repositories.TransactionOutputs;
 using Core.Repositories.Transactions;
 using Core.Repositories.TransactionSign;
@@ -38,6 +41,8 @@ namespace LkeServices.Transactions
 
         Task<CreateTransactionResponse> GetMultipleTransferTransaction(BitcoinAddress destination, IAsset asset, Dictionary<string, decimal> transferAddresses, int feeRate, decimal fixedFee, Guid transactionId);
 
+        Task<CreateMultiCashoutTransactionResult> GetMultipleCashoutTransaction(List<ICashoutRequest> cashoutRequests, Guid transactionId);
+
         Task<Guid> AddTransactionId(Guid? transactionId, string rawRequest);
 
         Task<CreateTransactionResponse> GetTransferFromSegwitWallet(BitcoinAddress source, Guid transactionId);
@@ -61,6 +66,8 @@ namespace LkeServices.Transactions
         private readonly IFeeProvider _feeProvider;
         private readonly RpcConnectionParams _connectionParams;
         private readonly BaseSettings _baseSettings;
+        private readonly IAssetSettingRepository _assetSettingRepository;
+
 
         public LykkeTransactionBuilderService(
             ITransactionBuildHelper transactionBuildHelper,
@@ -75,7 +82,7 @@ namespace LkeServices.Transactions
             TransactionBuildContextFactory transactionBuildContextFactory,
             CachedDataDictionary<string, IAsset> assetRepository,
             RpcConnectionParams connectionParams, BaseSettings baseSettings, CachedDataDictionary<string, IAssetSetting> assetSettingCache,
-            IFeeProvider feeProvider)
+            IFeeProvider feeProvider, IAssetSettingRepository assetSettingRepository)
         {
             _transactionBuildHelper = transactionBuildHelper;
             _bitcoinOutputsService = bitcoinOutputsService;
@@ -93,6 +100,7 @@ namespace LkeServices.Transactions
             _baseSettings = baseSettings;
             _assetSettingCache = assetSettingCache;
             _feeProvider = feeProvider;
+            _assetSettingRepository = assetSettingRepository;
         }
 
         public Task<CreateTransactionResponse> GetTransferTransaction(BitcoinAddress sourceAddress,
@@ -375,6 +383,146 @@ namespace LkeServices.Transactions
             }, exception => (exception as BackendException)?.Code == ErrorCode.TransactionConcurrentInputsProblem, 3, _log);
         }
 
+        public Task<CreateMultiCashoutTransactionResult> GetMultipleCashoutTransaction(List<ICashoutRequest> cashoutRequests, Guid transactionId)
+        {
+            return Retry.Try(async () =>
+            {
+                var context = _transactionBuildContextFactory.Create(_connectionParams.Network);
+                var assetSetting = await _assetSettingCache.GetItemAsync("BTC");
+
+                var hotWallet = OpenAssetsHelper.ParseAddress(assetSetting.HotWallet);
+                var changeWallet = OpenAssetsHelper.ParseAddress(string.IsNullOrWhiteSpace(assetSetting.ChangeWallet)
+                    ? assetSetting.HotWallet
+                    : assetSetting.ChangeWallet);
+
+                return await context.Build(async () =>
+                {
+                    var builder = new TransactionBuilder();
+
+                    var hotWalletOutputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(hotWallet.ToString())).OfType<Coin>().ToList();
+
+                    var hotWalletBalance = new Money(hotWalletOutputs.Select(o => o.Amount).DefaultIfEmpty().Sum(o => o?.Satoshi ?? 0));
+
+                    var maxFeeForTransaction = Money.FromUnit(0.099M, MoneyUnit.BTC);
+
+                    var selectedCoins = new List<Coin>();
+
+                    var maxInputsCount = maxFeeForTransaction.Satoshi / (await _feeProvider.GetFeeRate()).GetFee(Constants.InputSize).Satoshi;
+                    var tryCount = 100;
+                    do
+                    {
+                        if (selectedCoins.Count > maxInputsCount && cashoutRequests.Count > 1)
+                        {
+                            cashoutRequests = cashoutRequests.Take(cashoutRequests.Count - 1).ToList();
+                            selectedCoins.Clear();
+                        }
+                        else
+                            if (selectedCoins.Count > 0)
+                            break;
+
+                        var totalAmount = Money.FromUnit(cashoutRequests.Select(o => o.Amount).Sum(), MoneyUnit.BTC);
+
+                        if (hotWalletBalance < totalAmount + maxFeeForTransaction)
+                        {
+                            var changeBalance = Money.Zero;
+                            List<Coin> changeWalletOutputs = new List<Coin>();
+                            if (hotWallet != changeWallet)
+                            {
+                                changeWalletOutputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(changeWallet.ToString()))
+                                    .OfType<Coin>().ToList();
+                                changeBalance = new Money(changeWalletOutputs.Select(o => o.Amount).DefaultIfEmpty().Sum(o => o?.Satoshi ?? 0));
+                            }
+                            if (changeBalance + hotWalletBalance >= totalAmount + maxFeeForTransaction)
+                            {
+                                selectedCoins.AddRange(hotWalletOutputs);
+                                selectedCoins.AddRange(OpenAssetsHelper
+                                    .CoinSelect(changeWalletOutputs, totalAmount + maxFeeForTransaction - hotWalletBalance).OfType<Coin>());
+                            }
+                            else
+                            {
+                                selectedCoins.AddRange(hotWalletOutputs);
+                                selectedCoins.AddRange(changeWalletOutputs);
+
+                                int cashoutsUsedCount = 0;
+                                var cashoutsAmount = await _transactionBuildHelper.CalcFee(selectedCoins.Count, cashoutRequests.Count + 1);
+                                foreach (var cashoutRequest in cashoutRequests)
+                                {
+                                    cashoutsAmount += Money.FromUnit(cashoutRequest.Amount, MoneyUnit.BTC);
+                                    if (cashoutsAmount > hotWalletBalance + changeBalance)
+                                        break;
+                                    cashoutsUsedCount++;
+                                }
+                                if (cashoutsUsedCount == 0)
+                                    throw new BackendException("Not enough bitcoin available", ErrorCode.NotEnoughBitcoinAvailable);
+                                cashoutRequests = cashoutRequests.Take(cashoutsUsedCount).ToList();
+                            }
+
+                            if (changeWallet != hotWallet)
+                            {
+
+                                if (assetSetting.Asset == Constants.DefaultAssetSetting)
+                                    assetSetting = await CreateAssetSetting("BTC", assetSetting);
+
+                                if (assetSetting.Asset != Constants.DefaultAssetSetting)
+                                {
+                                    await _assetSettingRepository.UpdateHotWallet(assetSetting.Asset, assetSetting.ChangeWallet);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            selectedCoins.AddRange(OpenAssetsHelper.CoinSelect(hotWalletOutputs, totalAmount + maxFeeForTransaction).OfType<Coin>());
+                        }
+                    } while (tryCount-- > 0);
+
+                    var selectedCoinsAmount = new Money(selectedCoins.Sum(o => o.Amount));
+                    var sendAmount = new Money(cashoutRequests.Sum(o => o.Amount), MoneyUnit.BTC);
+
+                    builder.AddCoins(selectedCoins);
+                    foreach (var cashout in cashoutRequests)
+                    {
+                        var amount = Money.FromUnit(cashout.Amount, MoneyUnit.BTC);
+                        builder.Send(OpenAssetsHelper.ParseAddress(cashout.DestinationAddress), amount);
+                    }
+
+                    builder.Send(changeWallet, selectedCoinsAmount - sendAmount);
+                    builder.SubtractFees();
+                    builder.SendEstimatedFees(await _feeProvider.GetFeeRate());
+                    builder.SetChange(changeWallet);
+
+                    var tx = builder.BuildTransaction(true);
+                    _transactionBuildHelper.AggregateOutputs(tx);
+
+                    await _broadcastedOutputRepository.InsertOutputs(
+                        tx.Outputs.AsCoins().Where(o => o.ScriptPubKey == changeWallet.ScriptPubKey).Select(o =>
+                          new BroadcastedOutput(o, transactionId, _connectionParams.Network)).ToList());
+
+                    await _spentOutputService.SaveSpentOutputs(transactionId, tx);
+
+                    return new CreateMultiCashoutTransactionResult
+                    {
+                        Transaction = tx,
+                        UsedRequests = cashoutRequests
+                    };
+                });
+            }, exception => (exception as BackendException)?.Code == ErrorCode.TransactionConcurrentInputsProblem, 3, _log);
+        }
+
+        private async Task<IAssetSetting> CreateAssetSetting(string assetId, IAssetSetting defaultSetttings)
+        {
+            var clone = defaultSetttings.Clone(assetId);
+            clone.ChangeWallet = defaultSetttings.ChangeWallet;
+            clone.HotWallet = defaultSetttings.ChangeWallet;
+            try
+            {
+                await _assetSettingRepository.Insert(clone);
+            }
+            catch
+            {
+                return await _assetSettingRepository.GetAssetSetting(assetId) ?? defaultSetttings;
+            }
+            return clone;
+        }
 
         private async Task TransferOneDirection(TransactionBuilder builder, TransactionBuildContext context,
             BitcoinAddress @from, decimal amount, IAsset asset, BitcoinAddress to, bool addDust = true, bool sendDust = false)
@@ -428,7 +576,7 @@ namespace LkeServices.Transactions
                 var outputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(source.ToString())).OfType<Coin>().ToList();
                 if (!outputs.Any())
                     throw new BackendException($"Address {source} has not unspent outputs", ErrorCode.NoCoinsFound);
-                
+
                 var totalAmount = new Money(outputs.Sum(o => o.Amount));
 
                 var builder = new TransactionBuilder();

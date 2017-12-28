@@ -38,6 +38,11 @@ namespace Core
 
         public const string DefaultAssetSetting = "Default";
 
+        public const string MaxCountAggregatedCashouts = "MaxCountAggregatedCashouts";
+        public const string MaxCashoutDelaySeconds = "MaxCashoutDelaySeconds";
+
+
+
 
         public const string RabbitMqExplorerNotification = "onh.offchainnotifications";
         public const string RabbitMqMultisigNotification = "multisignotifications";
@@ -47,6 +52,7 @@ namespace Core
 
         public static readonly DateTime PrevBccBlockTime = new DateTime(2017, 08, 01, 13, 16, 14, DateTimeKind.Utc);
 
+        public const int InputSize = 146;
         
 
         public const string LykkePayTag = "LykkePay";

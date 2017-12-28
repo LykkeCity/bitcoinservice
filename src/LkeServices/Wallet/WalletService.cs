@@ -20,6 +20,7 @@ namespace LkeServices.Wallet
         Task<IEnumerable<IWalletAddress>> GetAllMultisigs();
         Task<ISegwitPrivateWallet> GetOrCreateSegwitPrivateWallet(string clientPubKey);
         Task<ISegwitPrivateWallet> CreateSegwitWallet();
+        Task<ISegwitPrivateWallet> CreateSegwitWallet(PubKey pubKey, string clientPubKey = null);
     }
 
     public class WalletService : IWalletService
@@ -74,20 +75,21 @@ namespace LkeServices.Wallet
             if (segwitWallet != null)
                 return segwitWallet;
 
-            var segwitPubKey = new PubKey(await _signatureApiProvider.GeneratePubKey());
-            var segwitAddress = segwitPubKey.WitHash.ScriptPubKey.Hash.GetAddress(_connectionParams.Network);
-
-            return await _segwitPrivateWalletRepository.AddSegwitPrivateWallet(clientPubKey, segwitAddress.ToString(), 
-                segwitPubKey.ToString(), segwitPubKey.WitHash.ScriptPubKey.ToString());
+            return await CreateSegwitWallet(new PubKey(await _signatureApiProvider.GeneratePubKey()), clientPubKey);
         }
 
         public async Task<ISegwitPrivateWallet> CreateSegwitWallet()
         {
             var segwitPubKey = new PubKey(await _signatureApiProvider.GeneratePubKey());
-            var segwitAddress = segwitPubKey.WitHash.ScriptPubKey.Hash.GetAddress(_connectionParams.Network);
+            return await CreateSegwitWallet(segwitPubKey);
+        }
 
-            return await _segwitPrivateWalletRepository.AddSegwitPrivateWallet(null, segwitAddress.ToString(),
-                segwitPubKey.ToString(), segwitPubKey.WitHash.ScriptPubKey.ToString());
+        public async Task<ISegwitPrivateWallet> CreateSegwitWallet(PubKey pubKey, string clientPubKey = null)
+        {
+            var segwitAddress = pubKey.WitHash.ScriptPubKey.Hash.GetAddress(_connectionParams.Network);
+
+            return await _segwitPrivateWalletRepository.AddSegwitPrivateWallet(clientPubKey, segwitAddress.ToString(),
+                pubKey.ToString(), pubKey.WitHash.ScriptPubKey.ToString());
         }
 
         private async Task<IWalletAddress> CreateMultisig(string clientPubKey, string exchangePubKey)

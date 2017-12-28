@@ -5,6 +5,7 @@ using Common;
 using Core.Exceptions;
 using Core.OpenAssets;
 using Core.Repositories.Assets;
+using Core.Repositories.MultipleCashouts;
 using Core.TransactionQueueWriter;
 using Core.TransactionQueueWriter.Commands;
 using LkeServices.Transactions;
@@ -15,23 +16,26 @@ namespace BitcoinApi.Controllers
     [Route("api/[controller]")]
     public class EnqueueTransactionController : Controller
     {
-        private readonly ILykkeTransactionBuilderService _builder;
-        private readonly IAssetRepository _assetRepository;
+        private readonly ILykkeTransactionBuilderService _builder;        
         private readonly CachedDataDictionary<string, IAssetSetting> _assetSettingCache;
+        private readonly CachedDataDictionary<string, IAsset> _assetRepository;
         private readonly IOffchainService _offchainService;
+        private readonly ICashoutRequestRepository _cashoutRequestRepository;
         private readonly ITransactionQueueWriter _transactionQueueWriter;
 
-        public EnqueueTransactionController(ILykkeTransactionBuilderService builder,
-            IAssetRepository assetRepository,
+        public EnqueueTransactionController(ILykkeTransactionBuilderService builder,            
             CachedDataDictionary<string, IAssetSetting> assetSettingCache,
+            
             IOffchainService offchainService,
-            ITransactionQueueWriter transactionQueueWriter)
+            ICashoutRequestRepository cashoutRequestRepository,
+            ITransactionQueueWriter transactionQueueWriter, CachedDataDictionary<string, IAsset> assetRepository)
         {
-            _builder = builder;
-            _assetRepository = assetRepository;
+            _builder = builder;            
             _assetSettingCache = assetSettingCache;
             _offchainService = offchainService;
+            _cashoutRequestRepository = cashoutRequestRepository;
             _transactionQueueWriter = transactionQueueWriter;
+            _assetRepository = assetRepository;
         }
 
         /// <summary>
@@ -49,7 +53,7 @@ namespace BitcoinApi.Controllers
             await ValidateAddress(model.SourceAddress);
             await ValidateAddress(model.DestinationAddress);
 
-            var asset = await _assetRepository.GetAssetById(model.Asset);
+            var asset = await _assetRepository.GetItemAsync(model.Asset);
             if (asset == null)
                 throw new BackendException("Provided asset is missing in database", ErrorCode.AssetNotFound);
 
@@ -84,26 +88,30 @@ namespace BitcoinApi.Controllers
             
             await ValidateAddress(model.DestinationAddress, false);
 
-            var asset = await _assetRepository.GetAssetById(model.Asset);
+            var asset = await _assetRepository.GetItemAsync(model.Asset);
             if (asset == null)
                 throw new BackendException("Provided asset is missing in database", ErrorCode.AssetNotFound);
 
             var transactionId = await _builder.AddTransactionId(model.TransactionId, $"Cashout: {model.ToJson()}");
 
-            var assetSetting = await _assetSettingCache.GetItemAsync(asset.Id);
-
-            var hotWallet = !string.IsNullOrEmpty(assetSetting.ChangeWallet)
-                ? assetSetting.ChangeWallet
-                : assetSetting.HotWallet;
-
-            await _transactionQueueWriter.AddCommand(transactionId, TransactionCommandType.Transfer, new TransferCommand
+            if (OpenAssetsHelper.IsBitcoin(model.Asset))            
+                await _cashoutRequestRepository.CreateCashoutRequest(transactionId, model.Amount, model.DestinationAddress);            
+            else
             {
-                Amount = model.Amount,
-                SourceAddress = hotWallet,
-                Asset = model.Asset,
-                DestinationAddress = model.DestinationAddress
-            }.ToJson());
+                var assetSetting = await _assetSettingCache.GetItemAsync(asset.Id);
 
+                var hotWallet = !string.IsNullOrEmpty(assetSetting.ChangeWallet)
+                    ? assetSetting.ChangeWallet
+                    : assetSetting.HotWallet;
+
+                await _transactionQueueWriter.AddCommand(transactionId, TransactionCommandType.Transfer, new TransferCommand
+                {
+                    Amount = model.Amount,
+                    SourceAddress = hotWallet,
+                    Asset = model.Asset,
+                    DestinationAddress = model.DestinationAddress
+                }.ToJson());
+            }
             return Ok(new TransactionIdResponse
             {
                 TransactionId = transactionId
@@ -178,11 +186,11 @@ namespace BitcoinApi.Controllers
             await ValidateAddress(model.MultisigCustomer1);
             await ValidateAddress(model.MultisigCustomer2);
 
-            var asset1 = await _assetRepository.GetAssetById(model.Asset1);
+            var asset1 = await _assetRepository.GetItemAsync(model.Asset1);
             if (asset1 == null)
                 throw new BackendException("Provided Asset1 is missing in database", ErrorCode.AssetNotFound);
 
-            var asset2 = await _assetRepository.GetAssetById(model.Asset2);
+            var asset2 = await _assetRepository.GetItemAsync(model.Asset2);
             if (asset2 == null)
                 throw new BackendException("Provided Asset2 is missing in database", ErrorCode.AssetNotFound);
 
@@ -218,7 +226,7 @@ namespace BitcoinApi.Controllers
 
             await ValidateAddress(model.Address);
 
-            var asset = await _assetRepository.GetAssetById(model.Asset);
+            var asset = await _assetRepository.GetItemAsync(model.Asset);
             if (asset == null)
                 throw new BackendException("Provided Asset is missing in database", ErrorCode.AssetNotFound);
 
@@ -251,7 +259,7 @@ namespace BitcoinApi.Controllers
 
             await ValidateAddress(model.Address);
 
-            var asset = await _assetRepository.GetAssetById(model.Asset);
+            var asset = await _assetRepository.GetItemAsync(model.Asset);
             if (asset == null)
                 throw new BackendException("Provided Asset is missing in database", ErrorCode.AssetNotFound);
 

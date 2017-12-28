@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Common.Log;
+using Core;
 using Core.Bitcoin;
 using Core.Outputs;
 using Core.Providers;
@@ -14,8 +15,7 @@ using NBitcoin;
 namespace BitcoinJob.Functions
 {
     public class SendFromChangeToHotWalletFunction
-    {
-        private const int SizeOfInputInBytes = 150;
+    {        
         private const int ConfirmationsCount = 1;
 
         private readonly IBitcoinOutputsService _bitcoinOutputsService;
@@ -50,7 +50,7 @@ namespace BitcoinJob.Functions
             var feePerByte = (await _feeProvider.GetFeeRate()).FeePerK.Satoshi * _baseSettings.SpendChangeFeeRateMultiplier / 1000;
 
             var coins = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(_baseSettings.ChangeAddress, ConfirmationsCount)).OfType<Coin>()
-                .Where(o => o.Amount.Satoshi > feePerByte * SizeOfInputInBytes).ToList();
+                .Where(o => o.Amount.Satoshi > feePerByte * Constants.InputSize).ToList();
 
             Utils.Shuffle(coins, new Random());
 

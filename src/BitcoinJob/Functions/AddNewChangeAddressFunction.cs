@@ -1,17 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using AzureRepositories.Assets;
 using Common;
 using Common.Log;
 using Core;
+using Core.Bitcoin;
 using Core.Providers;
 using Core.QBitNinja;
 using Core.Repositories.Assets;
 using Core.Repositories.Settings;
+using Core.Repositories.Wallets;
 using Core.Settings;
 using LkeServices.Providers;
+using LkeServices.Wallet;
 using Lykke.JobTriggers.Triggers.Attributes;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
@@ -25,6 +29,8 @@ namespace BitcoinJob.Functions
         private readonly IQBitNinjaApiCaller _qBitNinjaApiCaller;
         private readonly CachedDataDictionary<string, IAssetSetting> _assetSettingCache;
         private readonly CachedDataDictionary<string, IAsset> _assetRepository;
+        private readonly RpcConnectionParams _connectionParams;
+        private readonly IWalletService _walletService;        
         private readonly ISettingsRepository _settingsRepository;
         private readonly ISignatureApiProvider _signatureApiProvider;
         private readonly BaseSettings _baseSettings;
@@ -32,7 +38,11 @@ namespace BitcoinJob.Functions
         private readonly ILog _logger;
 
 
-        public AddNewChangeAddressFunction(IQBitNinjaApiCaller qBitNinjaApiCaller, CachedDataDictionary<string, IAssetSetting> assetSettingCache, ISettingsRepository settingsRepository, Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory, BaseSettings baseSettings, IAssetSettingRepository assetSettingRepository, ILog logger, CachedDataDictionary<string, IAsset> assetRepository)
+        public AddNewChangeAddressFunction(IQBitNinjaApiCaller qBitNinjaApiCaller, 
+            CachedDataDictionary<string, IAssetSetting> assetSettingCache, ISettingsRepository settingsRepository, 
+            Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory, BaseSettings baseSettings,
+            IAssetSettingRepository assetSettingRepository, ILog logger, CachedDataDictionary<string, IAsset> assetRepository,
+            RpcConnectionParams connectionParams,IWalletService walletService)
         {
             _qBitNinjaApiCaller = qBitNinjaApiCaller;
             _assetSettingCache = assetSettingCache;
@@ -41,6 +51,8 @@ namespace BitcoinJob.Functions
             _assetSettingRepository = assetSettingRepository;
             _logger = logger;
             _assetRepository = assetRepository;
+            _connectionParams = connectionParams;
+            _walletService = walletService;            
             _signatureApiProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
         }
 
@@ -93,26 +105,27 @@ namespace BitcoinJob.Functions
 
             Increment currentIncrement;
 
+            async Task<string> GetNextAddress(string addr)
+            {                
+                return (await _walletService.CreateSegwitWallet(await _signatureApiProvider.GetNextAddress(addr))).Address;                
+            }
+
             if (currentPrivateIncrementSetting == null)
             {
                 currentIncrement = new Increment
                 {
-                    CurrentAddress = await _signatureApiProvider.GetNextAddress(_baseSettings.Offchain.HotWallet),
+                    CurrentAddress = await GetNextAddress(_baseSettings.Offchain.HotWallet),
                     CurrentIncrement = 1
                 };
             }
             else
             {
-                currentIncrement = Newtonsoft.Json.JsonConvert.DeserializeObject<Increment>(currentPrivateIncrementSetting);
-
-                var newAddress = await _signatureApiProvider.GetNextAddress(currentIncrement.CurrentAddress);
-
-                currentIncrement.CurrentAddress = newAddress;
+                currentIncrement = Newtonsoft.Json.JsonConvert.DeserializeObject<Increment>(currentPrivateIncrementSetting);                
+                currentIncrement.CurrentAddress = await GetNextAddress(currentIncrement.CurrentAddress);
                 currentIncrement.CurrentIncrement++;
             }
 
             await _settingsRepository.Set(Constants.CurrentPrivateIncrementSetting, currentIncrement.ToJson());
-
             return currentIncrement;
         }
 
