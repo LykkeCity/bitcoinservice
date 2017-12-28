@@ -61,6 +61,18 @@ namespace BitcoinApi.Controllers
             };
         }
 
+        [HttpGet("segwit")]
+        [ProducesResponseType(typeof(SegwitWalletResult), 200)]
+        [ProducesResponseType(typeof(ApiException), 400)]
+        public async Task<SegwitWalletResult> GetSegwitWallet()
+        {
+            var address = await _walletService.CreateSegwitWallet();
+            return new SegwitWalletResult
+            {
+                SegwitAddress = address.Address
+            };
+        }
+
         /// <summary>
         /// Returns all registered multisigs
         /// </summary>

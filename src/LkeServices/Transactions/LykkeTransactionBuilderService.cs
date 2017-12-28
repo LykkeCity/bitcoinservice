@@ -38,6 +38,8 @@ namespace LkeServices.Transactions
 
         Task<Guid> AddTransactionId(Guid? transactionId, string rawRequest);
 
+        Task<CreateTransactionResponse> GetTransferFromSegwitWallet(BitcoinAddress source, Guid transactionId);
+
     }
 
     public class LykkeTransactionBuilderService : ILykkeTransactionBuilderService
@@ -53,7 +55,8 @@ namespace LkeServices.Transactions
         private readonly IOffchainService _offchainService;
         private readonly TransactionBuildContextFactory _transactionBuildContextFactory;
         private readonly CachedDataDictionary<string, IAsset> _assetRepository;
-
+        private readonly CachedDataDictionary<string, IAssetSetting> _assetSettingCache;
+        private readonly IFeeProvider _feeProvider;
         private readonly RpcConnectionParams _connectionParams;
         private readonly BaseSettings _baseSettings;
 
@@ -69,7 +72,8 @@ namespace LkeServices.Transactions
             IOffchainService offchainService,
             TransactionBuildContextFactory transactionBuildContextFactory,
             CachedDataDictionary<string, IAsset> assetRepository,
-            RpcConnectionParams connectionParams, BaseSettings baseSettings)
+            RpcConnectionParams connectionParams, BaseSettings baseSettings, CachedDataDictionary<string, IAssetSetting> assetSettingCache,
+            IFeeProvider feeProvider)
         {
             _transactionBuildHelper = transactionBuildHelper;
             _bitcoinOutputsService = bitcoinOutputsService;
@@ -85,6 +89,8 @@ namespace LkeServices.Transactions
 
             _connectionParams = connectionParams;
             _baseSettings = baseSettings;
+            _assetSettingCache = assetSettingCache;
+            _feeProvider = feeProvider;
         }
 
         public Task<CreateTransactionResponse> GetTransferTransaction(BitcoinAddress sourceAddress,
@@ -406,6 +412,47 @@ namespace LkeServices.Transactions
         {
             await CheckDuplicatedTransactionId(transactionId);
             return await _signRequestRepository.InsertTransactionId(transactionId, rawRequest);
+        }
+
+        public async Task<CreateTransactionResponse> GetTransferFromSegwitWallet(BitcoinAddress source, Guid transactionId)
+        {
+            var assetSetting = await _assetSettingCache.GetItemAsync("BTC");
+
+            var hotWallet = OpenAssetsHelper.ParseAddress(!string.IsNullOrEmpty(assetSetting.ChangeWallet) ? assetSetting.ChangeWallet : assetSetting.HotWallet);
+            var context = _transactionBuildContextFactory.Create(_connectionParams.Network);
+
+            return await context.Build(async () =>
+            {
+                var outputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(source.ToString())).OfType<Coin>().ToList();
+                if (!outputs.Any())
+                    throw new BackendException($"Address {source} has not unspent outputs", ErrorCode.NoCoinsFound);
+                
+                var totalAmount = new Money(outputs.Sum(o => o.Amount));
+
+                var builder = new TransactionBuilder();
+               
+                builder.AddCoins(outputs);
+                builder.Send(hotWallet, totalAmount);
+                builder.SubtractFees();
+
+                builder.SendEstimatedFees(await _feeProvider.GetFeeRate());
+
+                builder.SetChange(hotWallet);
+
+                var tx = builder.BuildTransaction(true);
+
+                _transactionBuildHelper.AggregateOutputs(tx);
+
+                if (tx.Outputs[0].Value <= tx.Outputs[0].GetDustThreshold(builder.StandardTransactionPolicy.MinRelayTxFee))
+                    throw new BackendException($"Address {source} balance is too low", ErrorCode.NoCoinsFound);
+
+                await _spentOutputService.SaveSpentOutputs(transactionId, tx);
+
+                await SaveNewOutputs(transactionId, tx, context);
+
+                return new CreateTransactionResponse(tx.ToHex(), transactionId);
+            });
+
         }
 
         private async Task CheckDuplicatedTransactionId(Guid? transactionId)

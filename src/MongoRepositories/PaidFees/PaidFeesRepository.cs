@@ -19,7 +19,7 @@ namespace MongoRepositories.PaidFees
         {
             return new PaidFeesEntity
             {
-                BsonId = Guid.NewGuid().ToString(),
+                BsonId = hash,
                 TransactionHash = hash,
                 Amount = amount,
                 Date = date,
@@ -41,7 +41,7 @@ namespace MongoRepositories.PaidFees
 
         public Task Insert(string hash, decimal amount, DateTime date, string multisig, string asset)
         {
-            return _table.InsertAsync(PaidFeesEntity.Create(hash, amount, date, multisig, asset));
+            return _table.InsertOrReplaceAsync(PaidFeesEntity.Create(hash, amount, date, multisig, asset));
         }
     }
 }

@@ -101,6 +101,11 @@ namespace BitcoinJob.Functions
                                                         await _assetRepository.GetAssetById(destroy.Asset),
                                                         message.TransactionId);
                         break;
+                    case TransactionCommandType.SegwitTransferToHotwallet:
+                        var segwitTransfer = message.Command.DeserializeJson<SegwitTransferCommand>();
+                        transactionResponse = await _lykkeTransactionBuilderService.GetTransferFromSegwitWallet(
+                                                        OpenAssetsHelper.ParseAddress(segwitTransfer.SourceAddress), message.TransactionId);
+                        break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
@@ -135,21 +140,7 @@ namespace BitcoinJob.Functions
             {
                 TransactionId = message.TransactionId,
                 PutDateTime = DateTime.UtcNow
-            }.ToJson());
-
-            //TODO: uncomment for client signatures
-            //try
-            //{
-            //    await _queueFactory(Constants.TransactionsForClientSignatureQueue).PutRawMessageAsync(new
-            //    {
-            //        TransactionId = message.TransactionId,
-            //        Transaction = transactionResponse.Transaction
-            //    }.ToJson());
-            //}
-            //catch (Exception ex)
-            //{
-            //    await _logger.WriteErrorAsync("TransactionBuildFunction", "ProcessMessage", message.ToJson(), ex);
-            //}
+            }.ToJson());           
         }
     }
 }
