@@ -21,5 +21,9 @@ namespace Core.Repositories.PaidFees
     public interface IPaidFeesRepository
     {
         Task Insert(string hash, decimal amount, DateTime date, string multisig, string asset);
+
+        Task<bool> Has(string hash);
+
+        Task<IEnumerable<IPaidFees>> Get(DateTime startDt, DateTime endDt);
     }
 }

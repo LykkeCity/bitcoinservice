@@ -43,5 +43,15 @@ namespace MongoRepositories.PaidFees
         {
             return _table.InsertAsync(PaidFeesEntity.Create(hash, amount, date, multisig, asset));
         }
+
+        public Task<bool> Has(string hash)
+        {
+            return _table.Any(o => o.TransactionHash == hash);
+        }
+
+        public async Task<IEnumerable<IPaidFees>> Get(DateTime startDt, DateTime endDt)
+        {
+            return await _table.GetDataAsync(o => o.Date >= startDt && o.Date <= endDt);
+        }
     }
 }

@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.10
+VisualStudioVersion = 15.0.27004.2010
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Main", "Main", "{1FC3A478-F724-4616-9A01-BF4135174569}"
 EndProject
@@ -43,6 +43,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Client", "Client", "{236D2F5D-C115-49AA-9C6F-3B4F043A8041}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lykke.Bitcoin.Api.Client", "client\Lykke.Bitcoin.Api.Client\Lykke.Bitcoin.Api.Client.csproj", "{6A1B7B16-66AC-4A85-8607-DFC38CC1D765}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EnqueuePaidFeesTasks", "src\EnqueuePaidFeesTasks\EnqueuePaidFeesTasks.csproj", "{AD1DDE78-9CD6-4D15-9122-180688EE3304}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -110,6 +112,10 @@ Global
 		{6A1B7B16-66AC-4A85-8607-DFC38CC1D765}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6A1B7B16-66AC-4A85-8607-DFC38CC1D765}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6A1B7B16-66AC-4A85-8607-DFC38CC1D765}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AD1DDE78-9CD6-4D15-9122-180688EE3304}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD1DDE78-9CD6-4D15-9122-180688EE3304}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AD1DDE78-9CD6-4D15-9122-180688EE3304}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AD1DDE78-9CD6-4D15-9122-180688EE3304}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -128,9 +134,7 @@ Global
 		{69CED1ED-F05F-49DE-97B2-97FDA07B80A9} = {C2A5F2F4-8E2A-489A-ACC0-5F2DE12B5E23}
 		{98A44F17-8493-4489-97F5-C414CD973B5A} = {C2A5F2F4-8E2A-489A-ACC0-5F2DE12B5E23}
 		{6A1B7B16-66AC-4A85-8607-DFC38CC1D765} = {236D2F5D-C115-49AA-9C6F-3B4F043A8041}
-	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {DBB82F86-1128-4A5B-BDF9-7D8D2B8FE158}
+		{AD1DDE78-9CD6-4D15-9122-180688EE3304} = {C2A5F2F4-8E2A-489A-ACC0-5F2DE12B5E23}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E4BD9D17-6975-4B7A-B198-E85EDC2D1D83}

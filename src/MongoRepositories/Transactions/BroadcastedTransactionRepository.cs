@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,6 +18,8 @@ namespace MongoRepositories.Transactions
 
         [BsonRepresentation(BsonType.String)]
         public Guid TransactionId { get; set; }
+
+        public DateTime Date => BsonCreateDt;
 
         public static BroadcastedTransactionEntity Create(string hash, Guid transactionId)
         {
@@ -51,6 +54,11 @@ namespace MongoRepositories.Transactions
         public async Task<IBroadcastedTransaction> GetTransactionById(Guid id)
         {
             return (await _storage.GetDataAsync(x => x.TransactionId == id)).FirstOrDefault();
+        }
+
+        public async Task<IEnumerable<IBroadcastedTransaction>> GetTrasactions(DateTime startDt, DateTime endDt)
+        {
+            return await _storage.GetDataAsync(o => o.BsonCreateDt >= startDt && o.BsonCreateDt <= endDt);
         }
     }
 }
