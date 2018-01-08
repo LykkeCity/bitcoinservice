@@ -61,22 +61,22 @@ namespace BitcoinApi.Controllers
             };
         }
 
-        /// <summary>
-        /// Returns all registered multisigs
-        /// </summary>
-        /// <returns>Array with all multisigs</returns>
-        [HttpGet("all")]
-        [ProducesResponseType(typeof(GetAllWalletsResult), 200)]
-        [ProducesResponseType(typeof(ApiException), 400)]
-        public async Task<GetAllWalletsResult> GetAllWallets()
-        {
-            var data = await _walletService.GetAllMultisigs();
+        ///// <summary>
+        ///// Returns all registered multisigs
+        ///// </summary>
+        ///// <returns>Array with all multisigs</returns>
+        //[HttpGet("all")]
+        //[ProducesResponseType(typeof(GetAllWalletsResult), 200)]
+        //[ProducesResponseType(typeof(ApiException), 400)]
+        //public async Task<GetAllWalletsResult> GetAllWallets()
+        //{
+        //    var data = await _walletService.GetAllMultisigs();
 
-            return new GetAllWalletsResult
-            {
-                Multisigs = data.Select(x => x.MultisigAddress)
-            };
-        }
+        //    return new GetAllWalletsResult
+        //    {
+        //        Multisigs = data.Select(x => x.MultisigAddress)
+        //    };
+        //}
 
         [HttpPost("lykkepay/generate")]
         [ProducesResponseType(typeof(GenerateWalletResponse), 200)]
