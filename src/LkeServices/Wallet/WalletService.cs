@@ -8,6 +8,7 @@ using Core.RabbitNotification;
 using Core.Repositories.Wallets;
 using LkeServices.Providers;
 using NBitcoin;
+using RpcConnectionParams = Core.Settings.RpcConnectionParams;
 
 namespace LkeServices.Wallet
 {

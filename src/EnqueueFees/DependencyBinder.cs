@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Autofac;
 using AzureRepositories.Assets;
 using AzureRepositories.TransactionOutputs;
@@ -14,6 +15,7 @@ using Core.Repositories.Wallets;
 using Core.Settings;
 using LkeServices.Bitcoin;
 using LkeServices.QBitNinja;
+using Lykke.SettingsReader;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
@@ -33,16 +35,15 @@ namespace EnqueueFees
     {
         public static IServiceProvider BindAndBuild(IConfigurationRoot configuration)
         {
-
             var mongoClient = new MongoClient(configuration.GetConnectionString("mongo"));
             var collection = new ServiceCollection();
 
             collection.AddTransient<EnqueueFeesJob>();
-            collection.AddSingleton<Func<string, IQueueExt>>(x => new AzureQueueExt(configuration.GetConnectionString("default"), x));
+            collection.AddSingleton<Func<string, IQueueExt>>(x => AzureQueueExt.Create(new FakeReloadingManager(configuration.GetConnectionString("default")), x));
             collection.AddSingleton<IPregeneratedOutputsQueueFactory, PregeneratedOutputsQueueFactory>();
 
 
-            collection.AddSingleton<IAssetRepository>(new AssetRepository(new AzureTableStorage<AssetEntity>(configuration.GetConnectionString("dicts"), "Dictionaries", null)));
+            collection.AddSingleton<IAssetRepository>(new AssetRepository(AzureTableStorage<AssetEntity>.Create(new FakeReloadingManager(configuration.GetConnectionString("dicts")), "Dictionaries", null)));
 
             collection.AddSingleton<ISpentOutputRepository>(
                 new SpentOutputRepository(new MongoStorage<OutputEntity>(mongoClient, "SpentOutputs")));               
@@ -71,5 +72,19 @@ namespace EnqueueFees
             collection.AddTransient<IBitcoinOutputsService, BitcoinOutputsService>();                  
             return collection.BuildServiceProvider();
         }
+    }
+
+    public class FakeReloadingManager : IReloadingManager<string>
+    {
+        private readonly string _value;
+
+        public FakeReloadingManager(string value)
+        {
+            _value = value;
+        }
+
+        public Task<string> Reload() => Task.FromResult(_value);
+        public bool HasLoaded => true;
+        public string CurrentValue => _value;
     }
 }

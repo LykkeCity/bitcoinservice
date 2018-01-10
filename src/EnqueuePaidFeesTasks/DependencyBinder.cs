@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using AzureRepositories.PaidFees;
 using AzureStorage;
 using AzureStorage.Blob;
@@ -7,6 +8,7 @@ using Core.Repositories.PaidFees;
 using Core.Repositories.TransactionOutputs;
 using Core.Repositories.Transactions;
 using Core.Repositories.TransactionSign;
+using Lykke.SettingsReader;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
@@ -26,9 +28,9 @@ namespace EnqueuePaidFeesTasks
 
             collection.AddTransient<Job>();
 
-            collection.AddTransient<Func<string, IQueueExt>>(x => queueName => new AzureQueueExt(configuration.GetConnectionString("azure"), queueName));
+            collection.AddTransient<Func<string, IQueueExt>>(x => queueName => AzureQueueExt.Create(new FakeReloadingManager(configuration.GetConnectionString("azure")), queueName));
 
-            collection.AddSingleton<IBlobStorage>(new AzureBlobStorage(configuration.GetConnectionString("azure")));
+            collection.AddSingleton<IBlobStorage>(AzureBlobStorage.Create(new FakeReloadingManager(configuration.GetConnectionString("azure"))));
 
             var mongoClient = new MongoClient(configuration.GetConnectionString("mongo"));
 
@@ -52,5 +54,19 @@ namespace EnqueuePaidFeesTasks
 
             return collection.BuildServiceProvider();
         }
+    }
+
+    public class FakeReloadingManager : IReloadingManager<string>
+    {
+        private readonly string _value;
+
+        public FakeReloadingManager(string value)
+        {
+            _value = value;
+        }
+
+        public Task<string> Reload() => Task.FromResult(_value);
+        public bool HasLoaded => true;
+        public string CurrentValue => _value;
     }
 }

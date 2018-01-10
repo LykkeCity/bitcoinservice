@@ -123,7 +123,7 @@ namespace BitcoinJob.Functions
             }
             else
             {
-                await _slackNotifier.ErrorAsync($"Hub commitment with id {commitment.CommitmentId} was broadcasted but it's not last");
+                await _slackNotifier.WarningAsync($"Hub commitment with id {commitment.CommitmentId} was broadcasted but it's not last");
             }
         }
 

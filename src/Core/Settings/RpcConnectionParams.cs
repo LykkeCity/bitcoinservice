@@ -1,8 +1,7 @@
 ﻿using Core.Enums;
-using Core.Settings;
 using NBitcoin;
 
-namespace Core.Bitcoin
+namespace Core.Settings
 {
     public class RpcConnectionParams
     {

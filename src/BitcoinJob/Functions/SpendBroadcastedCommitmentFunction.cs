@@ -12,6 +12,7 @@ using Core.Helpers;
 using Core.OpenAssets;
 using Core.QBitNinja;
 using Core.Repositories.Offchain;
+using Core.Settings;
 using LkeServices.Transactions;
 using Lykke.JobTriggers.Triggers.Attributes;
 using Lykke.JobTriggers.Triggers.Bindings;
@@ -81,7 +82,7 @@ namespace BitcoinJob.Functions
             }
             catch (Exception ex)
             {
-                await _log.WriteErrorAsync(nameof(SpendBroadcastedCommitmentFunction), nameof(Process), message.ToJson(), ex);
+                await _log.WriteWarningAsync(nameof(SpendBroadcastedCommitmentFunction), nameof(Process), message.ToJson(), ex);
                 MoveToEnd(context, message);
             }
         }

@@ -1,9 +1,0 @@
-version: '2'
-
-services:
-  apirunner:
-    image: lykkex/bitcoinapi
-    ports:
-     - "5566:5000"
-    environment:
-     - ConnectionStrings__Azure=UseDevelopmentStorage=true

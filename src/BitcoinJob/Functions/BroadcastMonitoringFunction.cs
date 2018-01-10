@@ -18,18 +18,12 @@ namespace BitcoinJob.Functions
     {
         private readonly IQBitNinjaApiCaller _qBitNinjaApiCaller;
         private readonly ILog _logger;
-        private readonly ISlackNotifier _slackNotifier;
-        private readonly IFailedTransactionsManager _failedTransactionManager;
         private readonly BaseSettings _settings;
 
-        public BroadcastMonitoringFunction(IQBitNinjaApiCaller qBitNinjaApiCaller, ILog logger,
-            ISlackNotifier slackNotifier, IFailedTransactionsManager failedTransactionManager,
-            BaseSettings settings)
+        public BroadcastMonitoringFunction(IQBitNinjaApiCaller qBitNinjaApiCaller, ILog logger, BaseSettings settings)
         {
             _qBitNinjaApiCaller = qBitNinjaApiCaller;
             _logger = logger;
-            _slackNotifier = slackNotifier;
-            _failedTransactionManager = failedTransactionManager;
             _settings = settings;
         }
 
@@ -51,8 +45,7 @@ namespace BitcoinJob.Functions
             }
             if (DateTime.UtcNow - message.PutDateTime > TimeSpan.FromSeconds(_settings.BroadcastMonitoringPeriodSeconds))
             {
-                context.MoveMessageToPoison(message.ToJson());                
-                await _failedTransactionManager.InsertFailedTransaction(message.TransactionId, message.TransactionHash, message.LastError);
+                context.MoveMessageToPoison(message.ToJson());
             }
             else
             {

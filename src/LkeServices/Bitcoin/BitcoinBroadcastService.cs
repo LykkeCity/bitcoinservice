@@ -12,6 +12,7 @@ using Core.Settings;
 using Core.TransactionMonitoring;
 using NBitcoin;
 using NBitcoin.RPC;
+using BaseSettings = Core.Settings.BaseSettings;
 
 namespace LkeServices.Bitcoin
 {
@@ -58,7 +59,7 @@ namespace LkeServices.Bitcoin
                 builder.AppendLine(ex.Message + ":");
                 foreach (var input in tx.Inputs)
                     builder.AppendLine(input.PrevOut.ToString());
-                await _logger.WriteErrorAsync(nameof(BitcoinBroadcastService), nameof(BroadcastTransaction), builder.ToString(), ex);
+                await _logger.WriteWarningAsync(nameof(BitcoinBroadcastService), nameof(BroadcastTransaction), builder.ToString(), ex);
                 throw;
             }            
             monitor?.Step("Set transaction hash and add to monitoring");

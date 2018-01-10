@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "BitcoinJob": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "SettingsUrl": "http://settings.lykke-settings.svc.cluster.local/4d0097d63cfb470488af814a5fc41ae381a5624f070a1e41961ba47388c01fa0_BitcoinJobs"
+      }
+    }
+  }
+}

@@ -2,12 +2,10 @@
 
   <PropertyGroup>
     <AssemblyTitle>Bitcoin.Tests</AssemblyTitle>
-    <TargetFramework>netcoreapp1.1</TargetFramework>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
     <AssemblyName>tests</AssemblyName>
     <PackageId>tests</PackageId>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
-    <PackageTargetFallback>$(PackageTargetFallback);dotnet5.6;portable-net45+win8</PackageTargetFallback>
-    <RuntimeFrameworkVersion>1.1.2</RuntimeFrameworkVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,10 +16,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Lykke.AzureQueueIntegration" Version="2.0.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.0.0-preview-20170106-08" />
     <PackageReference Include="Moq" Version="4.6.38-alpha" />
     <PackageReference Include="Microsoft.DotNet.InternalAbstractions" Version="1.0.500-preview2-1-003177" />
-    <PackageReference Include="System.ComponentModel.TypeConverter" Version="4.1.0" />
     <PackageReference Include="MSTest.TestAdapter" Version="1.1.11" />
     <PackageReference Include="MSTest.TestFramework" Version="1.1.11" />
   </ItemGroup>

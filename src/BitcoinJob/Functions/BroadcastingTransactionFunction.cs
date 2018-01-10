@@ -20,20 +20,17 @@ namespace BitcoinJob.Functions
     public class BroadcastingTransactionFunction
     {
         private readonly IBitcoinBroadcastService _broadcastService;
-        private readonly IFailedTransactionsManager _failedTransactionManager;
         private readonly ITransactionBlobStorage _transactionBlobStorage;
         private readonly BaseSettings _settings;
         private readonly ILog _logger;        
         private readonly ISignatureApiProvider _exchangeSignatureApi;
 
         public BroadcastingTransactionFunction(IBitcoinBroadcastService broadcastService,
-            IFailedTransactionsManager failedTransactionManager,
             ITransactionBlobStorage transactionBlobStorage,
             Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
             BaseSettings settings, ILog logger)
         {
             _broadcastService = broadcastService;
-            _failedTransactionManager = failedTransactionManager;
             _transactionBlobStorage = transactionBlobStorage;
             _settings = settings;
             _logger = logger;
@@ -63,7 +60,6 @@ namespace BitcoinJob.Functions
                 if (transaction.DequeueCount >= _settings.MaxDequeueCount)
                 {
                     context.MoveMessageToPoison();
-                    await _failedTransactionManager.InsertFailedTransaction(transaction.TransactionId, null, transaction.LastError);
                 }
                 else
                 {

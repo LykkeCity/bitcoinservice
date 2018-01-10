@@ -13,6 +13,8 @@ using Core.Settings;
 using NBitcoin;
 using NBitcoin.OpenAsset;
 using NBitcoin.Policy;
+using BaseSettings = Core.Settings.BaseSettings;
+using RpcConnectionParams = Core.Settings.RpcConnectionParams;
 
 namespace LkeServices.Transactions
 {

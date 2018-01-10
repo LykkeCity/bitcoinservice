@@ -24,7 +24,9 @@ using LkeServices.Signature;
 using LkeServices.Transactions;
 using LkeServices.Wallet;
 using QBitNinja.Client;
+using BaseSettings = Core.Settings.BaseSettings;
 using RestClient = RestEase.RestClient;
+using RpcConnectionParams = Core.Settings.RpcConnectionParams;
 
 namespace LkeServices
 {
@@ -58,7 +60,6 @@ namespace LkeServices
             ioc.RegisterType<OffchainService>().As<IOffchainService>();
             ioc.RegisterType<SignatureVerifier>().As<ISignatureVerifier>();
             ioc.RegisterType<BitcoinBroadcastService>().As<IBitcoinBroadcastService>();
-            ioc.RegisterType<FailedTransactionsManager>().As<IFailedTransactionsManager>();
             ioc.RegisterType<PerformanceMonitorFactory>().As<IPerformanceMonitorFactory>();
             ioc.RegisterType<SpentOutputService>().As<ISpentOutputService>();
 
@@ -145,7 +146,7 @@ namespace LkeServices
                 var settings = resolver.Resolve<BaseSettings>();
                 var client = new HttpClient
                 {
-                    BaseAddress = new Uri(settings.LykkeJobsUrl)
+                    BaseAddress = new Uri(settings.BitcoinCallbackUrl)
                 };
                 return RestClient.For<ILykkeApiProvider>(client);
             }).As<ILykkeApiProvider>().SingleInstance();

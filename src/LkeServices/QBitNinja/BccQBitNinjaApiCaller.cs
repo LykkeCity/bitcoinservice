@@ -11,6 +11,8 @@ using Core.Settings;
 using NBitcoin;
 using QBitNinja.Client;
 using QBitNinja.Client.Models;
+using BaseSettings = Core.Settings.BaseSettings;
+using RpcConnectionParams = Core.Settings.RpcConnectionParams;
 
 namespace LkeServices.QBitNinja
 {

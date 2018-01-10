@@ -1,11 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp1.1</TargetFramework>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
     <AssemblyName>AzureRepositories</AssemblyName>
     <PackageId>AzureRepositories</PackageId>
-    <PackageTargetFallback>$(PackageTargetFallback);portable-net45</PackageTargetFallback>
-    <RuntimeFrameworkVersion>1.1.2</RuntimeFrameworkVersion>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
@@ -16,8 +14,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Lykke.SlackNotification.AzureQueue" Version="2.0.1" />
     <PackageReference Include="System.Reflection.TypeExtensions" Version="4.3.0" />
-    <PackageReference Include="Lykke.JobTriggers" Version="1.1.11" />
+    <PackageReference Include="Lykke.JobTriggers" Version="1.2.0" />
   </ItemGroup>
 
 </Project>

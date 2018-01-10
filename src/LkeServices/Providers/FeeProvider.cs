@@ -7,6 +7,7 @@ using Core.Repositories;
 using Core.Repositories.FeeRate;
 using Core.Settings;
 using NBitcoin;
+using BaseSettings = Core.Settings.BaseSettings;
 
 namespace LkeServices.Providers
 {

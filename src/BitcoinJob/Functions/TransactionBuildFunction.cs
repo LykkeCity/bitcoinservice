@@ -22,7 +22,6 @@ namespace BitcoinJob.Functions
     {
         private readonly ILykkeTransactionBuilderService _lykkeTransactionBuilderService;
         private readonly IAssetRepository _assetRepository;
-        private readonly IFailedTransactionsManager _failedTransactionManager;
         private readonly Func<string, IQueueExt> _queueFactory;
         private readonly BaseSettings _settings;
         private readonly ILog _logger;
@@ -31,13 +30,11 @@ namespace BitcoinJob.Functions
 
         public TransactionBuildFunction(ILykkeTransactionBuilderService lykkeTransactionBuilderService,
             IAssetRepository assetRepository,
-            IFailedTransactionsManager failedTransactionManager,
             Func<string, IQueueExt> queueFactory, BaseSettings settings, ILog logger, ITransactionBlobStorage transactionBlobStorage,
             ITransactionSignRequestRepository signRequestRepository)
         {
             _lykkeTransactionBuilderService = lykkeTransactionBuilderService;
             _assetRepository = assetRepository;
-            _failedTransactionManager = failedTransactionManager;
             _queueFactory = queueFactory;
             _settings = settings;
             _logger = logger;
@@ -57,7 +54,6 @@ namespace BitcoinJob.Functions
                 if (request?.Invalidated == true)
                 {
                     context.MoveMessageToPoison(message.ToJson());
-                    await _failedTransactionManager.InsertFailedTransaction(message.TransactionId, null, "Transaction was invalidated");
                     return;
                 }
 
@@ -117,7 +113,6 @@ namespace BitcoinJob.Functions
                 if (message.DequeueCount >= _settings.MaxDequeueCount)
                 {
                     context.MoveMessageToPoison(message.ToJson());
-                    await _failedTransactionManager.InsertFailedTransaction(message.TransactionId, null, message.LastError);
                 }
                 else
                 {
@@ -136,20 +131,6 @@ namespace BitcoinJob.Functions
                 TransactionId = message.TransactionId,
                 PutDateTime = DateTime.UtcNow
             }.ToJson());
-
-            //TODO: uncomment for client signatures
-            //try
-            //{
-            //    await _queueFactory(Constants.TransactionsForClientSignatureQueue).PutRawMessageAsync(new
-            //    {
-            //        TransactionId = message.TransactionId,
-            //        Transaction = transactionResponse.Transaction
-            //    }.ToJson());
-            //}
-            //catch (Exception ex)
-            //{
-            //    await _logger.WriteErrorAsync("TransactionBuildFunction", "ProcessMessage", message.ToJson(), ex);
-            //}
         }
     }
 }

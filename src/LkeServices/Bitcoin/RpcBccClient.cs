@@ -5,6 +5,7 @@ using Autofac.Features.AttributeFilters;
 using Core;
 using Core.Bitcoin;
 using Core.Repositories.Transactions;
+using RpcConnectionParams = Core.Settings.RpcConnectionParams;
 
 namespace LkeServices.Bitcoin
 {

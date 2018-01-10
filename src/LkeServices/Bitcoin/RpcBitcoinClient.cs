@@ -8,6 +8,7 @@ using Core.Repositories.TransactionOutputs;
 using Core.Repositories.Transactions;
 using NBitcoin;
 using NBitcoin.RPC;
+using RpcConnectionParams = Core.Settings.RpcConnectionParams;
 
 namespace LkeServices.Bitcoin
 {

@@ -1,6 +1,5 @@
-﻿using System.ComponentModel;
-using Core.Enums;
-using Newtonsoft.Json;
+﻿using Core.Enums;
+using Lykke.SettingsReader.Attributes;
 
 namespace Core.Settings
 {
@@ -9,19 +8,24 @@ namespace Core.Settings
         public NetworkType NetworkType { get; set; }
 
         public string RPCUsername { get; set; }
+
         public string RPCPassword { get; set; }
+
         public string RPCServerIpAddress { get; set; }
 
         public string FeeAddress { get; set; }
-        public FeeType21co FeeType { get; set; }
-        public decimal FeeRateMultiplier { get; set; } = 1;
 
+        [HttpCheck("/")]
         public string QBitNinjaBaseUrl { get; set; }
 
+        [HttpCheck("/api/isalive")]
         public string SignatureProviderUrl { get; set; }
+
+        [HttpCheck("/api/isalive")]
         public string ClientSignatureProviderUrl { get; set; }
 
-        public string LykkeJobsUrl { get; set; }
+        [HttpCheck("/api/isalive")]
+        public string BitcoinCallbackUrl { get; set; }
 
         public DbSettings Db { get; set; }
 
@@ -31,42 +35,66 @@ namespace Core.Settings
 
         public string HotWalletForPregeneratedOutputs { get; set; }
 
-        public int MinPregeneratedOutputsCount { get; set; } = 2;
-        public int GenerateOutputsBatchSize { get; set; } = 4;
-
-        public decimal PregeneratedFeeAmount { get; set; } = 0.001M;
-        public decimal MinHotWalletBalance { get; set; } = 1;
-
-        public int MinPregeneratedAssetOutputsCount { get; set; } = 50;
-        public int GenerateAssetOutputsBatchSize { get; set; } = 100;
-
-        public int MaxDequeueCount { get; set; } = 1000;
-
-        public int MaxQueueDelay { get; set; } = 5000;
-
-        public int BroadcastMonitoringPeriodSeconds { get; set; } = 3600 * 2;
-
-        public decimal SpendChangeFeeRateMultiplier { get; set; } = 0.2M;
-
-        public int NumberOfChangeInputsForTransaction { get; set; } = 200;
-
-        public int FeeReservePeriodSeconds { get; set; } = 5 * 60;
-
-        public decimal MaxExtraAmount { get; set; } = 0.001M;
-
-        public int ClientSignatureTimeoutSeconds { get; set; } = 0;
-
-        public int RepeatNinjaCount { get; set; } = 3;
-
-        public int BroadcastedOutputsExpirationDays { get; set; } = 7;
-
-        public int SpentOutputsExpirationDays { get; set; } = 7;
-
         public Offchain Offchain { get; set; } = new Offchain();
 
-        public Rabbit RabbitMq { get; set; } = new Rabbit();       
-        
         public BccSettings Bcc { get; set; } = new BccSettings();
+
+        [Optional]
+        public FeeType21co FeeType { get; set; }
+
+        [Optional]
+        public decimal FeeRateMultiplier { get; set; } = 1;
+
+        [Optional]
+        public int MinPregeneratedOutputsCount { get; set; } = 2;
+
+        [Optional]
+        public int GenerateOutputsBatchSize { get; set; } = 4;
+
+        [Optional]
+        public decimal PregeneratedFeeAmount { get; set; } = 0.001M;
+
+        [Optional]
+        public decimal MinHotWalletBalance { get; set; } = 1;
+
+        [Optional]
+        public int MinPregeneratedAssetOutputsCount { get; set; } = 50;
+
+        [Optional]
+        public int GenerateAssetOutputsBatchSize { get; set; } = 100;
+
+        [Optional]
+        public int MaxDequeueCount { get; set; } = 1000;
+
+        [Optional]
+        public int MaxQueueDelay { get; set; } = 5000;
+
+        [Optional]
+        public int BroadcastMonitoringPeriodSeconds { get; set; } = 3600 * 2;
+
+        [Optional]
+        public decimal SpendChangeFeeRateMultiplier { get; set; } = 0.2M;
+
+        [Optional]
+        public int NumberOfChangeInputsForTransaction { get; set; } = 200;
+
+        [Optional]
+        public int FeeReservePeriodSeconds { get; set; } = 5 * 60;
+
+        [Optional]
+        public decimal MaxExtraAmount { get; set; } = 0.001M;
+
+        [Optional]
+        public int ClientSignatureTimeoutSeconds { get; set; } = 0;
+
+        [Optional]
+        public int BroadcastedOutputsExpirationDays { get; set; } = 7;
+
+        [Optional]
+        public int SpentOutputsExpirationDays { get; set; } = 7;
+
+        [Optional]
+        public Rabbit RabbitMq { get; set; } = new Rabbit();       
     }
 
     public class DbSettings
@@ -83,7 +111,9 @@ namespace Core.Settings
 
     public class Offchain
     {
+        [Optional]
         public bool UseOffchainGeneration { get; set; } = false;
+
         public string HotWallet { get; set; }
     }
 
@@ -99,7 +129,11 @@ namespace Core.Settings
         public string RPCUsername { get; set; }
         public string RPCPassword { get; set; }
         public string RPCServerIpAddress { get; set; }
+
+        [Optional]
         public bool UseBccNinja { get; set; }
+
+        [Optional]
         public string QBitNinjaBaseUrl { get; set; }
     }
 }

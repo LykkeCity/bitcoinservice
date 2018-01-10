@@ -4,58 +4,37 @@ using AzureStorage.Queue;
 using Core;
 using Core.Notifiers;
 using Lykke.JobTriggers.Abstractions;
-using Newtonsoft.Json;
+using Lykke.SlackNotifications;
 
 namespace AzureRepositories.Notifiers
 {
 	public class SlackNotifier : ISlackNotifier, IPoisionQueueNotifier
-    {
-		private readonly IQueueExt _queue;
+	{
+	    private readonly ISlackNotificationsSender _slackNotificationsSender;
 
-		public SlackNotifier(Func<string, IQueueExt> queueFactory)
+		public SlackNotifier(ISlackNotificationsSender slackNotificationsSender)
 		{
-			_queue = queueFactory(Constants.SlackNotifierQueue);
+		    _slackNotificationsSender = slackNotificationsSender;
 		}
 
 		public async Task WarningAsync(string message)
 		{
-			var obj = new
-			{
-                Type = "Warnings",
-                Sender = "bitcoin service",
-                Message = message
-			};
-            
-			await _queue.PutRawMessageAsync(JsonConvert.SerializeObject(obj));
+		    await _slackNotificationsSender.SendWarningAsync(message, "bitcoin service");
 		}
 
         public async Task ErrorAsync(string message)
         {
-            var obj = new
-            {
-                Type = "Errors",
-                Sender = "bitcoin service",
-                Message = message
-            };
-
-            await _queue.PutRawMessageAsync(JsonConvert.SerializeObject(obj));
+            await _slackNotificationsSender.SendErrorAsync(message, "bitcoin service");
         }
 
         public async Task FinanceWarningAsync(string message)
         {
-            var obj = new
-            {
-                Type = "Financewarnings",
-                Sender = "bitcoin service",
-                Message = message
-            };
-
-            await _queue.PutRawMessageAsync(JsonConvert.SerializeObject(obj));
+            await _slackNotificationsSender.SendAsync("Financewarnings", "bitcoin service", message);
         }
 
         public Task NotifyAsync(string message)
         {
-            return ErrorAsync(message);
+            return WarningAsync(message);
         }
     }
 }

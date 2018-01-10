@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Autofac;
 using Autofac.Features.ResolveAnything;
 using AzureRepositories.Offchain;
 using AzureStorage.Queue;
 using AzureStorage.Tables;
+using Lykke.SettingsReader;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OffchainRequestCreator.Repositories;
@@ -21,15 +23,29 @@ namespace OffchainRequestCreator
 
             container.RegisterInstance<IOffchainRequestRepository>(
                 new OffchainRequestRepository(
-                    new AzureTableStorage<OffchainRequestEntity>(configuration.GetConnectionString("main"), "OffchainRequests", null)));
+                    AzureTableStorage<OffchainRequestEntity>.Create(new FakeReloadingManager(configuration.GetConnectionString("main")), "OffchainRequests", null)));
 
             container.RegisterInstance<IOffchainTransferRepository>(
                 new OffchainTransferRepository(
-                    new AzureTableStorage<OffchainTransferEntity>(configuration.GetConnectionString("main"), "OffchainTransfers", null)));
+                    AzureTableStorage<OffchainTransferEntity>.Create(new FakeReloadingManager(configuration.GetConnectionString("main")), "OffchainTransfers", null)));
 
             container.RegisterSource(new AnyConcreteTypeNotAlreadyRegisteredSource());
 
             return container.Build();
         }
+    }
+
+    public class FakeReloadingManager : IReloadingManager<string>
+    {
+        private readonly string _value;
+
+        public FakeReloadingManager(string value)
+        {
+            _value = value;
+        }
+
+        public Task<string> Reload() => Task.FromResult(_value);
+        public bool HasLoaded => true;
+        public string CurrentValue => _value;
     }
 }

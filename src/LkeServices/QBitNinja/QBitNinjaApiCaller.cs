@@ -9,6 +9,7 @@ using LkeServices.Bitcoin;
 using NBitcoin;
 using QBitNinja.Client;
 using QBitNinja.Client.Models;
+using RpcConnectionParams = Core.Settings.RpcConnectionParams;
 
 namespace LkeServices.QBitNinja
 {

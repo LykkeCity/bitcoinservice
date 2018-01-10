@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Core.Bitcoin;
 using LkeServices.Transactions;
 using NBitcoin;
+using RpcConnectionParams = Core.Settings.RpcConnectionParams;
 
 namespace LkeServices.Signature
 {

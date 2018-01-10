@@ -85,7 +85,7 @@ namespace BitcoinJob.Functions
             }
             catch (Exception ex)
             {
-                await _logger.WriteErrorAsync("GenerateOffchainOutputsFunction", "Generate", "GenerateIssueAllowedCoins", ex);
+                await _logger.WriteWarningAsync("GenerateOffchainOutputsFunction", "Generate", "GenerateIssueAllowedCoins", ex);
             }
             try
             {
@@ -93,7 +93,7 @@ namespace BitcoinJob.Functions
             }
             catch (Exception ex)
             {
-                await _logger.WriteErrorAsync("GenerateOffchainOutputsFunction", "Generate", "GenerateBtcOutputs", ex);
+                await _logger.WriteWarningAsync("GenerateOffchainOutputsFunction", "Generate", "GenerateBtcOutputs", ex);
             }
             try
             {
@@ -101,7 +101,7 @@ namespace BitcoinJob.Functions
             }
             catch (Exception ex)
             {
-                await _logger.WriteErrorAsync("GenerateOffchainOutputsFunction", "Generate", "GenerateLKKOutputs", ex);
+                await _logger.WriteWarningAsync("GenerateOffchainOutputsFunction", "Generate", "GenerateLKKOutputs", ex);
             }
             try
             {
@@ -109,7 +109,7 @@ namespace BitcoinJob.Functions
             }
             catch (Exception ex)
             {
-                await _logger.WriteErrorAsync("GenerateOffchainOutputsFunction", "Generate", "GenerateLKK1YOutputs", ex);
+                await _logger.WriteWarningAsync("GenerateOffchainOutputsFunction", "Generate", "GenerateLKK1YOutputs", ex);
             }
             await _logger.WriteInfoAsync("GenerateOffchainOutputsFunction", "Generate", null, "End process");
         }

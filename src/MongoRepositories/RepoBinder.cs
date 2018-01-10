@@ -1,19 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Autofac;
-
-using Common;
-using Common.Log;
+﻿using Autofac;
 using Core;
-using Core.Notifiers;
-using Core.Repositories;
-using Core.Repositories.ApiRequests;
-using Core.Repositories.Assets;
 using Core.Repositories.ExtraAmounts;
 using Core.Repositories.FeeRate;
-using Core.Repositories.Monitoring;
 using Core.Repositories.Offchain;
 using Core.Repositories.PaidFees;
 using Core.Repositories.RevokeKeys;
@@ -22,9 +10,6 @@ using Core.Repositories.TransactionOutputs;
 using Core.Repositories.Transactions;
 using Core.Repositories.TransactionSign;
 using Core.Repositories.Wallets;
-using Core.Settings;
-using Core.TransactionMonitoring;
-using Core.TransactionQueueWriter;
 using MongoDB.Driver;
 using MongoRepositories.ExtraAmounts;
 using MongoRepositories.FeeRate;
@@ -42,10 +27,10 @@ namespace MongoRepositories
 {
     public static class RepoBinder
     {      
-        public static void BindMongo(this ContainerBuilder ioc, BaseSettings settings)
+        public static void BindMongo(this ContainerBuilder ioc, string mongoConnString)
         {
 
-            var mongoClient = new MongoClient(settings.Db.MongoDataConnString);
+            var mongoClient = new MongoClient(mongoConnString);
 
             ioc.RegisterInstance(new FeeRateRepository(new MongoStorage<FeeRateEntity>(mongoClient ,"Settings")))
                 .As<IFeeRateRepository>();

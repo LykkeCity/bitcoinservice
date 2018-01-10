@@ -30,15 +30,16 @@ using Core.Settings;
 using Core.TransactionMonitoring;
 using Core.TransactionQueueWriter;
 using Lykke.JobTriggers.Abstractions;
+using Lykke.SettingsReader;
 
 namespace AzureRepositories
 {
     public static class RepoBinder
     {
-        public static void BindAzure(this ContainerBuilder ioc, BaseSettings settings, SlackNotifications slackNotifications, ILog log)
+        public static void BindAzure(this ContainerBuilder ioc, IReloadingManager<DbSettings> settings, ILog log)
         {
             ioc.BindRepo(settings, log);
-            ioc.BindQueue(settings, slackNotifications);
+            ioc.BindQueue(settings);
 
             ioc.Register(x =>
             {
@@ -57,54 +58,46 @@ namespace AzureRepositories
             ioc.RegisterType<SlackNotifier>().As<ISlackNotifier>().As<IPoisionQueueNotifier>();
         }
 
-        private static void BindRepo(this ContainerBuilder ioc, BaseSettings settings, ILog log)
+        private static void BindRepo(this ContainerBuilder ioc, IReloadingManager<DbSettings> settings, ILog log)
         {
 
             ioc.RegisterInstance(new BroadcastedTransactionBlobStorage(
-                new AzureBlobStorage(settings.Db.DataConnString)))
+                AzureBlobStorage.Create(settings.ConnectionString(x => x.DataConnString))))
                 .As<IBroadcastedTransactionBlobStorage>();
 
-            ioc.RegisterInstance(new AssetRepository(new AzureTableStorage<AssetEntity>(settings.Db.DictsConnString, "Dictionaries", log)))
+            ioc.RegisterInstance(new AssetRepository(AzureTableStorage<AssetEntity>.Create(settings.ConnectionString(x => x.DictsConnString), "Dictionaries", log)))
                 .As<IAssetRepository>();
 
-            ioc.RegisterInstance(new AssetSettingRepository(new AzureTableStorage<AssetSettingEntity>(settings.Db.DictsConnString, "AssetSettings", log)))
+            ioc.RegisterInstance(new AssetSettingRepository(AzureTableStorage<AssetSettingEntity>.Create(settings.ConnectionString(x => x.DictsConnString), "AssetSettings", log)))
                 .As<IAssetSettingRepository>();
 
-            ioc.RegisterInstance(new MonitoringRepository(new AzureTableStorage<MonitoringEntity>(settings.Db.SharedConnString, "Monitoring", log)))
+            ioc.RegisterInstance(new MonitoringRepository(AzureTableStorage<MonitoringEntity>.Create(settings.ConnectionString(x => x.SharedConnString), "Monitoring", log)))
                 .As<IMonitoringRepository>();
 
-            ioc.RegisterInstance(new FailedTransactionRepository(new AzureTableStorage<FailedTransactionEntity>(settings.Db.ClientPersonalInfoConnString, "FailedTransactions", log)))
-                .As<IFailedTransactionRepository>();
-
-            ioc.RegisterInstance(new MenuBadgesRepository(new AzureTableStorage<MenuBadgeEntity>(settings.Db.BackofficeConnString, "MenuBadges", log)))
-                .As<IMenuBadgesRepository>();
-
-            ioc.RegisterInstance(new ApiRequestBlobRepository(new AzureBlobStorage(settings.Db.LogsConnString)))
+            ioc.RegisterInstance(new ApiRequestBlobRepository(AzureBlobStorage.Create(settings.ConnectionString(x => x.LogsConnString))))
                 .As<IApiRequestBlobRepository>();
 
-            ioc.RegisterInstance(new TransactionBlobStorage(new AzureBlobStorage(settings.Db.DataConnString)))
+            ioc.RegisterInstance(new TransactionBlobStorage(AzureBlobStorage.Create(settings.ConnectionString(x => x.DataConnString))))
                 .As<ITransactionBlobStorage>();
 
-            ioc.RegisterInstance(new NinjaOutputBlobStorage(new AzureBlobStorage(settings.Db.DataConnString)))
+            ioc.RegisterInstance(new NinjaOutputBlobStorage(AzureBlobStorage.Create(settings.ConnectionString(x => x.DataConnString))))
                 .As<INinjaOutputBlobStorage>();
 
         }
 
-        private static void BindQueue(this ContainerBuilder ioc, BaseSettings settings, SlackNotifications slackNotifications)
+        private static void BindQueue(this ContainerBuilder ioc, IReloadingManager<DbSettings> settings)
         {
 
             ioc.RegisterInstance<Func<string, IQueueExt>>(queueName =>
             {
                 switch (queueName)
                 {
-                    case Constants.SlackNotifierQueue:
-                        return new AzureQueueExt(slackNotifications.AzureQueue.ConnectionString, slackNotifications.AzureQueue.QueueName);
                     case Constants.EmailNotifierQueue:
-                        return new AzureQueueExt(settings.Db.SharedConnString, queueName);
+                        return AzureQueueExt.Create(settings.ConnectionString(x => x.SharedConnString), queueName);
                     case Constants.TransactionsForClientSignatureQueue:
-                        return new AzureQueueExt(settings.Db.ClientSignatureConnString, queueName);
+                        return AzureQueueExt.Create(settings.ConnectionString(x => x.ClientSignatureConnString), queueName);
                     default:
-                        return new AzureQueueExt(settings.Db.DataConnString, queueName);
+                        return AzureQueueExt.Create(settings.ConnectionString(x => x.DataConnString), queueName);
                 }
 
             });

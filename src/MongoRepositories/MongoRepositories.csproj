@@ -1,10 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp1.1</TargetFramework>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
     <AssemblyName>MongoRepositories</AssemblyName>
     <PackageId>MongoRepositories</PackageId>
-    <RuntimeFrameworkVersion>1.1.2</RuntimeFrameworkVersion>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
@@ -15,10 +14,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Lykke.Common" Version="1.1.37" />
+    <PackageReference Include="Lykke.Common" Version="4.1.0" />
     <PackageReference Include="MongoDB.Driver" Version="2.3.0" />
     <PackageReference Include="MongoDB.Driver.GridFS" Version="2.3.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
   </ItemGroup>
 
 </Project>

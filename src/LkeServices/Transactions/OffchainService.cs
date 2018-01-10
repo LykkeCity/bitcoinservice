@@ -31,6 +31,8 @@ using LkeServices.Providers;
 using LkeServices.Signature;
 using LkeServices.Wallet;
 using NBitcoin.Policy;
+using BaseSettings = Core.Settings.BaseSettings;
+using RpcConnectionParams = Core.Settings.RpcConnectionParams;
 
 namespace LkeServices.Transactions
 {

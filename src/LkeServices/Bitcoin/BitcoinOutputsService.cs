@@ -12,6 +12,7 @@ using Core.Repositories.Wallets;
 using NBitcoin;
 using NBitcoin.DataEncoders;
 using NBitcoin.OpenAsset;
+using RpcConnectionParams = Core.Settings.RpcConnectionParams;
 
 namespace LkeServices.Bitcoin
 {

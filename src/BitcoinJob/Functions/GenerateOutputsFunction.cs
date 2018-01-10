@@ -66,9 +66,16 @@ namespace BitcoinJob.Functions
         [TimerTrigger("00:30:00")]
         public async Task GenerateOutputs()
         {
-            await InternalBalanceCheck();
-            await GenerateFeeOutputs();
-            await GenerateAssetOutputs();
+            try
+            {
+                await InternalBalanceCheck();
+                await GenerateFeeOutputs();
+                await GenerateAssetOutputs();
+            }
+            catch (BackendException ex)
+            {
+                await _logger.WriteWarningAsync("GenerateOutputsFunction", "GenerateOutputs", null, ex);
+            }
         }
 
         private async Task GenerateFeeOutputs()
@@ -173,7 +180,7 @@ namespace BitcoinJob.Functions
                 }
                 catch (Exception e)
                 {
-                    await _logger.WriteErrorAsync("GenerateOutputsFunction", "GenerateAssetOutputs", $"Asset {asset.Id}", e);
+                    await _logger.WriteWarningAsync("GenerateOutputsFunction", "GenerateAssetOutputs", $"Asset {asset.Id}", e);
                 }
             }
             await _logger.WriteInfoAsync("GenerateOutputsFunction", "GenerateAssetOutputs", null, "End process");
