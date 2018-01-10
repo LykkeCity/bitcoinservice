@@ -9,5 +9,19 @@ namespace Core.Settings
     {
         public BaseSettings BitcoinApi { get; set; }
         public BaseSettings BitcoinJobs { get; set; }
+
+        public SlackNotifications SlackNotifications { get; set; }
+    }
+
+    public class SlackNotifications
+    {
+        public int ThrottlingLimitSeconds { get; set; }
+        public AzureQueueItem AzureQueue { get; set; }
+
+        public class AzureQueueItem
+        {
+            public string ConnectionString { get; set; }
+            public string QueueName { get; set; }
+        }
     }
 }

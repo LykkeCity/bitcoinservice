@@ -43,13 +43,7 @@ namespace BitcoinApi
         // For more information on how to configure your application, visit http://go.microsoft.com/fwlink/?LinkID=398940
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
-            BaseSettings settings;
-#if DEBUG
-            settings = GeneralSettingsReader.ReadGeneralSettingsLocal<BaseSettings>(Configuration.GetConnectionString("Settings"));
-#else
             var generalSettings = GeneralSettingsReader.ReadGeneralSettings<GeneralSettings>(Configuration.GetConnectionString("Settings"));
-            settings = generalSettings.BitcoinApi;
-#endif
 
             services.AddMvc(o =>
             {
@@ -83,7 +77,7 @@ namespace BitcoinApi
                 });
             });
 
-            var builder = new AzureBinder().Bind(settings);
+            var builder = new AzureBinder().Bind(generalSettings.BitcoinApi, generalSettings.SlackNotifications);
             builder.Populate(services);
 
             return new AutofacServiceProvider(builder.Build());

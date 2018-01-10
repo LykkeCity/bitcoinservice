@@ -35,10 +35,10 @@ namespace AzureRepositories
 {
     public static class RepoBinder
     {
-        public static void BindAzure(this ContainerBuilder ioc, BaseSettings settings, ILog log)
+        public static void BindAzure(this ContainerBuilder ioc, BaseSettings settings, SlackNotifications slackNotifications, ILog log)
         {
             ioc.BindRepo(settings, log);
-            ioc.BindQueue(settings);
+            ioc.BindQueue(settings, slackNotifications);
 
             ioc.Register(x =>
             {
@@ -54,13 +54,13 @@ namespace AzureRepositories
             }).SingleInstance();
 
             ioc.RegisterType<EmailNotifier>().As<IEmailNotifier>();
-            ioc.RegisterType<SlackNotifier>().As<ISlackNotifier>().As<IPoisionQueueNotifier>();            
+            ioc.RegisterType<SlackNotifier>().As<ISlackNotifier>().As<IPoisionQueueNotifier>();
         }
 
         private static void BindRepo(this ContainerBuilder ioc, BaseSettings settings, ILog log)
         {
-         
-            ioc.RegisterInstance(new BroadcastedTransactionBlobStorage(         
+
+            ioc.RegisterInstance(new BroadcastedTransactionBlobStorage(
                 new AzureBlobStorage(settings.Db.DataConnString)))
                 .As<IBroadcastedTransactionBlobStorage>();
 
@@ -84,13 +84,13 @@ namespace AzureRepositories
 
             ioc.RegisterInstance(new TransactionBlobStorage(new AzureBlobStorage(settings.Db.DataConnString)))
                 .As<ITransactionBlobStorage>();
-    
+
             ioc.RegisterInstance(new NinjaOutputBlobStorage(new AzureBlobStorage(settings.Db.DataConnString)))
                 .As<INinjaOutputBlobStorage>();
 
         }
 
-        private static void BindQueue(this ContainerBuilder ioc, BaseSettings settings)
+        private static void BindQueue(this ContainerBuilder ioc, BaseSettings settings, SlackNotifications slackNotifications)
         {
 
             ioc.RegisterInstance<Func<string, IQueueExt>>(queueName =>
@@ -98,6 +98,7 @@ namespace AzureRepositories
                 switch (queueName)
                 {
                     case Constants.SlackNotifierQueue:
+                        return new AzureQueueExt(slackNotifications.AzureQueue.ConnectionString, slackNotifications.AzureQueue.QueueName);
                     case Constants.EmailNotifierQueue:
                         return new AzureQueueExt(settings.Db.SharedConnString, queueName);
                     case Constants.TransactionsForClientSignatureQueue:

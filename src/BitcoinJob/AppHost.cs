@@ -34,15 +34,9 @@ namespace BackgroundWorker
 
         public void Run()
         {
-            BaseSettings settings;
-#if DEBUG
-            settings = GeneralSettingsReader.ReadGeneralSettingsLocal<BaseSettings>(Configuration.GetConnectionString("Settings"));
-#else
             var generalSettings = GeneralSettingsReader.ReadGeneralSettings<GeneralSettings>(Configuration.GetConnectionString("Settings"));
-            settings = generalSettings.BitcoinJobs;
-#endif
 
-            var containerBuilder = new AzureBinder().Bind(settings);
+            var containerBuilder = new AzureBinder().Bind(generalSettings.BitcoinJobs, generalSettings.SlackNotifications);
             var ioc = containerBuilder.Build();
 
             var triggerHost = new TriggerHost(new AutofacServiceProvider(ioc));

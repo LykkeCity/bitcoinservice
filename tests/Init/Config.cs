@@ -25,16 +25,16 @@ namespace Bitcoin.Tests
         [AssemblyInitialize]
         public static void Initialize(TestContext context)
         {
-            var settings = GeneralSettingsReader.ReadGeneralSettingsLocal<BaseSettings>("../../../../settings/bitcoinsettings_dev.json");
+            var settings = GeneralSettingsReader.ReadGeneralSettingsLocal<GeneralSettings>("../../../../settings/bitcoinsettings_dev.json");
 
             var log = new LogToConsole();
 
             ContainerBuilder builder = new ContainerBuilder();
             builder.RegisterInstance(settings);
             builder.RegisterInstance(log).As<ILog>();
-            builder.RegisterInstance(new RpcConnectionParams(settings));
-            builder.BindAzure(settings, log);
-            builder.BindMongo(settings);
+            builder.RegisterInstance(new RpcConnectionParams(settings.BitcoinApi));
+            builder.BindAzure(settings.BitcoinApi, settings.SlackNotifications, log);
+            builder.BindMongo(settings.BitcoinApi);
             builder.BindCommonServices();
 
             Services = new AutofacServiceProvider(builder.Build());

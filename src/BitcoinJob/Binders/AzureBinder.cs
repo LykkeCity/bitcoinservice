@@ -30,7 +30,7 @@ namespace BackgroundWorker.Binders
     {
         public const string DefaultConnectionString = "UseDevelopmentStorage=true";
 
-        public ContainerBuilder Bind(BaseSettings settings)
+        public ContainerBuilder Bind(BaseSettings settings, SlackNotifications slackNotifications)
         {
             var logToTable = new LogToTable(new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LogBitcoinJobError", null),
                                             new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LogBitcoinJobWarning", null),
@@ -41,11 +41,11 @@ namespace BackgroundWorker.Binders
             var log = logToTable;
 #endif
             var ioc = new ContainerBuilder();
-            InitContainer(ioc, settings, log);
+            InitContainer(ioc, settings, slackNotifications, log);
             return ioc;
         }
 
-        private void InitContainer(ContainerBuilder ioc, BaseSettings settings, ILog log)
+        private void InitContainer(ContainerBuilder ioc, BaseSettings settings, SlackNotifications slackNotifications, ILog log)
         {
 #if DEBUG
             log.WriteInfoAsync("BackgroundWorker", "App start", null, $"BaseSettings : {settings.ToJson()}").Wait();
@@ -54,10 +54,10 @@ namespace BackgroundWorker.Binders
 #endif            
             ioc.RegisterInstance(log);
             ioc.RegisterInstance(settings);
-            ioc.RegisterInstance(new RpcConnectionParams(settings));            
+            ioc.RegisterInstance(new RpcConnectionParams(settings));
 
             ioc.BindCommonServices();
-            ioc.BindAzure(settings, log);
+            ioc.BindAzure(settings, slackNotifications, log);
             ioc.BindMongo(settings);
 
             ioc.AddTriggers(pool =>
@@ -65,7 +65,7 @@ namespace BackgroundWorker.Binders
                 pool.AddDefaultConnection(settings.Db.DataConnString);
                 pool.AddConnection("client", settings.Db.ClientSignatureConnString);
             });
-            
+
             ioc.RegisterSource(new AnyConcreteTypeNotAlreadyRegisteredSource());
         }
     }
