@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net;
-using System.Text;
-using Lykke.Common.Api.Contract.Responses;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.SwaggerGen.Annotations;
 
@@ -33,6 +30,19 @@ namespace BitcoinJob.Controllers
                 IsDebug = false,
 #endif
             });
+        }
+
+        public class ErrorResponse
+        {
+            public string ErrorMessage { get; set; }
+        }
+
+        public class IsAliveResponse
+        {
+            public string Name { get; set; }
+            public string Version { get; set; }
+            public string Env { get; set; }
+            public bool IsDebug { get; set; }
         }
     }
 }

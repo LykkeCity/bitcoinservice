@@ -42,8 +42,6 @@ namespace BitcoinJob.Modules
                 pool.AddDefaultConnection(_dbSettingsManager.ConnectionString(x => x.DataConnString));
                 pool.AddConnection("client", _dbSettingsManager.ConnectionString(x => x.ClientSignatureConnString));
             });
-
-            builder.RegisterSource(new AnyConcreteTypeNotAlreadyRegisteredSource());
         }
     }
 }

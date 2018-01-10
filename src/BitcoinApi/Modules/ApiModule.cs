@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Autofac;
-using Autofac.Features.ResolveAnything;
+﻿using Autofac;
 using AzureRepositories;
-using BitcoinApi.Services;
 using Common.Log;
 using Core.Settings;
 using LkeServices;
-using Lykke.JobTriggers.Extenstions;
 using Lykke.SettingsReader;
 using MongoRepositories;
 
@@ -36,9 +30,6 @@ namespace BitcoinApi.Modules
             builder.BindCommonServices();
             builder.BindAzure(_dbSettingsManager, _log);
             builder.BindMongo(_dbSettingsManager.ConnectionString(x => x.MongoDataConnString).CurrentValue);
-            builder.RegisterType<RetryFailedTransactionService>().As<IRetryFailedTransactionService>();
-
-            builder.RegisterSource(new AnyConcreteTypeNotAlreadyRegisteredSource());
         }
     }
 }

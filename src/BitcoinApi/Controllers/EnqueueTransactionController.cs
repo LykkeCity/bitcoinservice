@@ -1,13 +1,7 @@
-﻿using System;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using BitcoinApi.Filters;
 using BitcoinApi.Models;
-using BitcoinApi.Services;
 using Common;
-using Common.Log;
 using Core.Exceptions;
 using Core.OpenAssets;
 using Core.Repositories.Assets;
@@ -24,26 +18,21 @@ namespace BitcoinApi.Controllers
         private readonly ILykkeTransactionBuilderService _builder;
         private readonly IAssetRepository _assetRepository;
         private readonly CachedDataDictionary<string, IAssetSetting> _assetSettingCache;
-        private readonly OffchainService _offchainService;
+        private readonly IOffchainService _offchainService;
         private readonly ITransactionQueueWriter _transactionQueueWriter;
-        private readonly IRetryFailedTransactionService _retryFailedService;
 
         public EnqueueTransactionController(ILykkeTransactionBuilderService builder,
             IAssetRepository assetRepository,
-            IAssetSettingRepository assetSettingRepository,
             CachedDataDictionary<string, IAssetSetting> assetSettingCache,
-            OffchainService offchainService,
-            ITransactionQueueWriter transactionQueueWriter, IRetryFailedTransactionService retryFailedService)
+            IOffchainService offchainService,
+            ITransactionQueueWriter transactionQueueWriter)
         {
             _builder = builder;
             _assetRepository = assetRepository;
             _assetSettingCache = assetSettingCache;
             _offchainService = offchainService;
             _transactionQueueWriter = transactionQueueWriter;
-            _retryFailedService = retryFailedService;
         }
-
-
 
         /// <summary>
         /// Add transfer transaction to queue for building
@@ -255,16 +244,6 @@ namespace BitcoinApi.Controllers
             {
                 TransactionId = transactionId
             });
-        }
-
-        [HttpPost("retry")]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(typeof(ApiException), 400)]
-        public async Task<IActionResult> Retry([FromBody] RetryFailedRequest model)
-        {
-            await _retryFailedService.RetryTransaction(model.TransactionId);
-
-            return Ok();
         }
 
         private async Task ValidateAddress(string address, bool checkOffchain = true)

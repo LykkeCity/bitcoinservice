@@ -6,6 +6,7 @@ using Common.Log;
 using Core;
 using Core.Bcc;
 using Core.Bitcoin;
+using Core.OpenAssets;
 using Core.Outputs;
 using Core.Performance;
 using Core.Providers;
@@ -17,7 +18,6 @@ using LkeServices.Bitcoin;
 using LkeServices.Outputs;
 using LkeServices.Performance;
 using LkeServices.Providers;
-using LkeServices.Providers.Rest;
 using LkeServices.QBitNinja;
 using LkeServices.RabbitNotifiaction;
 using LkeServices.Signature;
@@ -62,6 +62,9 @@ namespace LkeServices
             ioc.RegisterType<BitcoinBroadcastService>().As<IBitcoinBroadcastService>();
             ioc.RegisterType<PerformanceMonitorFactory>().As<IPerformanceMonitorFactory>();
             ioc.RegisterType<SpentOutputService>().As<ISpentOutputService>();
+
+            ioc.RegisterType<TransactionBuildContextFactory>();
+            ioc.RegisterType<TransactionBuildContext>();
 
             ioc.Register(x =>
                 {

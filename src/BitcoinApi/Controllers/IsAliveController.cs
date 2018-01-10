@@ -1,15 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using BitcoinApi.Filters;
 using Core.Bitcoin;
-using Core.Exceptions;
 using Core.Providers;
-using Core.Settings;
 using LkeServices.Providers;
-using Lykke.Common.Api.Contract.Responses;
 using Microsoft.AspNetCore.Mvc;
 using QBitNinja.Client;
 
@@ -83,6 +77,19 @@ namespace BitcoinApi.Controllers
         public async Task NinjaAlive()
         {
             await _qbitninja().GetBlock(new QBitNinja.Client.Models.BlockFeature(1));
+        }
+
+        public class ErrorResponse
+        {
+            public string ErrorMessage { get; set; }
+        }
+
+        public class IsAliveResponse
+        {
+            public string Name { get; set; }
+            public string Version { get; set; }
+            public string Env { get; set; }
+            public bool IsDebug { get; set; }
         }
     }
 }
