@@ -18,8 +18,8 @@ namespace LkeServices.Wallet
         Task<IWalletAddress> GetMultisig(string clientPubKey);
         Task<IWalletAddress> GetMultisigByAddr(string multisig);
         Task<IEnumerable<IWalletAddress>> GetAllMultisigs();
-
         Task<ISegwitPrivateWallet> GetOrCreateSegwitPrivateWallet(string clientPubKey);
+        Task<ISegwitPrivateWallet> CreateSegwitWallet();
     }
 
     public class WalletService : IWalletService
@@ -78,7 +78,16 @@ namespace LkeServices.Wallet
             var segwitAddress = segwitPubKey.WitHash.ScriptPubKey.Hash.GetAddress(_connectionParams.Network);
 
             return await _segwitPrivateWalletRepository.AddSegwitPrivateWallet(clientPubKey, segwitAddress.ToString(), 
-                segwitPubKey.ToString(_connectionParams.Network), segwitPubKey.WitHash.ScriptPubKey.ToString());
+                segwitPubKey.ToString(), segwitPubKey.WitHash.ScriptPubKey.ToString());
+        }
+
+        public async Task<ISegwitPrivateWallet> CreateSegwitWallet()
+        {
+            var segwitPubKey = new PubKey(await _signatureApiProvider.GeneratePubKey());
+            var segwitAddress = segwitPubKey.WitHash.ScriptPubKey.Hash.GetAddress(_connectionParams.Network);
+
+            return await _segwitPrivateWalletRepository.AddSegwitPrivateWallet(null, segwitAddress.ToString(),
+                segwitPubKey.ToString(), segwitPubKey.WitHash.ScriptPubKey.ToString());
         }
 
         private async Task<IWalletAddress> CreateMultisig(string clientPubKey, string exchangePubKey)

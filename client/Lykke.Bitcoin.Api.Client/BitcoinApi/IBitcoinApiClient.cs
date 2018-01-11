@@ -19,6 +19,7 @@ namespace Lykke.Bitcoin.Api.Client.BitcoinApi
         Task<OnchainResponse> DestroyAsync(DestroyData data);
         Task<OnchainResponse> SwapAsyncTransaction(SwapData data);
         Task<OnchainResponse> RetryAsync(RetryData data);
+        Task<OnchainResponse> SegwitTransfer(Guid? transactionId, string sourceAddress);
 
         //offchain
         Task<OffchainResponse> OffchainTransferAsync(OffchainTransferData data);
@@ -63,6 +64,7 @@ namespace Lykke.Bitcoin.Api.Client.BitcoinApi
         Task<AllWalletsResponse> GetAllWallets();
         Task<Wallet> GetWallet(string clientPubKey);
         Task<SegwitWallet> GetSegwitWallet(string clientPubKey);
+        Task<SegwitWallet> GetSegwitWallet();
         Task<LykkePayWallet> GenerateLykkePayWallet();
     }
 }

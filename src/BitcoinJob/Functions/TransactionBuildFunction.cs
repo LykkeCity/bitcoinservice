@@ -97,6 +97,11 @@ namespace BitcoinJob.Functions
                                                         await _assetRepository.GetAssetById(destroy.Asset),
                                                         message.TransactionId);
                         break;
+                    case TransactionCommandType.SegwitTransferToHotwallet:
+                        var segwitTransfer = message.Command.DeserializeJson<SegwitTransferCommand>();
+                        transactionResponse = await _lykkeTransactionBuilderService.GetTransferFromSegwitWallet(
+                                                        OpenAssetsHelper.ParseAddress(segwitTransfer.SourceAddress), message.TransactionId);
+                        break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }

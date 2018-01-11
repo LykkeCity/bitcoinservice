@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
@@ -24,6 +25,8 @@ namespace BitcoinJob.Functions
         private readonly BaseSettings _settings;
         private readonly ILog _logger;        
         private readonly ISignatureApiProvider _exchangeSignatureApi;
+
+        private readonly string[] _unacceptableTxErrors = {"bad-txns-inputs-spent", "txn-mempool-conflict"};
 
         public BroadcastingTransactionFunction(IBitcoinBroadcastService broadcastService,
             ITransactionBlobStorage transactionBlobStorage,
@@ -52,12 +55,15 @@ namespace BitcoinJob.Functions
             }
             catch (RPCException e)
             {
+                
                 if (e.Message != transaction.LastError)
                     await _logger.WriteWarningAsync("BroadcastingTransactionFunction", "BroadcastTransaction", $"Id: [{transaction.TransactionId}]", $"Message: {e.Message} Code:{e.RPCCode} CodeMessage:{e.RPCCodeMessage}");
 
                 transaction.LastError = e.Message;
 
-                if (transaction.DequeueCount >= _settings.MaxDequeueCount)
+                var unacceptableTx = _unacceptableTxErrors.Any(o => e.Message.Contains(o));
+
+                if (transaction.DequeueCount >= _settings.MaxDequeueCount || unacceptableTx)
                 {
                     context.MoveMessageToPoison();
                 }

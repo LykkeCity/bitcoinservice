@@ -36,6 +36,7 @@ namespace BitcoinJob.Functions
                 }
                 task.TryCount++;
                 context.MoveMessageToEnd(task.ToJson());
+                context.SetCountQueueBasedDelay(10000, 100);
                 return;
             }
             await _paidFeesRepository.Insert(task.TransactionHash, tr.Fees.ToDecimal(MoneyUnit.BTC), task.Date, task.Multisig, task.Asset);

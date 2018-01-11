@@ -110,6 +110,30 @@ namespace BitcoinApi.Controllers
             });
         }
 
+        /// <summary>
+        /// Add transfer transaction to queue for building
+        /// </summary>
+        /// <returns>Internal transaction id</returns>
+        [HttpPost("segwit/transfer")]
+        [ProducesResponseType(typeof(TransactionIdResponse), 200)]
+        [ProducesResponseType(typeof(ApiException), 400)]
+        public async Task<IActionResult> SegwitTransferToHotwallet([FromBody]SegwitTransferRequest model)
+        {            
+            await ValidateAddress(model.SourceAddress, false);         
+            
+            var transactionId = await _builder.AddTransactionId(model.TransactionId, $"SegwitTransfer: {model.ToJson()}");
+
+            await _transactionQueueWriter.AddCommand(transactionId, TransactionCommandType.SegwitTransferToHotwallet, new SegwitTransferCommand
+            {                
+                SourceAddress = model.SourceAddress                
+            }.ToJson());
+
+            return Ok(new TransactionIdResponse
+            {
+                TransactionId = transactionId
+            });
+        }
+
 
         /// <summary>
         /// Add transfer all transaction to queue for building
