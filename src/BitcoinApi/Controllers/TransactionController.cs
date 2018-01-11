@@ -141,6 +141,9 @@ namespace BitcoinApi.Controllers
             foreach (var source in model.Sources)
                 await ValidateAddress(source.Address);
 
+            if (model.FixedFee.GetValueOrDefault() < 0)
+                throw new BackendException("Fixed fee must be greater than or equal to zero", ErrorCode.BadInputParameter);
+
             var destAddress = OpenAssetsHelper.ParseAddress(model.Destination);
             if (destAddress == null)
                 throw new BackendException("Invalid destination address provided", ErrorCode.InvalidAddress);
@@ -152,7 +155,7 @@ namespace BitcoinApi.Controllers
             var transactionId = await _builder.AddTransactionId(model.TransactionId, $"MultipleTransfer: {model.ToJson()}");
 
             var response = await _builder.GetMultipleTransferTransaction(destAddress, asset,
-                model.Sources.ToDictionary(x => x.Address, x => x.Amount), model.FeeRate, model.FixedFee, transactionId);
+                model.Sources.ToDictionary(x => x.Address, x => x.Amount), model.FeeRate, model.FixedFee.GetValueOrDefault(), transactionId);
 
             var fullSignedHex = await _signatureApiProvider.SignTransaction(response.Transaction);
 
