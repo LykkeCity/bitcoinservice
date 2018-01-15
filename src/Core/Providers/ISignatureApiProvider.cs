@@ -36,7 +36,7 @@ namespace Core.Providers
         Task<PubKeyResponse> GenerateWallet(string tag = null);
         Task<string> SignTransaction(string transaction, SigHash hashType = SigHash.All, string[] additionalSecrets = null, string[] prevTransactions = null);
         Task<string> SignBccTransaction(string transaction, SigHash hashType = SigHash.All, string[] additionalSecrets = null);
-        Task<string> GetNextAddress(string address);
+        Task<PubKey> GetNextAddress(string address);
         Task AddKey(string privateKey);
     }
 

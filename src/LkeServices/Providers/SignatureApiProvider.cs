@@ -36,9 +36,9 @@ namespace LkeServices.Providers
             return (await _signatureApi.SignBccTransaction(new TransactionSignRequest(transaction, (byte)hashType, additionalSecrets))).SignedTransaction;
         }
 
-        public async Task<string> GetNextAddress(string address)
+        public async Task<PubKey> GetNextAddress(string address)
         {
-            return (await _signatureApi.GetNextAddress(new NextAddressRequest {Address = address})).Address;            
+            return new PubKey((await _signatureApi.GetNextAddress(new NextAddressRequest {Address = address})).PubKey);
         }
 
         public Task AddKey(string privateKey)

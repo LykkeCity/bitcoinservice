@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Threading.Tasks;
+using Core;
 using Core.Bitcoin;
 using Core.Exceptions;
 using Core.OpenAssets;
@@ -29,6 +30,7 @@ namespace LkeServices.Transactions
         Task AddFee(Transaction tr, TransactionBuildContext context);
         Task AddFeeWithoutChange(Transaction tr, TransactionBuildContext context, int maxCoins = int.MaxValue);
         Task<Money> CalcFee(Transaction tr, int feeRate = 0);
+        Task<Money> CalcFee(int inputsCount, int outputsCount);
     }
 
     public class TransactionBuildHelper : ITransactionBuildHelper
@@ -275,13 +277,18 @@ namespace LkeServices.Transactions
                     PrevOut = feeInput.Outpoint
                 });
                 providedAmount += feeInput.Amount;
-                fee = await _feeProvider.CalcFeeForTransaction(tr);                
+                fee = await _feeProvider.CalcFeeForTransaction(tr);
             } while (fee > providedAmount && count < maxCoins);
         }
 
         public Task<Money> CalcFee(Transaction tr, int feeRate = 0)
         {
             return _feeProvider.CalcFeeForTransaction(tr, feeRate);
+        }
+
+        public Task<Money> CalcFee(int inputsCount, int outputsCount)
+        {
+            return _feeProvider.CalcFee(inputsCount * Constants.InputSize + outputsCount * 33 + 10);
         }
     }
 }
