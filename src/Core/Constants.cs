@@ -17,10 +17,8 @@ namespace Core
         public const string BroadcastingQueue = "broadcasting-transactions";
         public const string BroadcastMonitoringQueue = "broadcast-monitoring";
         public const string FeeReserveMonitoringQueue = "fee-reserve-monitoring";
-
-        public const string ClientSignedTransactionQueue = "client-signed-transactions";
+        
         public const string ClientSignMonitoringQueue = "client-sign-monitoring";
-        public const string TransactionsForClientSignatureQueue = "transaction-out";
 
         public const string ReturnBroadcatedOutputsQueue = "return-broadcasted-outputs";
 
@@ -35,6 +33,7 @@ namespace Core
         public const string BccBlockSetting = "FirstBccBlock";
         public const string CommitmentFeesMultiplierSetting = "CommitmentFeesMultiplier";
         public const string MaxFeeRateSetting = "MaxFeeRate";
+        public const string CanBeBroadcastedSetting = "CanUseBroadcastFunction";
 
         public const string DefaultAssetSetting = "Default";
 

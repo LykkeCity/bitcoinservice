@@ -104,9 +104,6 @@ namespace Core.Settings
         public string MongoDataConnString { get; set; }
         public string DictsConnString { get; set; }
         public string SharedConnString { get; set; }
-        public string ClientPersonalInfoConnString { get; set; }
-        public string BackofficeConnString { get; set; }
-        public string ClientSignatureConnString { get; set; }
     }
 
     public class Offchain

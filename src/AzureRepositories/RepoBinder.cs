@@ -94,8 +94,6 @@ namespace AzureRepositories
                 {
                     case Constants.EmailNotifierQueue:
                         return AzureQueueExt.Create(settings.ConnectionString(x => x.SharedConnString), queueName);
-                    case Constants.TransactionsForClientSignatureQueue:
-                        return AzureQueueExt.Create(settings.ConnectionString(x => x.ClientSignatureConnString), queueName);
                     default:
                         return AzureQueueExt.Create(settings.ConnectionString(x => x.DataConnString), queueName);
                 }
