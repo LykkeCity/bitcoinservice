@@ -24,6 +24,7 @@ namespace AzureRepositories.Assets
         public string PartnerId { get; set; }
         public bool IssueAllowed { get; set; }
         public bool NotLykkeAsset { get; set; }
+        public double LowVolumeAmount { get; set; }
 
         public string Blockchain { get; set; }
     }

@@ -567,13 +567,15 @@ namespace LkeServices.Transactions
         public async Task<CreateTransactionResponse> GetTransferFromSegwitWallet(BitcoinAddress source, Guid transactionId)
         {
             var assetSetting = await _assetSettingCache.GetItemAsync("BTC");
+            var asset = await _assetRepository.GetItemAsync("BTC");
 
             var hotWallet = OpenAssetsHelper.ParseAddress(!string.IsNullOrEmpty(assetSetting.ChangeWallet) ? assetSetting.ChangeWallet : assetSetting.HotWallet);
             var context = _transactionBuildContextFactory.Create(_connectionParams.Network);
-
+            var lowVolume = new Money((decimal)asset.LowVolumeAmount, MoneyUnit.BTC);
             return await context.Build(async () =>
             {
-                var outputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(source.ToString())).OfType<Coin>().ToList();
+                var outputs = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(source.ToString())).OfType<Coin>()
+                    .Where(o => o.Amount >= lowVolume).ToList();
                 if (!outputs.Any())
                     throw new BackendException($"Address {source} has not unspent outputs", ErrorCode.NoCoinsFound);
 
