@@ -66,22 +66,7 @@ namespace Lykke.Bitcoin.Api.Client.BitcoinApi
 
             return PrepareOnchainResult(response);
         }
-
-        public async Task<OnchainResponse> RetryAsync(RetryData data)
-        {
-            var request = new RetryFailedRequest(data.TransactionId);
-
-            var response = await _apiClient.ApiEnqueueTransactionRetryPostAsync(request);
-
-            if (response != null)
-                return new OnchainResponse
-                {
-                    Error = new ErrorResponse { Code = response.Error.Code, Message = response.Error.Message }
-                };
-
-            return new OnchainResponse();
-        }
-
+       
         public async Task<OnchainResponse> SegwitTransfer(Guid? transactionId, string sourceAddress)
         {
             var response = await _apiClient.ApiEnqueueTransactionSegwitTransferPostAsync(new SegwitTransferRequest(transactionId, sourceAddress));
