@@ -30,6 +30,9 @@ namespace LkeServices.Transactions
     {
         Task<CreateTransactionResponse> GetTransferTransaction(BitcoinAddress source, BitcoinAddress destination, decimal amount, IAsset assetId, Guid transactionId, bool shouldReserveFee = false, bool sentDust = false);
 
+        Task<CreateTransactionResponse> GetPrivateTransferTransaction(BitcoinAddress source, BitcoinAddress destinationAddress, decimal amount, decimal fee, 
+            Guid transactionId);
+
         Task<CreateTransactionResponse> GetSwapTransaction(BitcoinAddress address1, decimal amount1, IAsset asset1,
             BitcoinAddress address2, decimal amount2, IAsset asset2, Guid transactionId);
 
@@ -128,6 +131,35 @@ namespace LkeServices.Transactions
                         await _feeReserveMonitoringWriter.AddTransactionFeeReserve(transactionId, context.FeeCoins);
 
                     return new CreateTransactionResponse(buildedTransaction.ToHex(), transactionId);
+                });
+            }, exception => (exception as BackendException)?.Code == ErrorCode.TransactionConcurrentInputsProblem, 3, _log);
+        }
+
+        public async Task<CreateTransactionResponse> GetPrivateTransferTransaction(BitcoinAddress source, BitcoinAddress destinationAddress, decimal amount, decimal fee, Guid transactionId)
+        {
+            return await Retry.Try(() =>
+            {
+                var context = _transactionBuildContextFactory.Create(_connectionParams.Network);
+
+                return context.Build(async () =>
+                {
+                    var coins = (await _bitcoinOutputsService.GetUncoloredUnspentOutputs(source.ToString())).OfType<Coin>().ToList();
+                    var totalAmount = new Money(coins.Select(o => o.Amount).DefaultIfEmpty().Sum(o => o?.Satoshi ?? 0));
+
+                    if (totalAmount.ToDecimal(MoneyUnit.BTC) < amount)
+                        throw new BackendException($"The sum of total applicable outputs is less than the required: {amount} btc.", ErrorCode.NotEnoughBitcoinAvailable);
+
+                    var builder = new TransactionBuilder();
+                    builder.AddCoins(coins);
+                    builder.SetChange(source);
+                    builder.Send(destinationAddress, new Money(amount, MoneyUnit.BTC));
+                    builder.SubtractFees();
+                    if (fee > 0)
+                        builder.SendFees(new Money(fee, MoneyUnit.BTC));
+                    else
+                        builder.SendEstimatedFees(await _feeProvider.GetFeeRate());
+                    var tx = builder.BuildTransaction(true);
+                    return new CreateTransactionResponse(tx.ToHex(), transactionId);
                 });
             }, exception => (exception as BackendException)?.Code == ErrorCode.TransactionConcurrentInputsProblem, 3, _log);
         }

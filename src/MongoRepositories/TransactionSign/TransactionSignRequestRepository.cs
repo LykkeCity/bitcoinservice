@@ -12,6 +12,7 @@ namespace MongoRepositories.TransactionSign
         public Guid TransactionId => Guid.Parse(BsonId);
         public bool? Invalidated { get; set; }
         public string RawRequest { get; set; }
+        public bool DoNotSign { get; set; }
 
 
         public static TransactionSignRequestEntity Create(Guid transactionId, string rawRequest)
@@ -51,6 +52,16 @@ namespace MongoRepositories.TransactionSign
                 entity =>
                 {
                     entity.Invalidated = true;
+                    return entity;
+                });
+        }
+
+        public Task DoNotSign(Guid transactionId)
+        {
+            return _table.ReplaceAsync(transactionId.ToString(),
+                entity =>
+                {
+                    entity.DoNotSign = true;
                     return entity;
                 });
         }

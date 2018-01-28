@@ -23,8 +23,15 @@ namespace Core.OpenAssets
             }
 
             if (address != null)           
-                return address;            
-            return new BitcoinColoredAddress(base58Data)?.Address;            
+                return address;
+            try
+            {
+                return new BitcoinColoredAddress(base58Data)?.Address;
+            }
+            catch (Exception)
+            {
+                throw new BackendException($"Can't parse address '{base58Data}'", ErrorCode.BadInputParameter);
+            }
         }
 
         public static bool IsBitcoin(string asset)
