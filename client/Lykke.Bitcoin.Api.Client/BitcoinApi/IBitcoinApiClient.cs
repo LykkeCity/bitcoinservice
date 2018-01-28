@@ -17,8 +17,7 @@ namespace Lykke.Bitcoin.Api.Client.BitcoinApi
         Task<OnchainResponse> CashoutAsync(CashoutModel data);
         Task<OnchainResponse> TransferAllAsync(TransferAllData data);
         Task<OnchainResponse> DestroyAsync(DestroyData data);
-        Task<OnchainResponse> SwapAsyncTransaction(SwapData data);
-        Task<OnchainResponse> RetryAsync(RetryData data);
+        Task<OnchainResponse> SwapAsyncTransaction(SwapData data);        
         Task<OnchainResponse> SegwitTransfer(Guid? transactionId, string sourceAddress);
 
         //offchain
@@ -53,7 +52,7 @@ namespace Lykke.Bitcoin.Api.Client.BitcoinApi
         Task<HttpOperationResponse> IsAliveNinja();
 
         //transaction
-        Task<OnchainResponse> TransactionTransfer(Guid? transactionId, string sourceAddress, string destinationAddress, decimal amount, string asset);
+        Task<OnchainResponse> TransactionTransfer(Guid? transactionId, string sourceAddress, string destinationAddress, decimal amount, string asset, decimal? fee = null);
         Task TransactionBroadcast(Guid transactionId, string transaction);
         Task<OnchainResponse> TransactionMultipleTransfer(Guid? transactionId, string destination, string asset, int feeRate, decimal fixedFee,
             IEnumerable<ToOneAddress> sources);

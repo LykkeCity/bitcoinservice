@@ -41,7 +41,7 @@ namespace LkeServices.Bitcoin
             _paidFeesTaskWriter = paidFeesTaskWriter;
         }
 
-        public async Task BroadcastTransaction(Guid transactionId, Transaction tx, IPerformanceMonitor monitor = null, bool useHandlers = true, Guid? notifyTxId = null)
+        public async Task BroadcastTransaction(Guid transactionId, Transaction tx, IPerformanceMonitor monitor = null, bool useHandlers = true, Guid? notifyTxId = null, bool savePaidFees = true)
         {
             var hash = tx.GetHash().ToString();
 
@@ -51,7 +51,7 @@ namespace LkeServices.Bitcoin
                 await _apiProvider.SendPreBroadcastNotification(new LykkeTransactionNotification(notifyTxId ?? transactionId, hash));
             }
 
-            await Broadcast(transactionId, tx, monitor, hash);
+            await Broadcast(transactionId, tx, monitor, hash, savePaidFees);
         }
 
 
@@ -75,7 +75,7 @@ namespace LkeServices.Bitcoin
             }
         }
 
-        private async Task Broadcast(Guid transactionId, Transaction tx, IPerformanceMonitor monitor, string hash)
+        private async Task Broadcast(Guid transactionId, Transaction tx, IPerformanceMonitor monitor, string hash, bool savePaidFees = true)
         {
             monitor?.Step("Broadcast transaction");
             try
@@ -94,7 +94,7 @@ namespace LkeServices.Bitcoin
             }
             monitor?.Step("Set transaction hash and add to monitoring");
             await Task.WhenAll(
-                _paidFeesTaskWriter.AddTask(hash, DateTime.UtcNow, null, null),
+                savePaidFees ? _paidFeesTaskWriter.AddTask(hash, DateTime.UtcNow, null, null) : Task.CompletedTask,
                 _broadcastedOutputRepository.SetTransactionHash(transactionId, hash),
                 _monitoringWriter.AddToMonitoring(transactionId, hash)
             );
