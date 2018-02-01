@@ -20,7 +20,7 @@ namespace AzureRepositories.TransactionOutputs
 
         private string CreateQueueName(string assetId)
         {
-            return "po-" + assetId.ToLower();
+            return "po-" + assetId.Replace(".", "-").Replace("_", "-").ToLower();
         }
 
         public IPregeneratedOutputsQueue Create(string assetId)
