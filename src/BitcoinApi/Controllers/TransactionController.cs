@@ -41,14 +41,14 @@ namespace BitcoinApi.Controllers
 
         public TransactionController(ILykkeTransactionBuilderService builder,
             IAssetRepository assetRepository,
-            Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
+            ISignatureApiProvider signatureApiProvider,
             ITransactionSignRequestRepository transactionSignRequestRepository,
             ITransactionBlobStorage transactionBlobStorage,
             IBitcoinBroadcastService broadcastService, IBroadcastedTransactionRepository broadcastedTransactionRepository, IOffchainService offchainService)
         {
             _builder = builder;
             _assetRepository = assetRepository;
-            _signatureApiProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
+            _signatureApiProvider = signatureApiProvider;
             _transactionSignRequestRepository = transactionSignRequestRepository;
             _transactionBlobStorage = transactionBlobStorage;
             _broadcastService = broadcastService;

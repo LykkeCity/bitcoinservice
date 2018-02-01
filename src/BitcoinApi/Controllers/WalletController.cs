@@ -19,10 +19,10 @@ namespace BitcoinApi.Controllers
         private readonly IWalletService _walletService;
         private readonly ISignatureApiProvider _signatureProvider;
 
-        public WalletController(IWalletService walletService, Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory)
+        public WalletController(IWalletService walletService, ISignatureApiProvider signatureApiProvider)
         {
             _walletService = walletService;
-            _signatureProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
+            _signatureProvider = signatureApiProvider;
         }
 
         /// <summary>

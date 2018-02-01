@@ -14,31 +14,20 @@ namespace BitcoinApi.Controllers
     {
         private readonly IRpcBitcoinClient _rpcClient;
         private readonly Func<QBitNinjaClient> _qbitninja;
-        private readonly Func<SignatureApiProviderType, ISignatureApi> _signatureApiFactory;
+        private readonly ISignatureApi _signatureApi;
 
-        public IsAliveController(IRpcBitcoinClient rpcClient, Func<QBitNinjaClient> qbitninja, Func<SignatureApiProviderType, ISignatureApi> signatureApiFactory)
+        public IsAliveController(IRpcBitcoinClient rpcClient, Func<QBitNinjaClient> qbitninja, ISignatureApi signatureApi)
         {
             _rpcClient = rpcClient;
             _qbitninja = qbitninja;
-            _signatureApiFactory = signatureApiFactory;
+            _signatureApi = signatureApi;
         }
 
         [HttpGet]
         public async Task<IActionResult> Get()
-        {
-            var clientUp = await CheckSigninService(SignatureApiProviderType.Client);
-            var serverUp = await CheckSigninService(SignatureApiProviderType.Exchange);
-
-            if (!clientUp && !serverUp)
-                return StatusCode((int)HttpStatusCode.InternalServerError, new ErrorResponse
-                {
-                    ErrorMessage = $"Job is unhealthy: Client and server signin services are not working!"
-                });
-            if (!clientUp)
-                return StatusCode((int)HttpStatusCode.InternalServerError, new ErrorResponse
-                {
-                    ErrorMessage = $"Job is unhealthy: Client signin services is not working!"
-                });
+        {          
+            var serverUp = await CheckSigninService();
+            
             if (!serverUp)
                 return StatusCode((int)HttpStatusCode.InternalServerError, new ErrorResponse
                 {
@@ -53,11 +42,11 @@ namespace BitcoinApi.Controllers
             });
         }
 
-        private async Task<bool> CheckSigninService(SignatureApiProviderType type)
+        private async Task<bool> CheckSigninService()
         {
             try
             {
-                await _signatureApiFactory(type).IsAlive();
+                await _signatureApi.IsAlive();
                 return true;
             }
             catch

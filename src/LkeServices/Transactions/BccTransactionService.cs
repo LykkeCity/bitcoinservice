@@ -53,7 +53,7 @@ namespace LkeServices.Transactions
 
         public BccTransactionService(IBccOutputService bccOutputService, [KeyFilter(Constants.BccKey)] ISpentOutputRepository spentOutputRepository,
             [KeyFilter(Constants.BccKey)] RpcConnectionParams connectionParams, ITransactionBuildHelper transactionBuildHelper,
-            Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
+            ISignatureApiProvider signatureApiProvider,
             ILog log, [KeyFilter(Constants.BccKey)] IRpcBitcoinClient rpcBitcoinClient, IWalletService walletService,
             IOffchainChannelRepository offchainChannelRepository,
             ICommitmentRepository commitmentRepository
@@ -68,7 +68,7 @@ namespace LkeServices.Transactions
             _walletService = walletService;
             _offchainChannelRepository = offchainChannelRepository;
             _commitmentRepository = commitmentRepository;
-            _signatureApi = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
+            _signatureApi = signatureApiProvider;
         }
 
         public async Task Transfer(BitcoinAddress from, BitcoinAddress to, decimal amount)

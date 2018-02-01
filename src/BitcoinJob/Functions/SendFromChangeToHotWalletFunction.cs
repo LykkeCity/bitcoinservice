@@ -30,7 +30,7 @@ namespace BitcoinJob.Functions
         public SendFromChangeToHotWalletFunction(IBitcoinOutputsService bitcoinOutputsService,
             IFeeProvider feeProvider,
             IBitcoinBroadcastService bitcoinBroadcastService,
-            Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
+            ISignatureApiProvider signatureApiProvider,
             ISpentOutputService spentOutputService,
             ILog log,
             BaseSettings baseSettings)
@@ -39,7 +39,7 @@ namespace BitcoinJob.Functions
             _feeProvider = feeProvider;
             _bitcoinBroadcastService = bitcoinBroadcastService;
             _spentOutputService = spentOutputService;            
-            _signatureApiProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
+            _signatureApiProvider = signatureApiProvider;
             _log = log;
             _baseSettings = baseSettings;
         }
