@@ -127,7 +127,7 @@ namespace LkeServices.Transactions
             IBitcoinOutputsService bitcoinOutputsService,
             IOffchainChannelRepository offchainChannelRepository,
             ISignatureVerifier signatureVerifier,
-            Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
+            ISignatureApiProvider signatureApiProvider,
             ICommitmentRepository commitmentRepository,
             IBroadcastedOutputRepository broadcastedOutputRepository,
             IRevokeKeyRepository revokeKeyRepository,
@@ -155,7 +155,7 @@ namespace LkeServices.Transactions
             _bitcoinOutputsService = bitcoinOutputsService;
             _offchainChannelRepository = offchainChannelRepository;
             _signatureVerifier = signatureVerifier;
-            _signatureApiProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
+            _signatureApiProvider = signatureApiProvider;            
             _commitmentRepository = commitmentRepository;
             _broadcastedOutputRepository = broadcastedOutputRepository;
             _revokeKeyRepository = revokeKeyRepository;

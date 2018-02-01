@@ -51,7 +51,7 @@ namespace BitcoinJob.Functions
             TransactionBuildContextFactory transactionBuildContextFactory,
             IBitcoinBroadcastService bitcoinBroadcastService,
             IBroadcastedOutputRepository broadcastedOutputRepository,
-            Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
+            ISignatureApiProvider signatureApiProvider,
             IEmailNotifier emailNotifier, ISlackNotifier slackNotifier,
             ISpentOutputService spentOutputService,
             IPregeneratedOutputsQueueFactory pregeneratedOutputsQueueFactory)
@@ -70,7 +70,7 @@ namespace BitcoinJob.Functions
             _slackNotifier = slackNotifier;
             _spentOutputService = spentOutputService;
             _pregeneratedOutputsQueueFactory = pregeneratedOutputsQueueFactory;
-            _signatureApi = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
+            _signatureApi = signatureApiProvider;
         }
 
         [TimerTrigger("1:00:00")]

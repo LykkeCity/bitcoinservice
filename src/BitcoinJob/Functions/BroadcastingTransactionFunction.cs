@@ -32,7 +32,7 @@ namespace BitcoinJob.Functions
 
         public BroadcastingTransactionFunction(IBitcoinBroadcastService broadcastService,
             ITransactionBlobStorage transactionBlobStorage,
-            Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
+            ISignatureApiProvider signatureApiProvider,
             BaseSettings settings, ILog logger, ISettingsRepository settingsRepository)
         {
             _broadcastService = broadcastService;
@@ -41,7 +41,7 @@ namespace BitcoinJob.Functions
             _logger = logger;
             _settingsRepository = settingsRepository;
 
-            _exchangeSignatureApi = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
+            _exchangeSignatureApi = signatureApiProvider;
         }
 
         [QueueTrigger(Constants.BroadcastingQueue, 100)]
@@ -49,7 +49,7 @@ namespace BitcoinJob.Functions
         {
             try
             {
-                var signedByClientTr = await _transactionBlobStorage.GetTransaction(transaction.TransactionId, TransactionBlobType.Client);
+                var signedByClientTr = await _transactionBlobStorage.GetTransaction(transaction.TransactionId, TransactionBlobType.Initial);
 
                 var signedByExchangeTr = await _exchangeSignatureApi.SignTransaction(signedByClientTr);
 

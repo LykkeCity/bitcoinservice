@@ -259,7 +259,7 @@ namespace Bitcoin.Tests
 
             var bitcoinOutService = Config.Services.GetService<IBitcoinOutputsService>();
             var helper = Config.Services.GetService<ITransactionBuildHelper>();
-            var signProvider = Config.Services.GetService<Func<SignatureApiProviderType, ISignatureApiProvider>>()(SignatureApiProviderType.Exchange);
+            var signProvider = Config.Services.GetService<ISignatureApiProvider>();
             var bitcoinClient = Config.Services.GetService<IRpcBitcoinClient>();
             var outputs = await bitcoinOutService.GetUncoloredUnspentOutputs(address);
 

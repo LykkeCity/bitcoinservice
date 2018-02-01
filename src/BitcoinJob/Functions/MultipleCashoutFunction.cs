@@ -35,7 +35,7 @@ namespace BitcoinJob.Functions
         public MultipleCashoutFunction(ICashoutRequestRepository cashoutRequestRepository,
             ISettingsRepository settingsRepository, IMultiCashoutRepository multiCashoutRepository,
             ISlackNotifier slackNotifier, IBitcoinTransactionService bitcoinTransactionService,
-            Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
+            ISignatureApiProvider signatureApiProvider,
             ILykkeTransactionBuilderService lykkeTransactionBuilderService, IBitcoinBroadcastService bitcoinBroadcastService)
         {
             _cashoutRequestRepository = cashoutRequestRepository;
@@ -43,7 +43,7 @@ namespace BitcoinJob.Functions
             _multiCashoutRepository = multiCashoutRepository;
             _slackNotifier = slackNotifier;
             _bitcoinTransactionService = bitcoinTransactionService;
-            _signatureApi = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
+            _signatureApi = signatureApiProvider;
             _lykkeTransactionBuilderService = lykkeTransactionBuilderService;
             _bitcoinBroadcastService = bitcoinBroadcastService;
         }

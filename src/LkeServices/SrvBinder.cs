@@ -153,45 +153,16 @@ namespace LkeServices
                 };
                 return RestClient.For<ILykkeApiProvider>(client);
             }).As<ILykkeApiProvider>().SingleInstance();
-
+           
             ioc.Register(x =>
             {
                 var resolver = x.Resolve<IComponentContext>();
                 var settings = resolver.Resolve<BaseSettings>();
-                return new HttpClient { BaseAddress = new Uri(settings.ClientSignatureProviderUrl) };
-            }).Named<HttpClient>("client-signature-http").SingleInstance();
+                
+                return RestClient.For<ISignatureApi>(new HttpClient { BaseAddress = new Uri(settings.SignatureProviderUrl) });
+            }).As<ISignatureApi>().SingleInstance();
 
-            ioc.Register(x =>
-            {
-                var resolver = x.Resolve<IComponentContext>();
-                var settings = resolver.Resolve<BaseSettings>();
-                return new HttpClient { BaseAddress = new Uri(settings.SignatureProviderUrl) };
-            }).Named<HttpClient>("server-signature-http").SingleInstance();
-
-            ioc.Register<Func<SignatureApiProviderType, ISignatureApi>>(x =>
-            {
-                var resolver = x.Resolve<IComponentContext>();
-
-                return type =>
-                {
-                    switch (type)
-                    {
-                        case SignatureApiProviderType.Client:
-                            return RestClient.For<ISignatureApi>(resolver.ResolveNamed<HttpClient>("client-signature-http"));
-                        case SignatureApiProviderType.Exchange:
-                            return RestClient.For<ISignatureApi>(resolver.ResolveNamed<HttpClient>("server-signature-http"));
-                        default:
-                            throw new ArgumentException();
-                    }
-                };
-            });
-
-            ioc.Register<Func<SignatureApiProviderType, ISignatureApiProvider>>(x =>
-            {
-                var resolver = x.Resolve<IComponentContext>();
-                var factory = resolver.Resolve<Func<SignatureApiProviderType, ISignatureApi>>();
-                return type => new SignatureApiProvider(factory(type));
-            });
+            ioc.RegisterType<SignatureApiProvider>().As<ISignatureApiProvider>().SingleInstance();
         }
     }
 }

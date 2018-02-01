@@ -40,7 +40,7 @@ namespace BitcoinJob.Functions
 
         public AddNewChangeAddressFunction(IQBitNinjaApiCaller qBitNinjaApiCaller, 
             CachedDataDictionary<string, IAssetSetting> assetSettingCache, ISettingsRepository settingsRepository, 
-            Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory, BaseSettings baseSettings,
+            ISignatureApiProvider signatureApiProvider, BaseSettings baseSettings,
             IAssetSettingRepository assetSettingRepository, ILog logger, CachedDataDictionary<string, IAsset> assetRepository,
             RpcConnectionParams connectionParams,IWalletService walletService)
         {
@@ -53,7 +53,7 @@ namespace BitcoinJob.Functions
             _assetRepository = assetRepository;
             _connectionParams = connectionParams;
             _walletService = walletService;            
-            _signatureApiProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
+            _signatureApiProvider = signatureApiProvider;
         }
 
         [TimerTrigger("00:30:00")]
