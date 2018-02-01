@@ -45,7 +45,7 @@ namespace BitcoinJob.Functions
             IRpcBitcoinClient bitcoinClient,
             IBroadcastedOutputRepository broadcastedOutputRepository,
             ISpentOutputService spentOutputService,
-            BaseSettings baseSettings, RpcConnectionParams connectionParams, ILog logger, IEmailNotifier emailNotifier, ISlackNotifier slackNotifier, Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory)
+            BaseSettings baseSettings, RpcConnectionParams connectionParams, ILog logger, IEmailNotifier emailNotifier, ISlackNotifier slackNotifier, ISignatureApiProvider signatureApiProvider)
         {
             _assetRepository = assetRepository;
             _pregeneratedOutputsQueueFactory = pregeneratedOutputsQueueFactory;
@@ -59,7 +59,7 @@ namespace BitcoinJob.Functions
             _logger = logger;
             _emailNotifier = emailNotifier;
             _slackNotifier = slackNotifier;
-            _signatureApiProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
+            _signatureApiProvider = signatureApiProvider;
         }
 
 

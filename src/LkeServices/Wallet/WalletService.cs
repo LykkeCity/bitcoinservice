@@ -32,7 +32,7 @@ namespace LkeServices.Wallet
         private readonly RpcConnectionParams _connectionParams;
 
         public WalletService(IWalletAddressRepository walletAddressRepository,
-            Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
+            ISignatureApiProvider signatureApiProvider,
             IRabbitNotificationService notificationService,
             ISegwitPrivateWalletRepository segwitPrivateWalletRepository,
             RpcConnectionParams connectionParams)
@@ -40,7 +40,7 @@ namespace LkeServices.Wallet
             _walletAddressRepository = walletAddressRepository;
             _notificationService = notificationService;
             _segwitPrivateWalletRepository = segwitPrivateWalletRepository;
-            _signatureApiProvider = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
+            _signatureApiProvider = signatureApiProvider;
             _connectionParams = connectionParams;
         }
 
