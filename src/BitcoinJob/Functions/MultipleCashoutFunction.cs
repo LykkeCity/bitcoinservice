@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Core;
 using Core.Bitcoin;
 using Core.Notifiers;
+using Core.Outputs;
 using Core.Providers;
 using Core.Repositories.MultipleCashouts;
 using Core.Repositories.Settings;
@@ -30,13 +31,16 @@ namespace BitcoinJob.Functions
         private readonly IBitcoinTransactionService _bitcoinTransactionService;
         private readonly ILykkeTransactionBuilderService _lykkeTransactionBuilderService;
         private readonly IBitcoinBroadcastService _bitcoinBroadcastService;
+        private readonly ISpentOutputService _spentOutputService;
         private readonly ISignatureApiProvider _signatureApi;
 
         public MultipleCashoutFunction(ICashoutRequestRepository cashoutRequestRepository,
             ISettingsRepository settingsRepository, IMultiCashoutRepository multiCashoutRepository,
             ISlackNotifier slackNotifier, IBitcoinTransactionService bitcoinTransactionService,
             Func<SignatureApiProviderType, ISignatureApiProvider> signatureApiProviderFactory,
-            ILykkeTransactionBuilderService lykkeTransactionBuilderService, IBitcoinBroadcastService bitcoinBroadcastService)
+            ILykkeTransactionBuilderService lykkeTransactionBuilderService,
+            IBitcoinBroadcastService bitcoinBroadcastService,
+            ISpentOutputService spentOutputService)
         {
             _cashoutRequestRepository = cashoutRequestRepository;
             _settingsRepository = settingsRepository;
@@ -46,6 +50,7 @@ namespace BitcoinJob.Functions
             _signatureApi = signatureApiProviderFactory(SignatureApiProviderType.Exchange);
             _lykkeTransactionBuilderService = lykkeTransactionBuilderService;
             _bitcoinBroadcastService = bitcoinBroadcastService;
+            _spentOutputService = spentOutputService;
         }
 
         [TimerTrigger("00:00:10")]
@@ -80,9 +85,19 @@ namespace BitcoinJob.Functions
                 return;
 
             var multiCashoutId = Guid.NewGuid();
-            var createTxData = await _lykkeTransactionBuilderService.GetMultipleCashoutTransaction(cashouts.ToList(), multiCashoutId);
-
-            var signedHex = await _signatureApi.SignTransaction(createTxData.Transaction.ToHex());
+            CreateMultiCashoutTransactionResult createTxData = null;
+            string signedHex;
+            try
+            {
+                createTxData = await _lykkeTransactionBuilderService.GetMultipleCashoutTransaction(cashouts.ToList(), multiCashoutId);
+                signedHex = await _signatureApi.SignTransaction(createTxData.Transaction.ToHex());
+            }
+            catch (Exception)
+            {
+                if (createTxData != null)
+                    await _spentOutputService.RemoveSpentOutputs(createTxData.Transaction);
+                throw;
+            }
 
             var signedTx = new Transaction(signedHex);
 
@@ -104,7 +119,7 @@ namespace BitcoinJob.Functions
                 return;
             }
             await _multiCashoutRepository.IncreaseTryCount(currentMultiCashout.MultipleCashoutId);
-            
+
             var cashouts = await _cashoutRequestRepository.GetCashoutRequests(currentMultiCashout.MultipleCashoutId);
 
             await _bitcoinBroadcastService.BroadcastTransaction(currentMultiCashout.MultipleCashoutId, cashouts.Select(o => o.CashoutRequestId).ToList(),
