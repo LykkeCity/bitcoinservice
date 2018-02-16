@@ -16,21 +16,21 @@ namespace BitcoinApi.Controllers
     [Route("api/[controller]")]
     public class EnqueueTransactionController : Controller
     {
-        private readonly ILykkeTransactionBuilderService _builder;        
+        private readonly ILykkeTransactionBuilderService _builder;
         private readonly CachedDataDictionary<string, IAssetSetting> _assetSettingCache;
         private readonly CachedDataDictionary<string, IAsset> _assetRepository;
         private readonly IOffchainService _offchainService;
         private readonly ICashoutRequestRepository _cashoutRequestRepository;
         private readonly ITransactionQueueWriter _transactionQueueWriter;
 
-        public EnqueueTransactionController(ILykkeTransactionBuilderService builder,            
+        public EnqueueTransactionController(ILykkeTransactionBuilderService builder,
             CachedDataDictionary<string, IAssetSetting> assetSettingCache,
-            
+
             IOffchainService offchainService,
             ICashoutRequestRepository cashoutRequestRepository,
             ITransactionQueueWriter transactionQueueWriter, CachedDataDictionary<string, IAsset> assetRepository)
         {
-            _builder = builder;            
+            _builder = builder;
             _assetSettingCache = assetSettingCache;
             _offchainService = offchainService;
             _cashoutRequestRepository = cashoutRequestRepository;
@@ -83,9 +83,11 @@ namespace BitcoinApi.Controllers
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<IActionResult> Cashout([FromBody]CashoutRequest model)
         {
+            model.DestinationAddress = model.DestinationAddress.Trim('\n', ' ', '\t');
+
             if (model.Amount <= 0)
                 throw new BackendException("Amount can't be less or equal to zero", ErrorCode.BadInputParameter);
-            
+
             await ValidateAddress(model.DestinationAddress, false);
 
             var asset = await _assetRepository.GetItemAsync(model.Asset);
@@ -94,8 +96,8 @@ namespace BitcoinApi.Controllers
 
             var transactionId = await _builder.AddTransactionId(model.TransactionId, $"Cashout: {model.ToJson()}");
 
-            if (OpenAssetsHelper.IsBitcoin(model.Asset))            
-                await _cashoutRequestRepository.CreateCashoutRequest(transactionId, model.Amount, model.DestinationAddress);            
+            if (OpenAssetsHelper.IsBitcoin(model.Asset))
+                await _cashoutRequestRepository.CreateCashoutRequest(transactionId, model.Amount, model.DestinationAddress);
             else
             {
                 var assetSetting = await _assetSettingCache.GetItemAsync(asset.Id);
@@ -126,14 +128,14 @@ namespace BitcoinApi.Controllers
         [ProducesResponseType(typeof(TransactionIdResponse), 200)]
         [ProducesResponseType(typeof(ApiException), 400)]
         public async Task<IActionResult> SegwitTransferToHotwallet([FromBody]SegwitTransferRequest model)
-        {            
-            await ValidateAddress(model.SourceAddress, false);         
-            
+        {
+            await ValidateAddress(model.SourceAddress, false);
+
             var transactionId = await _builder.AddTransactionId(model.TransactionId, $"SegwitTransfer: {model.ToJson()}");
 
             await _transactionQueueWriter.AddCommand(transactionId, TransactionCommandType.SegwitTransferToHotwallet, new SegwitTransferCommand
-            {                
-                SourceAddress = model.SourceAddress                
+            {
+                SourceAddress = model.SourceAddress
             }.ToJson());
 
             return Ok(new TransactionIdResponse
