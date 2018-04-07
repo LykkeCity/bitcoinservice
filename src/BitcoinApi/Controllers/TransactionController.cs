@@ -83,6 +83,9 @@ namespace BitcoinApi.Controllers
             if (model.Fee.GetValueOrDefault() < 0)
                 throw new BackendException("Fee must be greater than or equal to zero", ErrorCode.BadInputParameter);
 
+            if (model.Amount <= model.Fee.GetValueOrDefault())
+                throw new BackendException("Amount is less than fee", ErrorCode.BadInputParameter);
+
             var transactionId = await _builder.AddTransactionId(model.TransactionId, model.ToJson());
 
             CreateTransactionResponse createTransactionResponse;
