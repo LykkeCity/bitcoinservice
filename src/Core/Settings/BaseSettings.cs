@@ -19,10 +19,7 @@ namespace Core.Settings
         public string QBitNinjaBaseUrl { get; set; }
 
         [HttpCheck("/api/isalive")]
-        public string SignatureProviderUrl { get; set; }
-
-        [HttpCheck("/api/isalive")]
-        public string ClientSignatureProviderUrl { get; set; }
+        public string SignatureProviderUrl { get; set; }        
 
         [HttpCheck("/api/isalive")]
         public string BitcoinCallbackUrl { get; set; }

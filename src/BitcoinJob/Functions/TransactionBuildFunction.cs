@@ -131,10 +131,9 @@ namespace BitcoinJob.Functions
             await _transactionBlobStorage.AddOrReplaceTransaction(message.TransactionId, TransactionBlobType.Initial, transactionResponse.Transaction);
 
 
-            await _queueFactory(Constants.ClientSignMonitoringQueue).PutRawMessageAsync(new WaitClientSignatureMessage
+            await  _queueFactory(Constants.BroadcastingQueue).PutRawMessageAsync(new BroadcastingTransaction
             {
-                TransactionId = message.TransactionId,
-                PutDateTime = DateTime.UtcNow
+                TransactionId = message.TransactionId
             }.ToJson());
         }
     }
