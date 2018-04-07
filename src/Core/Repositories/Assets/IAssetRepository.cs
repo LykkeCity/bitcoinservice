@@ -14,6 +14,8 @@ namespace Core.Repositories.Assets
         string PartnerId { get; }
         bool IssueAllowed { get; }
         bool NotLykkeAsset { get; }
+
+        double LowVolumeAmount { get; set; }
     }
 
     public interface IAssetRepository
