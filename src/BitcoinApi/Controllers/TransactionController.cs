@@ -80,9 +80,24 @@ namespace BitcoinApi.Controllers
             if (asset == null)
                 throw new BackendException("Provided asset is missing in database", ErrorCode.AssetNotFound);
 
+            if (model.Fee.GetValueOrDefault() < 0)
+                throw new BackendException("Fee must be greater than or equal to zero", ErrorCode.BadInputParameter);
+
+            if (model.Amount <= model.Fee.GetValueOrDefault())
+                throw new BackendException("Amount is less than fee", ErrorCode.BadInputParameter);
+
             var transactionId = await _builder.AddTransactionId(model.TransactionId, model.ToJson());
 
-            var createTransactionResponse = await _builder.GetTransferTransaction(sourceAddress, destAddress, model.Amount, asset, transactionId, true, true);
+            CreateTransactionResponse createTransactionResponse;
+
+            if (OpenAssetsHelper.IsBitcoin(asset.Id) && model.Fee.GetValueOrDefault() > 0)
+            {
+                createTransactionResponse = await _builder.GetPrivateTransferTransaction(sourceAddress, destAddress, model.Amount,
+                    model.Fee.GetValueOrDefault(), transactionId);
+                await _transactionSignRequestRepository.DoNotSign(transactionId);
+            }
+            else
+                createTransactionResponse = await _builder.GetTransferTransaction(sourceAddress, destAddress, model.Amount, asset, transactionId, true, true);
 
             await _transactionBlobStorage.AddOrReplaceTransaction(transactionId, TransactionBlobType.Initial, createTransactionResponse.Transaction);
 
@@ -118,15 +133,15 @@ namespace BitcoinApi.Controllers
             var transaction = new Transaction(model.Transaction);
 
             if (transaction.Inputs.All(o => o.ScriptSig == null || o.ScriptSig.Length == 0))
-                throw new BackendException("Signed transaction is not signed by client", ErrorCode.BadTransaction);
+                throw new BackendException("Transaction is not signed by client", ErrorCode.BadTransaction);
 
-            var fullSignedHex = await _signatureApiProvider.SignTransaction(model.Transaction);
+            var fullSignedHex = signRequest.DoNotSign ? model.Transaction : await _signatureApiProvider.SignTransaction(model.Transaction);
 
             await _transactionBlobStorage.AddOrReplaceTransaction(model.TransactionId, TransactionBlobType.Signed, fullSignedHex);
 
             var fullSigned = new Transaction(fullSignedHex);
 
-            await _broadcastService.BroadcastTransaction(model.TransactionId, fullSigned, useHandlers: false);
+            await _broadcastService.BroadcastTransaction(model.TransactionId, fullSigned, useHandlers: false, savePaidFees: !signRequest.DoNotSign);
         }
 
         /// <summary>

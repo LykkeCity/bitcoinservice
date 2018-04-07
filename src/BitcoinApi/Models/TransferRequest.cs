@@ -16,5 +16,6 @@ namespace BitcoinApi.Models
         public decimal Amount { get; set; }
 
         public string Asset { get; set; }
+        public decimal? Fee { get; set; }
     }
 }

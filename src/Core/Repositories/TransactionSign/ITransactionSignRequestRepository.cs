@@ -10,6 +10,8 @@ namespace Core.Repositories.TransactionSign
         Guid TransactionId { get; }
         bool? Invalidated { get; }
         string RawRequest { get; }
+
+        bool DoNotSign { get; set; }
     }
 
     public interface ITransactionSignRequestRepository
@@ -19,5 +21,6 @@ namespace Core.Repositories.TransactionSign
         Task<Guid> InsertTransactionId(Guid? transactionId, string rawRequest);
 
         Task InvalidateTransactionId(Guid transactionId);
+        Task DoNotSign(Guid transactionId);
     }
 }
