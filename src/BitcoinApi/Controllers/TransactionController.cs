@@ -90,10 +90,10 @@ namespace BitcoinApi.Controllers
 
             CreateTransactionResponse createTransactionResponse;
 
-            if (OpenAssetsHelper.IsBitcoin(asset.Id) && model.Fee.GetValueOrDefault() > 0)
+            if (OpenAssetsHelper.IsBitcoin(asset.Id) && model.Fee.HasValue)
             {
                 createTransactionResponse = await _builder.GetPrivateTransferTransaction(sourceAddress, destAddress, model.Amount,
-                    model.Fee.GetValueOrDefault(), transactionId);
+                    model.Fee.Value, transactionId);
                 await _transactionSignRequestRepository.DoNotSign(transactionId);
             }
             else
@@ -104,7 +104,8 @@ namespace BitcoinApi.Controllers
             return Ok(new TransactionResponse
             {
                 Transaction = createTransactionResponse.Transaction,
-                TransactionId = createTransactionResponse.TransactionId
+                TransactionId = createTransactionResponse.TransactionId,
+                Fee = (createTransactionResponse as PrivateTransferResponse)?.Fee ?? 0
             });
         }
 

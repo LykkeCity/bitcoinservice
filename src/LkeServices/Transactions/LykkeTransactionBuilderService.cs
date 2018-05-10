@@ -30,7 +30,7 @@ namespace LkeServices.Transactions
     {
         Task<CreateTransactionResponse> GetTransferTransaction(BitcoinAddress source, BitcoinAddress destination, decimal amount, IAsset assetId, Guid transactionId, bool shouldReserveFee = false, bool sentDust = false);
 
-        Task<CreateTransactionResponse> GetPrivateTransferTransaction(BitcoinAddress source, BitcoinAddress destinationAddress, decimal amount, decimal fee, 
+        Task<PrivateTransferResponse> GetPrivateTransferTransaction(BitcoinAddress source, BitcoinAddress destinationAddress, decimal amount, decimal fee,
             Guid transactionId);
 
         Task<CreateTransactionResponse> GetSwapTransaction(BitcoinAddress address1, decimal amount1, IAsset asset1,
@@ -135,7 +135,7 @@ namespace LkeServices.Transactions
             }, exception => (exception as BackendException)?.Code == ErrorCode.TransactionConcurrentInputsProblem, 3, _log);
         }
 
-        public async Task<CreateTransactionResponse> GetPrivateTransferTransaction(BitcoinAddress source, BitcoinAddress destinationAddress, decimal amount, decimal fee, Guid transactionId)
+        public async Task<PrivateTransferResponse> GetPrivateTransferTransaction(BitcoinAddress source, BitcoinAddress destinationAddress, decimal amount, decimal fee, Guid transactionId)
         {
             return await Retry.Try(() =>
             {
@@ -154,12 +154,13 @@ namespace LkeServices.Transactions
                     builder.SetChange(source);
                     builder.Send(destinationAddress, new Money(amount, MoneyUnit.BTC));
                     builder.SubtractFees();
-                    if (fee > 0)
-                        builder.SendFees(new Money(fee, MoneyUnit.BTC));
-                    else
-                        builder.SendEstimatedFees(await _feeProvider.GetFeeRate());
+                    if (fee == 0)
+                        fee = builder.EstimateFees(await _feeProvider.GetFeeRate()).ToDecimal(MoneyUnit.BTC);
+                    builder.SendFees(new Money(fee, MoneyUnit.BTC));
+
                     var tx = builder.BuildTransaction(true);
-                    return new CreateTransactionResponse(tx.ToHex(), transactionId);
+
+                    return new PrivateTransferResponse(tx.ToHex(), transactionId, fee);
                 });
             }, exception => (exception as BackendException)?.Code == ErrorCode.TransactionConcurrentInputsProblem, 3, _log);
         }

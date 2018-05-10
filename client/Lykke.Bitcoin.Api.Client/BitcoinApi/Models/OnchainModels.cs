@@ -63,6 +63,7 @@ namespace Lykke.Bitcoin.Api.Client.BitcoinApi.Models
         public Guid? TransactionId { get; set; }
         public string Transaction { get; set; }
         public string Hash { get; set; }
+        public decimal Fee { get; set; }
     }
 
     public class OnchainResponse : Response

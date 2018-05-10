@@ -9,5 +9,6 @@ namespace BitcoinApi.Models
     {
         public string Transaction { get; set; }
         public Guid TransactionId { get; set; }
+        public decimal Fee { get; set; }
     }
 }
