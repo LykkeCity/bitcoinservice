@@ -83,14 +83,17 @@ namespace BitcoinApi.Controllers
             if (model.Fee.GetValueOrDefault() < 0)
                 throw new BackendException("Fee must be greater than or equal to zero", ErrorCode.BadInputParameter);
 
+            if (model.Amount <= model.Fee.GetValueOrDefault())
+                throw new BackendException("Amount is less than fee", ErrorCode.BadInputParameter);
+
             var transactionId = await _builder.AddTransactionId(model.TransactionId, model.ToJson());
 
             CreateTransactionResponse createTransactionResponse;
 
-            if (OpenAssetsHelper.IsBitcoin(asset.Id) && model.Fee.GetValueOrDefault() > 0)
+            if (OpenAssetsHelper.IsBitcoin(asset.Id) && model.Fee.HasValue)
             {
                 createTransactionResponse = await _builder.GetPrivateTransferTransaction(sourceAddress, destAddress, model.Amount,
-                    model.Fee.GetValueOrDefault(), transactionId);
+                    model.Fee.Value, transactionId);
                 await _transactionSignRequestRepository.DoNotSign(transactionId);
             }
             else
@@ -101,7 +104,8 @@ namespace BitcoinApi.Controllers
             return Ok(new TransactionResponse
             {
                 Transaction = createTransactionResponse.Transaction,
-                TransactionId = createTransactionResponse.TransactionId
+                TransactionId = createTransactionResponse.TransactionId,
+                Fee = (createTransactionResponse as PrivateTransferResponse)?.Fee ?? 0
             });
         }
 

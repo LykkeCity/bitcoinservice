@@ -38,7 +38,8 @@ namespace BitcoinJob.Functions
             ISettingsRepository settingsRepository, IMultiCashoutRepository multiCashoutRepository,
             ISlackNotifier slackNotifier, IBitcoinTransactionService bitcoinTransactionService,
             ISignatureApiProvider signatureApiProvider,
-            ILykkeTransactionBuilderService lykkeTransactionBuilderService, IBitcoinBroadcastService bitcoinBroadcastService,
+            ILykkeTransactionBuilderService lykkeTransactionBuilderService,
+            IBitcoinBroadcastService bitcoinBroadcastService,
             ISpentOutputService spentOutputService)
         {
             _cashoutRequestRepository = cashoutRequestRepository;

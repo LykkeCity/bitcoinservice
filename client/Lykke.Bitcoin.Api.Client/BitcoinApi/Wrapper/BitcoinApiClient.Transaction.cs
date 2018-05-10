@@ -32,7 +32,8 @@ namespace Lykke.Bitcoin.Api.Client.BitcoinApi
                         Transaction = new TransactionResponse
                         {
                             Transaction = model.Transaction,
-                            TransactionId = model.TransactionId
+                            TransactionId = model.TransactionId,
+                            Fee = model.Fee.GetValueOrDefault()
                         }
                     };
                 return null;
