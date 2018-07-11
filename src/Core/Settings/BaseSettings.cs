@@ -91,7 +91,10 @@ namespace Core.Settings
         public int SpentOutputsExpirationDays { get; set; } = 7;
 
         [Optional]
-        public Rabbit RabbitMq { get; set; } = new Rabbit();       
+        public Rabbit RabbitMq { get; set; } = new Rabbit();
+
+        [Optional]
+        public string SigningServiceApiKey { get; set; }
     }
 
     public class DbSettings
