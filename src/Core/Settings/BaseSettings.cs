@@ -92,8 +92,7 @@ namespace Core.Settings
 
         [Optional]
         public Rabbit RabbitMq { get; set; } = new Rabbit();
-
-        [Optional]
+        
         public string SigningServiceApiKey { get; set; }
     }
 
