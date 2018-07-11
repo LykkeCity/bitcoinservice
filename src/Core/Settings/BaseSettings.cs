@@ -87,6 +87,8 @@ namespace Core.Settings
 
         [Optional]
         public int SpentOutputsExpirationDays { get; set; } = 7;
+        [Optional]
+        public string SigningServiceApiKey { get; set; }
     }
 
     public class DbSettings

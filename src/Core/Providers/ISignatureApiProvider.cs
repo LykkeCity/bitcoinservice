@@ -10,6 +10,9 @@ namespace Core.Providers
 
     public interface ISignatureApi
     {
+        [Header("apiKey")]
+        string ApiKey { get; set; }
+
         [Get("/api/bitcoin/key")]
         Task<PubKeyResponse> GeneratePubKey([Query]string tag = null);
 

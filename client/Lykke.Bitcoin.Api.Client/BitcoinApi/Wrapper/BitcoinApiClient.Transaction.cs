@@ -40,13 +40,15 @@ namespace Lykke.Bitcoin.Api.Client.BitcoinApi
             });
         }
 
-        public Task TransactionBroadcast(Guid transactionId, string transaction)
+        public async Task<Response> TransactionBroadcast(Guid transactionId, string transaction)
         {
-            return _apiClient.ApiTransactionBroadcastPostAsync(new BroadcastTransactionRequest
+            var response = await _apiClient.ApiTransactionBroadcastPostAsync(new BroadcastTransactionRequest
             {
                 TransactionId = transactionId,
                 Transaction = transaction
             });
+
+            return PrepareResult(response, o => new Response());
         }
 
         public async Task<OnchainResponse> TransactionMultipleTransfer(Guid? transactionId, string destination, string asset, int feeRate, decimal fixedFee, IEnumerable<ToOneAddress> sources)
