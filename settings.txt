@@ -16,13 +16,13 @@
     "BitcoinCallbackUrl": "${BitcoinCallbackServiceUrl}",
     "SignatureProviderUrl": "${SignInServiceUrl}",
     "ChangeAddress": "${BitcoinService-ChangeAddress}",
-	"FeeRateMultiplier": ${BitcoinService-FeeRateMultiplier},
+    "FeeRateMultiplier": ${BitcoinService-FeeRateMultiplier},
     "HotWalletForPregeneratedOutputs": "${BitcoinService-HotWalletForPregeneratedOutputs}",
     "MinPregeneratedOutputsCount": ${BitcoinService-MinPregeneratedOutputsCount},
     "GenerateOutputsBatchSize": ${BitcoinService-GenerateOutputsBatchSize},
     "PregeneratedFeeAmount": ${BitcoinService-PregeneratedFeeAmount},
     "MinHotWalletBalance": ${BitcoinService-MinHotWalletBalance},
-	"SpendChangeFeeRateMultiplier": ${BitcoinService-SpendChangeFeeRateMultiplier},
+    "SpendChangeFeeRateMultiplier": ${BitcoinService-SpendChangeFeeRateMultiplier},
     "Offchain": {
       "UseOffchainGeneration": ${BitcoinService-UseOffchainGeneration},
       "HotWallet": "${BitcoinService-OffchainHotWallet}"
