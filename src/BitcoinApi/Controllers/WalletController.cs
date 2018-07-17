@@ -55,9 +55,13 @@ namespace BitcoinApi.Controllers
         public async Task<SegwitWalletResult> GetSegwitWallet(string clientPubKey)
         {
             var address = await _walletService.GetOrCreateSegwitPrivateWallet(clientPubKey);
+
+            var coloredSegwit = BitcoinAddress.Create(address.Address).ToColoredAddress().ToString();
+
             return new SegwitWalletResult
             {
-                SegwitAddress = address.Address
+                SegwitAddress = address.Address,
+                ColoredSegwitAddress = coloredSegwit
             };
         }
 
@@ -67,9 +71,13 @@ namespace BitcoinApi.Controllers
         public async Task<SegwitWalletResult> GetSegwitWallet()
         {
             var address = await _walletService.CreateSegwitWallet();
+
+            var coloredSegwit = BitcoinAddress.Create(address.Address).ToColoredAddress().ToString();
+
             return new SegwitWalletResult
             {
-                SegwitAddress = address.Address
+                SegwitAddress = address.Address,
+                ColoredSegwitAddress = coloredSegwit
             };
         }
 

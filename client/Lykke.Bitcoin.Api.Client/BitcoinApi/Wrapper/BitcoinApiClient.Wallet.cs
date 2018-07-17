@@ -46,7 +46,8 @@ namespace Lykke.Bitcoin.Api.Client.BitcoinApi
                 if (o is SegwitWalletResult model)
                     return new SegwitWallet
                     {
-                        Address = model.SegwitAddress
+                        Address = model.SegwitAddress,
+                        ColoredAddress = model.ColoredSegwitAddress
                     };
                 return null;
             });
@@ -60,7 +61,8 @@ namespace Lykke.Bitcoin.Api.Client.BitcoinApi
                 if (o is SegwitWalletResult model)
                     return new SegwitWallet
                     {
-                        Address = model.SegwitAddress
+                        Address = model.SegwitAddress,
+                        ColoredAddress = model.ColoredSegwitAddress
                     };
                 return null;
             });

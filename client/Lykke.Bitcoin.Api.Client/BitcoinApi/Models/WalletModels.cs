@@ -26,6 +26,8 @@ namespace Lykke.Bitcoin.Api.Client.BitcoinApi.Models
     public class SegwitWallet : Response
     {
         public string Address { get; set; }
+
+        public string ColoredAddress { get; set; }
     }
 
 }
