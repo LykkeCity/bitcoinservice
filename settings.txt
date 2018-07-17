@@ -12,7 +12,7 @@
     "RPCPassword": "${BitcoinService-RPCPass}",
     "RPCServerIpAddress": "${BitcoinService-RPCAddress}",
     "FeeAddress": "${BitcoinService-FeeAddress}",
-    "QBitNinjaBaseUrl": "${QBitNinjaAddress}",
+    "QBitNinjaBaseUrl": "${NinjaServiceUrl}",
     "BitcoinCallbackUrl": "${BitcoinCallbackServiceUrl}",
     "SignatureProviderUrl": "${SignInServiceUrl}",
     "ChangeAddress": "${BitcoinService-ChangeAddress}",
