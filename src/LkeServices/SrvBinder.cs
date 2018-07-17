@@ -2,7 +2,6 @@
 using System.Net.Http;
 using Autofac;
 using Autofac.Features.AttributeFilters;
-using Common.Log;
 using Core;
 using Core.Bcc;
 using Core.Bitcoin;
@@ -11,15 +10,12 @@ using Core.Outputs;
 using Core.Performance;
 using Core.Providers;
 using Core.QBitNinja;
-using Core.RabbitNotification;
-using Core.Settings;
 using LkeServices.Bcc;
 using LkeServices.Bitcoin;
 using LkeServices.Outputs;
 using LkeServices.Performance;
 using LkeServices.Providers;
 using LkeServices.QBitNinja;
-using LkeServices.RabbitNotifiaction;
 using LkeServices.Signature;
 using LkeServices.Transactions;
 using LkeServices.Wallet;
@@ -65,33 +61,6 @@ namespace LkeServices
 
             ioc.RegisterType<TransactionBuildContextFactory>();
             ioc.RegisterType<TransactionBuildContext>();
-
-            ioc.Register(x =>
-                {
-                    var resolver = x.Resolve<IComponentContext>();
-                    var settings = resolver.Resolve<BaseSettings>();
-                    var log = resolver.Resolve<ILog>();
-                    return new RabbitMqPublisher(settings.RabbitMq.ExplorerNotificationConnection.ConnectionString,
-                                                 settings.RabbitMq.ExplorerNotificationConnection.Exchange, log);
-                }).Named<IRabbitMqPublisher>(Constants.RabbitMqExplorerNotification).SingleInstance().AutoActivate();
-
-            ioc.Register(x =>
-            {
-                var resolver = x.Resolve<IComponentContext>();
-                var settings = resolver.Resolve<BaseSettings>();
-                var log = resolver.Resolve<ILog>();
-                return new RabbitMqPublisher(settings.RabbitMq.MultisigNotificationConnection.ConnectionString,
-                    settings.RabbitMq.MultisigNotificationConnection.Exchange, log);
-            }).Named<IRabbitMqPublisher>(Constants.RabbitMqMultisigNotification).SingleInstance().AutoActivate();
-
-
-            ioc.Register<Func<string, IRabbitMqPublisher>>(x =>
-            {
-                var resolver = x.Resolve<IComponentContext>();
-                return queue => resolver.ResolveNamed<IRabbitMqPublisher>(queue);
-            });
-
-            ioc.RegisterType<RabbitNotificationService>().As<IRabbitNotificationService>();
 
             BindApiProviders(ioc);
 

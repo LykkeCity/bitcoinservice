@@ -9,7 +9,7 @@ namespace BitcoinApi
     {
         public static void Main(string[] args)
         {
-            Console.WriteLine($"BitcoinApi version {Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion}");
+            Console.WriteLine($"BitcoinService version {Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion}");
 #if DEBUG
             Console.WriteLine("Is DEBUG");
 #else
