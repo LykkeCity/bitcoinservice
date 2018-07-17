@@ -27,7 +27,7 @@
       "UseOffchainGeneration": ${BitcoinService-UseOffchainGeneration},
       "HotWallet": "${BitcoinService-OffchainHotWallet}"
     },
-	"SigningServiceApiKey": "${BitcoinService-SigningServiceApiKey}"
+    "SigningServiceApiKey": "${BitcoinService-SigningServiceApiKey}"
   },
   "SlackNotifications": {
     "AzureQueue": {
