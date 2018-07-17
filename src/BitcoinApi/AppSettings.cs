@@ -5,7 +5,7 @@ namespace BitcoinApi
 {
     public class AppSettings
     {
-        public BaseSettings BitcoinApi { get; set; }
+        public BaseSettings BitcoinService { get; set; }
 
         public SlackNotificationsSettings SlackNotifications { get; set; }
     }

@@ -5,7 +5,7 @@ namespace BitcoinJob
 {
     public class AppSettings
     {
-        public BaseSettings BitcoinJobs { get; set; }
+        public BaseSettings BitcoinService { get; set; }
 
         public SlackNotificationsSettings SlackNotifications { get; set; }
     }

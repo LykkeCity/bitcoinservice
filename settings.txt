@@ -1,0 +1,39 @@
+﻿{
+  "BitcoinService": {
+    "Db": {
+      "DataConnString": "${BitcoinService-DataConnString}:[AzureTableStorage]",
+      "MongoDataConnString": "${BitcoinService-MongoDataConnString}:[AzureTableStorage]",
+      "LogsConnString": "${BitcoinService-LogsConnString}:[AzureTableStorage]",
+      "DictsConnString": "${DictsConnString}:[AzureTableStorage]",
+      "SharedConnString": "${SharedStorageConnString}:[AzureTableStorage]"
+    },
+    "NetworkType": "${BitcoinService-NetworkType}",
+    "RPCUsername": "${BitcoinService-RPCUser}",
+    "RPCPassword": "${BitcoinService-RPCPass}",
+    "RPCServerIpAddress": "${BitcoinService-RPCAddress}",
+    "FeeAddress": "${BitcoinService-FeeAddress}",
+    "QBitNinjaBaseUrl": "${QBitNinjaAddress}",
+    "BitcoinCallbackUrl": "${BitcoinCallbackServiceUrl}",
+    "SignatureProviderUrl": "${SignInServiceUrl}",
+    "ChangeAddress": "${BitcoinService-ChangeAddress}",
+	"FeeRateMultiplier": ${BitcoinService-FeeRateMultiplier},
+    "HotWalletForPregeneratedOutputs": "${BitcoinService-HotWalletForPregeneratedOutputs}",
+    "MinPregeneratedOutputsCount": ${BitcoinService-MinPregeneratedOutputsCount},
+    "GenerateOutputsBatchSize": ${BitcoinService-GenerateOutputsBatchSize},
+    "PregeneratedFeeAmount": ${BitcoinService-PregeneratedFeeAmount},
+    "MinHotWalletBalance": ${BitcoinService-MinHotWalletBalance},
+	"SpendChangeFeeRateMultiplier": ${BitcoinService-SpendChangeFeeRateMultiplier},
+    "Offchain": {
+      "UseOffchainGeneration": ${BitcoinService-UseOffchainGeneration},
+      "HotWallet": "${BitcoinService-OffchainHotWallet}"
+    },
+	"SigningServiceApiKey": "${BitcoinService-SigningServiceApiKey}"
+  },
+  "SlackNotifications": {
+    "AzureQueue": {
+      "ConnectionString": "${SlackNotificationsConnString}:[AzureTableStorage]",
+      "QueueName": "slack-notifications"
+    },
+    "ThrottlingLimitSeconds": ${SlackNotificationsThrottlingLimit}
+  }
+}

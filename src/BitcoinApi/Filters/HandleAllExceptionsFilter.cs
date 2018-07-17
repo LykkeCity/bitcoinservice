@@ -41,7 +41,7 @@ namespace BitcoinApi.Filters
             }
             else
             {
-                _logger.WriteErrorAsync("ApiException", "BitcoinApi", $"Controller: {controller}, action: {action}", context.Exception);
+                _logger.WriteErrorAsync("ApiException", "BitcoinService", $"Controller: {controller}, action: {action}", context.Exception);
                 ex = new ApiException
                 {
                     Error = new ApiError

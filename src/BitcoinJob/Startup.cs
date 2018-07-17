@@ -71,7 +71,7 @@ namespace BitcoinJob
 
             var builder = new ContainerBuilder();
 
-            builder.RegisterModule(new JobModule(appSettings.Nested(x => x.BitcoinJobs).CurrentValue, appSettings.Nested(x => x.BitcoinJobs.Db), Log));
+            builder.RegisterModule(new JobModule(appSettings.Nested(x => x.BitcoinService).CurrentValue, appSettings.Nested(x => x.BitcoinService.Db), Log));
 
             builder.Populate(services);
 
@@ -173,7 +173,7 @@ namespace BitcoinJob
                 QueueName = settings.CurrentValue.SlackNotifications.AzureQueue.QueueName
             }, aggregateLogger);
 
-            var dbLogConnectionStringManager = settings.Nested(x => x.BitcoinJobs.Db.LogsConnString);
+            var dbLogConnectionStringManager = settings.Nested(x => x.BitcoinService.Db.LogsConnString);
             var dbLogConnectionString = dbLogConnectionStringManager.CurrentValue;
 
             // Creating azure storage logger, which logs own messages to concole log
