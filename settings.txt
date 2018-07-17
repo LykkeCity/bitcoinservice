@@ -26,7 +26,15 @@
     "Offchain": {
       "UseOffchainGeneration": ${BitcoinService-UseOffchainGeneration},
       "HotWallet": "${BitcoinService-OffchainHotWallet}"
-    }
+    },
+    "Bcc": {
+      "NetworkType": "${BitcoinService-NetworkType}",
+      "RPCUsername": "${BitcoinService-BccRPCUser}",
+      "RPCPassword": "${BitcoinService-BccRPCPass}",
+      "RPCServerIpAddress": "${BitcoinService-BccRPCAddress}",
+      "UseBccNinja": true,
+      "QBitNinjaBaseUrl": "${BitcoinService-BccNinjaServiceUrl}"
+	}
   },
   "SlackNotifications": {
     "AzureQueue": {
