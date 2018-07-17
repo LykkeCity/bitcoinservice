@@ -116,7 +116,7 @@ namespace Core.Settings
         public string RPCServerIpAddress { get; set; }
 
         [Optional]
-        public bool UseBccNinja { get; set; }
+        public bool UseBccNinja { get; set; } = true;
 
         [Optional]
         public string QBitNinjaBaseUrl { get; set; }
