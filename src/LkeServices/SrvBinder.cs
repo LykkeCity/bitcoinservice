@@ -122,13 +122,15 @@ namespace LkeServices
                 };
                 return RestClient.For<ILykkeApiProvider>(client);
             }).As<ILykkeApiProvider>().SingleInstance();
-           
+
             ioc.Register(x =>
             {
                 var resolver = x.Resolve<IComponentContext>();
                 var settings = resolver.Resolve<BaseSettings>();
-                
-                return RestClient.For<ISignatureApi>(new HttpClient { BaseAddress = new Uri(settings.SignatureProviderUrl) });
+
+                var api = RestClient.For<ISignatureApi>(new HttpClient { BaseAddress = new Uri(settings.SignatureProviderUrl) });
+                api.ApiKey = settings.SigningServiceApiKey;
+                return api;
             }).As<ISignatureApi>().SingleInstance();
 
             ioc.RegisterType<SignatureApiProvider>().As<ISignatureApiProvider>().SingleInstance();
