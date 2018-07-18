@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Core.Bitcoin;
 using Core.Exceptions;
@@ -17,17 +15,13 @@ using Core;
 using Core.Outputs;
 using Core.Performance;
 using Core.Providers;
-using Core.RabbitNotification;
 using Core.Repositories.Offchain;
-using Core.Repositories.PaidFees;
 using Core.Repositories.RevokeKeys;
 using Core.Repositories.Settings;
 using Core.Repositories.TransactionOutputs;
 using Core.Repositories.Wallets;
 using Core.ScriptTemplates;
-using Core.Settings;
 using LkeServices.Helpers;
-using LkeServices.Providers;
 using LkeServices.Signature;
 using LkeServices.Wallet;
 using NBitcoin.Policy;
@@ -113,7 +107,6 @@ namespace LkeServices.Transactions
         private readonly ILog _logger;
         private readonly IAssetSettingRepository _assetSettingRepository;
         private readonly IReturnOutputsMessageWriter _returnOutputsMessageWriter;
-        private readonly IRabbitNotificationService _rabbitNotificationService;
         private readonly ICommitmentBroadcastRepository _commitmentBroadcastRepository;
         private readonly ISpendCommitmentMonitoringWriter _spendCommitmentMonitoringWriter;
         private readonly IClosingChannelRepository _closingChannelRepository;
@@ -142,7 +135,6 @@ namespace LkeServices.Transactions
             ILog logger,
             IAssetSettingRepository assetSettingRepository,
             IReturnOutputsMessageWriter returnOutputsMessageWriter,
-            IRabbitNotificationService rabbitNotificationService,
             ICommitmentBroadcastRepository commitmentBroadcastRepository,
             ISpendCommitmentMonitoringWriter spendCommitmentMonitoringWriter,
             IClosingChannelRepository closingChannelRepository,
@@ -170,7 +162,6 @@ namespace LkeServices.Transactions
             _logger = logger;
             _assetSettingRepository = assetSettingRepository;
             _returnOutputsMessageWriter = returnOutputsMessageWriter;
-            _rabbitNotificationService = rabbitNotificationService;
             _commitmentBroadcastRepository = commitmentBroadcastRepository;
             _spendCommitmentMonitoringWriter = spendCommitmentMonitoringWriter;
             _closingChannelRepository = closingChannelRepository;
@@ -618,12 +609,6 @@ namespace LkeServices.Transactions
                             }
                         })                        
                     );
-                    if (channel.PrevChannelTransactionId.HasValue)
-                        _rabbitNotificationService.CloseChannel(channel.PrevChannelTransactionId.ToString(), hash);
-
-                    _rabbitNotificationService.OpenChannel(channel.ChannelId.ToString(), channel.PrevChannelTransactionId?.ToString(), hash, asset.BlockChainAssetId,
-                        wallet.MultisigAddress, new PubKey(wallet.ClientPubKey).ToString(_connectionParams.Network),
-                        new PubKey(wallet.ExchangePubKey).ToString(_connectionParams.Network));
                 }
                 monitor.Step("Update amounts and complete transfer");
 
@@ -631,8 +616,7 @@ namespace LkeServices.Transactions
                     _offchainChannelRepository.UpdateAmounts(wallet.MultisigAddress, asset.Id, hubCommitment.ClientAmount, hubCommitment.HubAmount),
                     _offchainTransferRepository.CompleteTransfer(wallet.MultisigAddress, asset.Id, transfer.TransferId)
                 );
-                _rabbitNotificationService.Transfer(channel.ChannelId.ToString(), (notifyTxId ?? transfer.TransferId).ToString(), hubCommitment.ClientAmount, hubCommitment.HubAmount, DateTime.UtcNow);
-
+              
                 return new OffchainFinalizeResponse()
                 {
                     TransactionHex = signedByHubCommitment,
@@ -1052,7 +1036,6 @@ namespace LkeServices.Transactions
             await _spentOutputService.SaveSpentOutputs(closing.ClosingChannelId, tr);
 
             var hash = tr.GetHash().ToString();
-            _rabbitNotificationService.CloseChannel(closing.ChannelId.ToString(), hash);
             
             return hash;
         }

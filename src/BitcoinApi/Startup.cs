@@ -79,7 +79,7 @@ namespace BitcoinApi
 
             Log = CreateLogWithSlack(services, appSettings);
 
-            builder.RegisterModule(new ApiModule(appSettings.Nested(x => x.BitcoinApi).CurrentValue, appSettings.Nested(x => x.BitcoinApi.Db), Log));
+            builder.RegisterModule(new ApiModule(appSettings.Nested(x => x.BitcoinService).CurrentValue, appSettings.Nested(x => x.BitcoinService.Db), Log));
 
             builder.Populate(services);
 
@@ -157,7 +157,7 @@ namespace BitcoinApi
                 QueueName = settings.CurrentValue.SlackNotifications.AzureQueue.QueueName
             }, aggregateLogger);
 
-            var dbLogConnectionStringManager = settings.Nested(x => x.BitcoinApi.Db.LogsConnString);
+            var dbLogConnectionStringManager = settings.Nested(x => x.BitcoinService.Db.LogsConnString);
             var dbLogConnectionString = dbLogConnectionStringManager.CurrentValue;
 
             // Creating azure storage logger, which logs own messages to concole log

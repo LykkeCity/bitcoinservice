@@ -1,0 +1,46 @@
+﻿{
+  "BitcoinService": {
+    "Db": {
+      "DataConnString": "${BitcoinService-DataConnString}:[AzureTableStorage]",
+      "MongoDataConnString": "${BitcoinService-MongoDataConnString}:[MongoDB]",
+      "LogsConnString": "${BitcoinService-LogsConnString}:[AzureTableStorage]",
+      "DictsConnString": "${DictsConnString}:[AzureTableStorage]",
+      "SharedConnString": "${SharedStorageConnString}:[AzureTableStorage]"
+    },
+    "NetworkType": "${BitcoinService-NetworkType}",
+    "RPCUsername": "${BitcoinService-RPCUser}",
+    "RPCPassword": "${BitcoinService-RPCPass}",
+    "RPCServerIpAddress": "${BitcoinService-RPCAddress}",
+    "FeeAddress": "${BitcoinService-FeeAddress}",
+    "QBitNinjaBaseUrl": "${NinjaServiceUrl}",
+    "BitcoinCallbackUrl": "${BitcoinCallbackServiceUrl}",
+    "SignatureProviderUrl": "${SignInServiceUrl}",
+    "ChangeAddress": "${BitcoinService-ChangeAddress}",
+    "FeeRateMultiplier": ${BitcoinService-FeeRateMultiplier},
+    "HotWalletForPregeneratedOutputs": "${BitcoinService-HotWalletForPregeneratedOutputs}",
+    "MinPregeneratedOutputsCount": ${BitcoinService-MinPregeneratedOutputsCount},
+    "GenerateOutputsBatchSize": ${BitcoinService-GenerateOutputsBatchSize},
+    "PregeneratedFeeAmount": ${BitcoinService-PregeneratedFeeAmount},
+    "MinHotWalletBalance": ${BitcoinService-MinHotWalletBalance},
+    "SpendChangeFeeRateMultiplier": ${BitcoinService-SpendChangeFeeRateMultiplier},
+    "Offchain": {
+      "UseOffchainGeneration": ${BitcoinService-UseOffchainGeneration},
+      "HotWallet": "${BitcoinService-OffchainHotWallet}"
+    },
+    "Bcc": {
+      "NetworkType": "${BitcoinService-NetworkType}",
+      "RPCUsername": "${BitcoinService-BccRPCUser}",
+      "RPCPassword": "${BitcoinService-BccRPCPass}",
+      "RPCServerIpAddress": "${BitcoinService-BccRPCAddress}",
+      "UseBccNinja": true,
+      "QBitNinjaBaseUrl": "${BitcoinService-BccNinjaServiceUrl}"
+	}
+  },
+  "SlackNotifications": {
+    "AzureQueue": {
+      "ConnectionString": "${SlackNotificationsConnString}:[AzureTableStorage]",
+      "QueueName": "slack-notifications"
+    },
+    "ThrottlingLimitSeconds": ${SlackNotificationsThrottlingLimit}
+  }
+}

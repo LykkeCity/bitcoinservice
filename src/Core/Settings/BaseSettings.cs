@@ -26,7 +26,8 @@ namespace Core.Settings
 
         public DbSettings Db { get; set; }
 
-        public bool UseLykkeApi { get; set; }
+        [Optional]
+        public bool UseLykkeApi { get; set; } = true;
 
         public string ChangeAddress { get; set; }
 
@@ -61,7 +62,7 @@ namespace Core.Settings
         public int GenerateAssetOutputsBatchSize { get; set; } = 100;
 
         [Optional]
-        public int MaxDequeueCount { get; set; } = 1000;
+        public int MaxDequeueCount { get; set; } = 500;
 
         [Optional]
         public int MaxQueueDelay { get; set; } = 5000;
@@ -82,16 +83,10 @@ namespace Core.Settings
         public decimal MaxExtraAmount { get; set; } = 0.001M;
 
         [Optional]
-        public int ClientSignatureTimeoutSeconds { get; set; } = 0;
-
-        [Optional]
         public int BroadcastedOutputsExpirationDays { get; set; } = 7;
 
         [Optional]
         public int SpentOutputsExpirationDays { get; set; } = 7;
-
-        [Optional]
-        public Rabbit RabbitMq { get; set; } = new Rabbit();       
     }
 
     public class DbSettings
@@ -111,12 +106,6 @@ namespace Core.Settings
         public string HotWallet { get; set; }
     }
 
-    public class Rabbit
-    {
-        public RabbitMqConnectionSettings ExplorerNotificationConnection { get; set; } = new RabbitMqConnectionSettings();
-        public RabbitMqConnectionSettings MultisigNotificationConnection { get; set; } = new RabbitMqConnectionSettings();
-    }
-
     public class BccSettings
     {
         public NetworkType NetworkType { get; set; }
@@ -125,7 +114,7 @@ namespace Core.Settings
         public string RPCServerIpAddress { get; set; }
 
         [Optional]
-        public bool UseBccNinja { get; set; }
+        public bool UseBccNinja { get; set; } = true;
 
         [Optional]
         public string QBitNinjaBaseUrl { get; set; }
