@@ -34,7 +34,8 @@
       "RPCServerIpAddress": "${BitcoinService-BccRPCAddress}",
       "UseBccNinja": true,
       "QBitNinjaBaseUrl": "${BitcoinService-BccNinjaServiceUrl}"
-	}
+    },
+	"SigningServiceApiKey": "${BitcoinService-SigningServiceApiKey}"
   },
   "SlackNotifications": {
     "AzureQueue": {
