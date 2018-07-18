@@ -2,7 +2,7 @@
   "BitcoinService": {
     "Db": {
       "DataConnString": "${BitcoinService-DataConnString}:[AzureTableStorage]",
-      "MongoDataConnString": "${BitcoinService-MongoDataConnString}:[AzureTableStorage]",
+      "MongoDataConnString": "${BitcoinService-MongoDataConnString}:[MongoDB]",
       "LogsConnString": "${BitcoinService-LogsConnString}:[AzureTableStorage]",
       "DictsConnString": "${DictsConnString}:[AzureTableStorage]",
       "SharedConnString": "${SharedStorageConnString}:[AzureTableStorage]"
