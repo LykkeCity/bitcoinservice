@@ -7,5 +7,7 @@ namespace BitcoinApi.Models
     public class SegwitWalletResult
     {
         public string SegwitAddress { get; set; }
+
+        public string ColoredSegwitAddress { get; set; }
     }
 }
