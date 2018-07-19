@@ -43,7 +43,7 @@ namespace EnqueueFees
             collection.AddSingleton<IPregeneratedOutputsQueueFactory, PregeneratedOutputsQueueFactory>();
 
 
-            collection.AddSingleton<IAssetRepository>(new AssetRepository(AzureTableStorage<AssetEntity>.Create(new FakeReloadingManager(configuration.GetConnectionString("dicts")), "Dictionaries", null)));
+            collection.AddSingleton<IAssetRepository>(new AssetRepository(AzureTableStorage<AssetEntity>.Create(new FakeReloadingManager(configuration.GetConnectionString("dicts")), "Dictionaries", log: null)));
 
             collection.AddSingleton<ISpentOutputRepository>(
                 new SpentOutputRepository(new MongoStorage<OutputEntity>(mongoClient, "SpentOutputs")));               
@@ -84,6 +84,12 @@ namespace EnqueueFees
         }
 
         public Task<string> Reload() => Task.FromResult(_value);
+
+        public bool WasReloadedFrom(DateTime dateTime)
+        {
+            return true;
+        }
+
         public bool HasLoaded => true;
         public string CurrentValue => _value;
     }

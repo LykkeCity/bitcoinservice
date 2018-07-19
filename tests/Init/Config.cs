@@ -74,6 +74,11 @@ namespace Bitcoin.Tests
         }
 
         public Task<DbSettings> Reload() => Task.FromResult(_value);
+        public bool WasReloadedFrom(DateTime dateTime)
+        {
+            return true;
+        }
+
         public bool HasLoaded => true;
         public DbSettings CurrentValue => _value;
     }
