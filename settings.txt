@@ -7,6 +7,9 @@
       "DictsConnString": "${DictsConnString}:[AzureTableStorage]",
       "SharedConnString": "${SharedStorageConnString}:[AzureTableStorage]"
     },
+    "Cqrs": {
+      "RabbitConnectionString": "${CqrsRabbitConnString}:[RabbitMq]"
+    },
     "NetworkType": "${BitcoinService-NetworkType}",
     "RPCUsername": "${BitcoinService-RPCUser}",
     "RPCPassword": "${BitcoinService-RPCPass}",
@@ -34,8 +37,8 @@
       "RPCServerIpAddress": "${BitcoinService-BccRPCAddress}",
       "UseBccNinja": true,
       "QBitNinjaBaseUrl": "${BitcoinService-BccNinjaServiceUrl}"
-    },
-	"SigningServiceApiKey": "${BitcoinService-SigningServiceApiKey}"
+   },
+   "SigningServiceApiKey": "${BitcoinService-SigningServiceApiKey}"
   },
   "SlackNotifications": {
     "AzureQueue": {

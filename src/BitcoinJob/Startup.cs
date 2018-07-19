@@ -72,9 +72,10 @@ namespace BitcoinJob
             var builder = new ContainerBuilder();
 
             builder.RegisterModule(new JobModule(appSettings.Nested(x => x.BitcoinService).CurrentValue, appSettings.Nested(x => x.BitcoinService.Db), Log));
+            builder.RegisterModule(new CqrsModule(appSettings, Log));
 
             builder.Populate(services);
-
+            
             ApplicationContainer = builder.Build();
 
             return new AutofacServiceProvider(ApplicationContainer);
