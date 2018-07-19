@@ -26,6 +26,8 @@ namespace Core.Settings
 
         public DbSettings Db { get; set; }
 
+        public RabbitMq Cqrs { get; set; }
+
         [Optional]
         public bool UseLykkeApi { get; set; } = true;
 
@@ -120,5 +122,10 @@ namespace Core.Settings
 
         [Optional]
         public string QBitNinjaBaseUrl { get; set; }
+    }
+
+    public class RabbitMq
+    {
+        public string RabbitConnectionString { get; set; }
     }
 }

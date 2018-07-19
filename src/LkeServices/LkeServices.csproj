@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
     <AssemblyName>LkeServices</AssemblyName>
     <PackageId>LkeServices</PackageId>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
@@ -14,10 +14,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Autofac" Version="4.6.1" />
-    <PackageReference Include="Lykke.Common" Version="3.1.0" />
-    <PackageReference Include="RabbitMQ.Client" Version="5.0.1" />
-    <PackageReference Include="RestEase" Version="1.3.1" />
+    <PackageReference Include="Autofac" Version="4.8.1" />
+    <PackageReference Include="Lykke.Common" Version="7.0.1" />
+    <PackageReference Include="RestEase" Version="1.4.5" />
   </ItemGroup>
 
 </Project>

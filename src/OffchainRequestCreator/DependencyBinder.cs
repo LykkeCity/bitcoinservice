@@ -23,11 +23,11 @@ namespace OffchainRequestCreator
 
             container.RegisterInstance<IOffchainRequestRepository>(
                 new OffchainRequestRepository(
-                    AzureTableStorage<OffchainRequestEntity>.Create(new FakeReloadingManager(configuration.GetConnectionString("main")), "OffchainRequests", null)));
+                    AzureTableStorage<OffchainRequestEntity>.Create(new FakeReloadingManager(configuration.GetConnectionString("main")), "OffchainRequests", log: null)));
 
             container.RegisterInstance<IOffchainTransferRepository>(
                 new OffchainTransferRepository(
-                    AzureTableStorage<OffchainTransferEntity>.Create(new FakeReloadingManager(configuration.GetConnectionString("main")), "OffchainTransfers", null)));
+                    AzureTableStorage<OffchainTransferEntity>.Create(new FakeReloadingManager(configuration.GetConnectionString("main")), "OffchainTransfers", log: null)));
 
             container.RegisterSource(new AnyConcreteTypeNotAlreadyRegisteredSource());
 
@@ -45,6 +45,11 @@ namespace OffchainRequestCreator
         }
 
         public Task<string> Reload() => Task.FromResult(_value);
+        public bool WasReloadedFrom(DateTime dateTime)
+        {
+            return true;
+        }
+
         public bool HasLoaded => true;
         public string CurrentValue => _value;
     }

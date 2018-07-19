@@ -36,6 +36,11 @@ namespace PoisonMessagesReenqueue
         }
 
         public Task<string> Reload() => Task.FromResult(_value);
+        public bool WasReloadedFrom(DateTime dateTime)
+        {
+            return true;
+        }
+
         public bool HasLoaded => true;
         public string CurrentValue => _value;
     }
