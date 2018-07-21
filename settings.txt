@@ -44,7 +44,6 @@
     "AzureQueue": {
       "ConnectionString": "${SlackNotificationsConnString}:[AzureTableStorage]",
       "QueueName": "slack-notifications"
-    },
-    "ThrottlingLimitSeconds": ${SlackNotificationsThrottlingLimit}
+    }
   }
 }
