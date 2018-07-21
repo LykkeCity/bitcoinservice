@@ -1,10 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using MessagePack;
 
-namespace BitcoinJob.Workflow.Commands
+namespace Lykke.Bitcoin.Contracts.Commands
 {
+    /// <summary>
+    /// Cashout command
+    /// </summary>
     [MessagePackObject(keyAsPropertyName: true)]
     public class StartCashoutCommand
     {

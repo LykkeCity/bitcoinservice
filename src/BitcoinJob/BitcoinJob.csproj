@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\LkeServices\LkeServices.csproj" />
     <ProjectReference Include="..\AzureRepositories\AzureRepositories.csproj" />
+    <ProjectReference Include="..\Lykke.Bitcoin.Contracts\Lykke.Bitcoin.Contracts.csproj" />
     <ProjectReference Include="..\MongoRepositories\MongoRepositories.csproj" />
   </ItemGroup>
 

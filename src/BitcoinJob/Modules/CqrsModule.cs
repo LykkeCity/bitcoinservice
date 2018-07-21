@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using Autofac;
-using BitcoinJob.Workflow.Commands;
 using BitcoinJob.Workflow.Handlers;
 using Common.Log;
 using JetBrains.Annotations;
-using Lykke.Common.Log;
+using Lykke.Bitcoin.Contracts;
+using Lykke.Bitcoin.Contracts.Commands;
 using Lykke.Cqrs;
 using Lykke.Cqrs.Configuration;
 using Lykke.Messaging;
@@ -50,7 +50,7 @@ namespace BitcoinJob.Modules
 
             builder.Register(ctx =>
             {
-                var commandsRoute = "commands";
+                const string defaultRoute = "self";
 
                 return new CqrsEngine(_log,
                     ctx.Resolve<IDependencyResolver>(),
@@ -58,12 +58,12 @@ namespace BitcoinJob.Modules
                     new DefaultEndpointProvider(),
                     true,
                     Register.DefaultEndpointResolver(sagasEndpointResolver),
-                    Register.BoundedContext("bitcoin-service")
+                    Register.BoundedContext(BitcoinBoundedContext.Name)
                         .ListeningCommands(typeof(StartCashinCommand))
-                            .On(commandsRoute)
+                            .On(defaultRoute)
                             .WithCommandsHandler<CashinCommandHandler>()
                         .ListeningCommands(typeof(StartCashoutCommand))
-                            .On(commandsRoute)
+                            .On(defaultRoute)
                             .WithCommandsHandler<CashoutCommandHandler>());
 
             })

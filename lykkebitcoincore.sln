@@ -41,6 +41,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		settings.txt = settings.txt
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lykke.Bitcoin.Contracts", "src\Lykke.Bitcoin.Contracts\Lykke.Bitcoin.Contracts.csproj", "{39423DC3-B3C3-4C8A-B6AA-C24287C501C5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -95,6 +97,10 @@ Global
 		{AD1DDE78-9CD6-4D15-9122-180688EE3304}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AD1DDE78-9CD6-4D15-9122-180688EE3304}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AD1DDE78-9CD6-4D15-9122-180688EE3304}.Release|Any CPU.Build.0 = Release|Any CPU
+		{39423DC3-B3C3-4C8A-B6AA-C24287C501C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{39423DC3-B3C3-4C8A-B6AA-C24287C501C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{39423DC3-B3C3-4C8A-B6AA-C24287C501C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{39423DC3-B3C3-4C8A-B6AA-C24287C501C5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -110,6 +116,7 @@ Global
 		{69CED1ED-F05F-49DE-97B2-97FDA07B80A9} = {C2A5F2F4-8E2A-489A-ACC0-5F2DE12B5E23}
 		{6A1B7B16-66AC-4A85-8607-DFC38CC1D765} = {236D2F5D-C115-49AA-9C6F-3B4F043A8041}
 		{AD1DDE78-9CD6-4D15-9122-180688EE3304} = {C2A5F2F4-8E2A-489A-ACC0-5F2DE12B5E23}
+		{39423DC3-B3C3-4C8A-B6AA-C24287C501C5} = {236D2F5D-C115-49AA-9C6F-3B4F043A8041}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E4BD9D17-6975-4B7A-B198-E85EDC2D1D83}
