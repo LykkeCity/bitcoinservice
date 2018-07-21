@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-using BitcoinJob.Workflow.Commands;
 using Common;
 using Common.Log;
 using Core.Exceptions;
@@ -12,6 +11,7 @@ using Core.Repositories.MultipleCashouts;
 using Core.TransactionQueueWriter;
 using Core.TransactionQueueWriter.Commands;
 using LkeServices.Transactions;
+using Lykke.Bitcoin.Contracts.Commands;
 using Lykke.Cqrs;
 
 namespace BitcoinJob.Workflow.Handlers
