@@ -6,6 +6,7 @@ using Core.TransactionQueueWriter;
 using Core.TransactionQueueWriter.Commands;
 using LkeServices.Transactions;
 using Lykke.Bitcoin.Contracts.Commands;
+using Lykke.Bitcoin.Contracts.Events;
 using Lykke.Cqrs;
 
 namespace BitcoinJob.Workflow.Handlers
@@ -39,6 +40,8 @@ namespace BitcoinJob.Workflow.Handlers
             {
                 _logger.WriteWarning(nameof(CashinCommandHandler), nameof(Handle), $"Duplicated id: {command.Id}");
             }
+            
+            eventPublisher.PublishEvent(new CashinCompletedEvent { OperationId = command.Id });
 
             return CommandHandlingResult.Ok();
         }
