@@ -13,6 +13,9 @@ using Core.Settings;
 using Core.TransactionQueueWriter;
 using Core.TransactionQueueWriter.Commands;
 using LkeServices.Transactions;
+using Lykke.Bitcoin.Contracts;
+using Lykke.Bitcoin.Contracts.Events;
+using Lykke.Cqrs;
 using Lykke.JobTriggers.Triggers.Attributes;
 using Lykke.JobTriggers.Triggers.Bindings;
 
@@ -27,11 +30,12 @@ namespace BitcoinJob.Functions
         private readonly ILog _logger;
         private readonly ITransactionBlobStorage _transactionBlobStorage;
         private readonly ITransactionSignRequestRepository _signRequestRepository;
+        private readonly ICqrsEngine _cqrsEngine;
 
         public TransactionBuildFunction(ILykkeTransactionBuilderService lykkeTransactionBuilderService,
             IAssetRepository assetRepository,
             Func<string, IQueueExt> queueFactory, BaseSettings settings, ILog logger, ITransactionBlobStorage transactionBlobStorage,
-            ITransactionSignRequestRepository signRequestRepository)
+            ITransactionSignRequestRepository signRequestRepository, ICqrsEngine cqrsEngine)
         {
             _lykkeTransactionBuilderService = lykkeTransactionBuilderService;
             _assetRepository = assetRepository;
@@ -40,6 +44,7 @@ namespace BitcoinJob.Functions
             _logger = logger;
             _transactionBlobStorage = transactionBlobStorage;
             _signRequestRepository = signRequestRepository;
+            _cqrsEngine = cqrsEngine;
         }
 
 
@@ -61,56 +66,62 @@ namespace BitcoinJob.Functions
                 {
                     case TransactionCommandType.Issue:
                         var issue = message.Command.DeserializeJson<IssueCommand>();
-                        transactionResponse = await _lykkeTransactionBuilderService.GetIssueTransaction(OpenAssetsHelper.ParseAddress(issue.Address),
-                                                        issue.Amount, await _assetRepository.GetAssetById(issue.Asset), message.TransactionId);
+                        transactionResponse = await _lykkeTransactionBuilderService.GetIssueTransaction(
+                            OpenAssetsHelper.ParseAddress(issue.Address),
+                            issue.Amount, await _assetRepository.GetAssetById(issue.Asset), message.TransactionId);
                         break;
                     case TransactionCommandType.Transfer:
                         var transfer = message.Command.DeserializeJson<TransferCommand>();
                         transactionResponse = await _lykkeTransactionBuilderService.GetTransferTransaction(
-                                                        OpenAssetsHelper.ParseAddress(transfer.SourceAddress),
-                                                        OpenAssetsHelper.ParseAddress(transfer.DestinationAddress), transfer.Amount,
-                                                        await _assetRepository.GetAssetById(transfer.Asset), message.TransactionId);
+                            OpenAssetsHelper.ParseAddress(transfer.SourceAddress),
+                            OpenAssetsHelper.ParseAddress(transfer.DestinationAddress), transfer.Amount,
+                            await _assetRepository.GetAssetById(transfer.Asset), message.TransactionId);
                         break;
                     case TransactionCommandType.TransferAll:
                         var transferAll = message.Command.DeserializeJson<TransferAllCommand>();
                         transactionResponse = await _lykkeTransactionBuilderService.GetTransferAllTransaction(
-                                                        OpenAssetsHelper.ParseAddress(transferAll.SourceAddress),
-                                                        OpenAssetsHelper.ParseAddress(transferAll.DestinationAddress),
-                                                        message.TransactionId);
+                            OpenAssetsHelper.ParseAddress(transferAll.SourceAddress),
+                            OpenAssetsHelper.ParseAddress(transferAll.DestinationAddress),
+                            message.TransactionId);
                         break;
                     case TransactionCommandType.Swap:
                         var swap = message.Command.DeserializeJson<SwapCommand>();
                         transactionResponse = await _lykkeTransactionBuilderService.GetSwapTransaction(
-                                                        OpenAssetsHelper.ParseAddress(swap.MultisigCustomer1),
-                                                        swap.Amount1,
-                                                        await _assetRepository.GetAssetById(swap.Asset1),
-                                                        OpenAssetsHelper.ParseAddress(swap.MultisigCustomer2),
-                                                        swap.Amount2,
-                                                        await _assetRepository.GetAssetById(swap.Asset2),
-                                                        message.TransactionId);
+                            OpenAssetsHelper.ParseAddress(swap.MultisigCustomer1),
+                            swap.Amount1,
+                            await _assetRepository.GetAssetById(swap.Asset1),
+                            OpenAssetsHelper.ParseAddress(swap.MultisigCustomer2),
+                            swap.Amount2,
+                            await _assetRepository.GetAssetById(swap.Asset2),
+                            message.TransactionId);
                         break;
                     case TransactionCommandType.Destroy:
                         var destroy = message.Command.DeserializeJson<DestroyCommand>();
                         transactionResponse = await _lykkeTransactionBuilderService.GetDestroyTransaction(
-                                                        OpenAssetsHelper.ParseAddress(destroy.Address),
-                                                        destroy.Amount,
-                                                        await _assetRepository.GetAssetById(destroy.Asset),
-                                                        message.TransactionId);
+                            OpenAssetsHelper.ParseAddress(destroy.Address),
+                            destroy.Amount,
+                            await _assetRepository.GetAssetById(destroy.Asset),
+                            message.TransactionId);
                         break;
                     case TransactionCommandType.SegwitTransferToHotwallet:
                         var segwitTransfer = message.Command.DeserializeJson<SegwitTransferCommand>();
                         transactionResponse = await _lykkeTransactionBuilderService.GetTransferFromSegwitWallet(
-                                                        OpenAssetsHelper.ParseAddress(segwitTransfer.SourceAddress), message.TransactionId);
+                            OpenAssetsHelper.ParseAddress(segwitTransfer.SourceAddress), message.TransactionId);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
             }
-            catch (BackendException e)
+            catch (BackendException e) when (e.Code == ErrorCode.NoCoinsFound)
             {
-                if (e.Code == ErrorCode.NoCoinsFound)
-                    return;
-
+                if (message.Type == TransactionCommandType.SegwitTransferToHotwallet)
+                {
+                    _cqrsEngine.PublishEvent(new CashinCompletedEvent { OperationId = message.TransactionId }, BitcoinBoundedContext.Name);
+                }
+                return;
+            }
+            catch (BackendException e)
+            {               
                 if (e.Text != message.LastError)
                     await _logger.WriteWarningAsync("TransactionBuildFunction", "ProcessMessage", $"Id: [{message.TransactionId}], cmd: [{message.Command}]", e.Text);
 
@@ -131,8 +142,9 @@ namespace BitcoinJob.Functions
             await _transactionBlobStorage.AddOrReplaceTransaction(message.TransactionId, TransactionBlobType.Initial, transactionResponse.Transaction);
 
 
-            await  _queueFactory(Constants.BroadcastingQueue).PutRawMessageAsync(new BroadcastingTransaction
+            await _queueFactory(Constants.BroadcastingQueue).PutRawMessageAsync(new BroadcastingTransaction
             {
+                TransactionCommandType = message.Type,
                 TransactionId = message.TransactionId
             }.ToJson());
         }

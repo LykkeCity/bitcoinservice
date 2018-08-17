@@ -7,5 +7,7 @@ namespace Lykke.Bitcoin.Contracts.Events
     public class CashoutCompletedEvent
     {
         public Guid OperationId { get; set; }
+
+        public string TxHash { get; set; }
     }
 }
