@@ -39,9 +39,7 @@ namespace BitcoinJob.Workflow.Handlers
             catch (BackendException ex) when (ex.Code == ErrorCode.DuplicateTransactionId)
             {
                 _logger.WriteWarning(nameof(CashinCommandHandler), nameof(Handle), $"Duplicated id: {command.Id}");
-            }
-            
-            eventPublisher.PublishEvent(new CashinCompletedEvent { OperationId = command.Id });
+            }                        
 
             return CommandHandlingResult.Ok();
         }

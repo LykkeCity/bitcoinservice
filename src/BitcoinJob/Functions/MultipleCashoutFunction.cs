@@ -12,6 +12,9 @@ using Core.Repositories.MultipleCashouts;
 using Core.Repositories.Settings;
 using LkeServices.Providers;
 using LkeServices.Transactions;
+using Lykke.Bitcoin.Contracts;
+using Lykke.Bitcoin.Contracts.Events;
+using Lykke.Cqrs;
 using Lykke.JobTriggers.Triggers.Attributes;
 using NBitcoin;
 using NBitcoin.RPC;
@@ -32,6 +35,7 @@ namespace BitcoinJob.Functions
         private readonly ILykkeTransactionBuilderService _lykkeTransactionBuilderService;
         private readonly IBitcoinBroadcastService _bitcoinBroadcastService;
         private readonly ISpentOutputService _spentOutputService;
+        private readonly ICqrsEngine _cqrsEngine;
         private readonly ISignatureApiProvider _signatureApi;
 
         public MultipleCashoutFunction(ICashoutRequestRepository cashoutRequestRepository,
@@ -40,7 +44,8 @@ namespace BitcoinJob.Functions
             ISignatureApiProvider signatureApiProvider,
             ILykkeTransactionBuilderService lykkeTransactionBuilderService,
             IBitcoinBroadcastService bitcoinBroadcastService,
-            ISpentOutputService spentOutputService)
+            ISpentOutputService spentOutputService,
+            ICqrsEngine cqrsEngine)
         {
             _cashoutRequestRepository = cashoutRequestRepository;
             _settingsRepository = settingsRepository;
@@ -51,6 +56,7 @@ namespace BitcoinJob.Functions
             _lykkeTransactionBuilderService = lykkeTransactionBuilderService;
             _bitcoinBroadcastService = bitcoinBroadcastService;
             _spentOutputService = spentOutputService;
+            _cqrsEngine = cqrsEngine;
         }
 
         [TimerTrigger("00:00:10")]
@@ -101,14 +107,30 @@ namespace BitcoinJob.Functions
 
             var signedTx = new Transaction(signedHex);
 
+            var txHash = signedTx.GetHash().ToString();
+
             await _cashoutRequestRepository.SetMultiCashoutId(createTxData.UsedRequests.Select(o => o.CashoutRequestId), multiCashoutId);
 
-            await _multiCashoutRepository.CreateMultiCashout(multiCashoutId, signedHex, signedTx.GetHash().ToString());
+            await _multiCashoutRepository.CreateMultiCashout(multiCashoutId, signedHex, txHash);
 
             await _bitcoinBroadcastService.BroadcastTransaction(multiCashoutId, createTxData.UsedRequests.Select(o => o.CashoutRequestId).ToList(),
                 signedTx);
 
             await _multiCashoutRepository.CompleteMultiCashout(multiCashoutId);
+
+            SendCompleteCashoutEvents(createTxData.UsedRequests, txHash);
+        }
+
+        private void SendCompleteCashoutEvents(IEnumerable<ICashoutRequest> completedRequests, string txHash)
+        {
+            foreach (var cashoutRequest in completedRequests)
+            {
+                _cqrsEngine.PublishEvent(new CashoutCompletedEvent()
+                {
+                    OperationId = cashoutRequest.CashoutRequestId,
+                    TxHash = txHash
+                }, BitcoinBoundedContext.Name);
+            }
         }
 
         private async Task RetryBroadcast(IMultipleCashout currentMultiCashout)
@@ -122,10 +144,13 @@ namespace BitcoinJob.Functions
 
             var cashouts = await _cashoutRequestRepository.GetCashoutRequests(currentMultiCashout.MultipleCashoutId);
 
-            await _bitcoinBroadcastService.BroadcastTransaction(currentMultiCashout.MultipleCashoutId, cashouts.Select(o => o.CashoutRequestId).ToList(),
-                new Transaction(currentMultiCashout.TransactionHex));
+            var tx = new Transaction(currentMultiCashout.TransactionHex);
+
+            await _bitcoinBroadcastService.BroadcastTransaction(currentMultiCashout.MultipleCashoutId, cashouts.Select(o => o.CashoutRequestId).ToList(), tx);
 
             await _multiCashoutRepository.CompleteMultiCashout(currentMultiCashout.MultipleCashoutId);
+
+            SendCompleteCashoutEvents(cashouts, tx.GetHash().ToString());
         }
 
         private async Task CloseMultiCashout(IMultipleCashout currentMultiCashout)

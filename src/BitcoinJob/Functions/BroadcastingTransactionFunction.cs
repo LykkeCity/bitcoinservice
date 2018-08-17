@@ -12,6 +12,9 @@ using Core.Settings;
 using Core.TransactionQueueWriter;
 using LkeServices.Providers;
 using LkeServices.Transactions;
+using Lykke.Bitcoin.Contracts;
+using Lykke.Bitcoin.Contracts.Events;
+using Lykke.Cqrs;
 using Lykke.JobTriggers.Triggers.Attributes;
 using Lykke.JobTriggers.Triggers.Bindings;
 using NBitcoin;
@@ -27,19 +30,21 @@ namespace BitcoinJob.Functions
         private readonly ILog _logger;
         private readonly ISignatureApiProvider _exchangeSignatureApi;
         private readonly ISettingsRepository _settingsRepository;
+        private readonly ICqrsEngine _cqrsEngine;
 
         private readonly string[] _unacceptableTxErrors = { "bad-txns-inputs-spent", "txn-mempool-conflict", "absurdly-high-fee" };
 
         public BroadcastingTransactionFunction(IBitcoinBroadcastService broadcastService,
             ITransactionBlobStorage transactionBlobStorage,
             ISignatureApiProvider signatureApiProvider,
-            BaseSettings settings, ILog logger, ISettingsRepository settingsRepository)
+            BaseSettings settings, ILog logger, ISettingsRepository settingsRepository, ICqrsEngine cqrsEngine)
         {
             _broadcastService = broadcastService;
             _transactionBlobStorage = transactionBlobStorage;
             _settings = settings;
             _logger = logger;
             _settingsRepository = settingsRepository;
+            _cqrsEngine = cqrsEngine;
 
             _exchangeSignatureApi = signatureApiProvider;
         }
@@ -62,6 +67,17 @@ namespace BitcoinJob.Functions
 
                 var tr = new Transaction(signedByExchangeTr);
                 await _broadcastService.BroadcastTransaction(transaction.TransactionId, tr);
+
+                if (transaction.TransactionCommandType == TransactionCommandType.SegwitTransferToHotwallet)
+                {
+                    _cqrsEngine.PublishEvent(new CashinCompletedEvent { OperationId = transaction.TransactionId, TxHash = tr.GetHash().ToString() }, BitcoinBoundedContext.Name);
+                }
+
+                if (transaction.TransactionCommandType == TransactionCommandType.Transfer)
+                {
+                    _cqrsEngine.PublishEvent(new CashoutCompletedEvent { OperationId = transaction.TransactionId, TxHash = tr.GetHash().ToString() }, BitcoinBoundedContext.Name);
+                }
+
             }
             catch (RPCException e)
             {
