@@ -6,6 +6,7 @@ using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Bitcoin.Contracts;
 using Lykke.Bitcoin.Contracts.Commands;
+using Lykke.Bitcoin.Contracts.Events;
 using Lykke.Cqrs;
 using Lykke.Cqrs.Configuration;
 using Lykke.Messaging;
@@ -59,6 +60,8 @@ namespace BitcoinJob.Modules
                     true,
                     Register.DefaultEndpointResolver(sagasEndpointResolver),
                     Register.BoundedContext(BitcoinBoundedContext.Name)
+                        .PublishingEvents(typeof(CashoutCompletedEvent), typeof(CashinCompletedEvent))
+                            .With("events")
                         .ListeningCommands(typeof(StartCashinCommand))
                             .On(defaultRoute)
                             .WithCommandsHandler<CashinCommandHandler>()

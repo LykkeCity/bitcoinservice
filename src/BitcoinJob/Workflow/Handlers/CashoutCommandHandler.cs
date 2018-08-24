@@ -12,6 +12,7 @@ using Core.TransactionQueueWriter;
 using Core.TransactionQueueWriter.Commands;
 using LkeServices.Transactions;
 using Lykke.Bitcoin.Contracts.Commands;
+using Lykke.Bitcoin.Contracts.Events;
 using Lykke.Cqrs;
 
 namespace BitcoinJob.Workflow.Handlers
@@ -70,7 +71,7 @@ namespace BitcoinJob.Workflow.Handlers
             catch (BackendException ex) when (ex.Code == ErrorCode.DuplicateTransactionId)
             {
                 _logger.WriteWarning(nameof(CashinCommandHandler), nameof(Handle), $"Duplicated id: {command.Id}");
-            }
+            }            
 
             return CommandHandlingResult.Ok();
         }
