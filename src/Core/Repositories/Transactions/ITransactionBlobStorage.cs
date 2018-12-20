@@ -9,7 +9,8 @@ namespace Core.Repositories.Transactions
     {
         Initial = 0,        
         Signed = 1,
-        Client = 2
+        Client = 2,
+        Prebroadcasted = 3,
     }
 
     public interface ITransactionBlobStorage

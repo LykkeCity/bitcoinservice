@@ -66,6 +66,9 @@ namespace BitcoinJob.Functions
                 }
 
                 var tr = new Transaction(signedByExchangeTr);
+
+                await _transactionBlobStorage.AddOrReplaceTransaction(transaction.TransactionId, TransactionBlobType.Prebroadcasted, signedByExchangeTr);
+
                 await _broadcastService.BroadcastTransaction(transaction.TransactionId, tr);
 
                 if (transaction.TransactionCommandType == TransactionCommandType.SegwitTransferToHotwallet)
