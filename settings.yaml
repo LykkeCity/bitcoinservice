@@ -1,0 +1,87 @@
+BitcoinService:
+  Db:
+    DataConnString:
+      settings-key: BitcoinService-DataConnString
+      types: [ AzureTableStorage ]
+    MongoDataConnString:
+      settings-key: BitcoinService-MongoDataConnString
+      types: [ MongoDB ]
+    LogsConnString:
+      settings-key: BitcoinService-LogsConnString
+      types: [ AzureTableStorage ]
+    DictsConnString:
+      settings-key: BitcoinService-DataConnString
+      types: [ AzureTableStorage ]
+    SharedConnString:
+      settings-key: BitcoinService-DataConnString
+      types: [ AzureTableStorage ]
+  Cqrs:
+    RabbitConnectionString:
+      settings-key: CqrsRabbitConnString
+      types: [ RabbitMq ]
+  NetworkType:
+    settings-key: BitcoinService-NetworkType
+  RPCUsername: 
+    settings-key: BitcoinService-RPCUser
+  RPCPassword: 
+    settings-key: BitcoinService-RPCPass
+  RPCServerIpAddress: 
+    settings-key: BitcoinService-RPCAddress
+  FeeAddress: 
+    settings-key: BitcoinService-FeeAddress
+  QBitNinjaBaseUrl: 
+    settings-key: NinjaServiceUrl
+  BitcoinCallbackUrl: 
+    settings-key: BitcoinCallbackServiceUrl
+  SignatureProviderUrl: 
+    settings-key: SignInServiceUrl
+  ChangeAddress: 
+    settings-key: BitcoinService-ChangeAddress
+  FeeRateMultiplier: 
+    settings-key: BitcoinService-FeeRateMultiplier
+  HotWalletForPregeneratedOutputs: 
+    settings-key: BitcoinService-HotWalletForPregeneratedOutputs
+  MinPregeneratedOutputsCount:
+    settings-key: BitcoinService-MinPregeneratedOutputsCount
+  GenerateOutputsBatchSize: 
+    settings-key: BitcoinService-GenerateOutputsBatchSize
+  PregeneratedFeeAmount: 
+    settings-key: BitcoinService-PregeneratedFeeAmount
+  MinHotWalletBalance: 
+    settings-key: BitcoinService-MinHotWalletBalance
+  SpendChangeFeeRateMultiplier: 
+    settings-key: BitcoinService-SpendChangeFeeRateMultiplier
+  Offchain:
+    UseOffchainGeneration: 
+      settings-key: BitcoinService-UseOffchainGeneration
+    HotWallet: 
+      settings-key: BitcoinService-OffchainHotWallet
+  Bcc:
+    NetworkType: 
+      settings-key: BitcoinService-NetworkType
+    RPCUsername: 
+      settings-key: BitcoinService-BccRPCUser
+    RPCPassword: 
+      settings-key: BitcoinService-BccRPCPass
+    RPCServerIpAddress: 
+      settings-key: BitcoinService-BccRPCAddress
+    UseBccNinja: 
+      value: true,
+    QBitNinjaBaseUrl: 
+      settings-key: BitcoinService-BccNinjaServiceUrl
+  SigningServiceApiKey: 
+    settings-key: BitcoinService-SigningServiceApiKey
+SlackNotifications:
+  AzureQueue:
+    ConnectionString:
+      settings-key: SlackNotificationsConnString
+      types: [ AzureTableStorage ]
+    QueueName:
+      settings-key: SlackQueueName
+      types: [ AzureTableStorage ]
+
+
+
+
+
+
