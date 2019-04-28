@@ -1,5 +1,5 @@
 ﻿{
-  "BitcoinService": {
+  "BitcoinService":  {
     "Db": {
       "DataConnString": "${BitcoinService-DataConnString}:[AzureTableStorage]",
       "MongoDataConnString": "${BitcoinService-MongoDataConnString}:[MongoDB]",
