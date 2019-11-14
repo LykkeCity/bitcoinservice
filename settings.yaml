@@ -10,10 +10,10 @@ BitcoinService:
       settings-key: BitcoinService-LogsConnString
       types: [ AzureTableStorage ]
     DictsConnString:
-      settings-key: BitcoinService-DataConnString
+      settings-key: DictsConnString
       types: [ AzureTableStorage ]
     SharedConnString:
-      settings-key: BitcoinService-DataConnString
+      settings-key: SharedStorageConnString
       types: [ AzureTableStorage ]
   Cqrs:
     RabbitConnectionString:
