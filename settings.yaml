@@ -65,8 +65,8 @@ BitcoinService:
       settings-key: BitcoinService-BccRPCPass
     RPCServerIpAddress: 
       settings-key: BitcoinService-BccRPCAddress
-    UseBccNinja: 
-      value: true
+    UseBccNinja:
+      settings-key: true
     QBitNinjaBaseUrl: 
       settings-key: BitcoinService-BccNinjaServiceUrl
   SigningServiceApiKey: 
