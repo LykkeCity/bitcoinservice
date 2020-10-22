@@ -26,7 +26,7 @@ namespace Bitcoin.Tests
         public static IServiceProvider Services { get; set; }
         public static ILog Logger => Services.GetService<ILog>();
 
-        [AssemblyInitialize]
+        //[AssemblyInitialize]
         public static void Initialize(TestContext context)
         {
             var settings = GeneralSettingsReader.ReadGeneralSettingsLocal<AppSettings>("../../../../settings/bitcoinsettings_dev.json");
