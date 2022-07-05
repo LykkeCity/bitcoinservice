@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Core.Repositories.Assets;
 using Microsoft.WindowsAzure.Storage.Table;
 using AzureStorage;
+using Core.OpenAssets;
 
 namespace AzureRepositories.Assets
 {
@@ -46,7 +45,9 @@ namespace AzureRepositories.Assets
         public async Task<IEnumerable<IAsset>> GetBitcoinAssets()
         {
             return await _storage.GetDataAsync(AssetEntity.GeneratePartitionKey(),
-                    entity => entity.Blockchain == "Bitcoin");
+                // NOTE: It's needed to specify BTC explicitly here since we've switched 'Blockchain'
+                // field of BTC to 'Ethereum' to make it work on Sirius integration.
+                entity => entity.Blockchain == "Bitcoin" || OpenAssetsHelper.IsBitcoin(entity.Id));
         }
     }
 }
